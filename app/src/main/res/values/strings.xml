@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">SD Demo</string>
+    <string name="start_service_one">Start1</string>
+    <string name="start_service_two">Start2</string>
+    <string name="end_service_one">End1</string>
+    <string name="end_service_two">End2</string>
+
+    <string name="end_sdp_one">eSDP1</string>
+    <string name="end_sdp_two">eSDP2</string>
+    <string name="start_sdp_one">sSDP1</string>
+    <string name="start_sdp_two">sSDP2</string>
+
+    <string name="ger_te_in_reichweite">Gefundene Geräte</string>
+    <string name="offene_verbindunen">Offene Verbindunen</string>
+
+    <string name="refresh">Refresh</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="title_home">Home</string>
+    <string name="title_bt">Bluetooth</string>
+    <string name="title_wifip2p">Wifi Direct</string>
+
+    <string name="end_disc">End Disc</string>
+    <string name="discover">Discover</string>
+
+
+
+    <string name="discoverabe">Discoverabe</string>
+    <string name="discovery">Discovery</string>
+</resources>
