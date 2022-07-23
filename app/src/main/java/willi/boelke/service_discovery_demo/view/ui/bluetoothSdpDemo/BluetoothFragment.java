@@ -197,7 +197,6 @@ public class BluetoothFragment extends Fragment
         this.messageTwoObserver();
         this.connectionsObserver();
         this.devicesInRangeObserver();
-        this.testUUIDs();
         return root;
     }
 
@@ -309,39 +308,6 @@ public class BluetoothFragment extends Fragment
                 devicesInRangeListView.setAdapter(deviceLisAdapter);
             }
         });
-    }
-
-    private void testUUIDs(){
-        // UUID
-        UUID test = UUID.fromString( "020012ac-4202-39b9-ec11-9af4ff5f3412");
-        Log.d(TAG, "testUUIDs: " + test.toString());
-
-        // Making it little endian
-        ByteBuffer byteBuffer = ByteBuffer.allocate(16);
-        byteBuffer
-                .putLong(test.getLeastSignificantBits())
-                .putLong(test.getMostSignificantBits());
-        byteBuffer.rewind();
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        test = new UUID(byteBuffer.getLong(), byteBuffer.getLong());
-        Log.d(TAG, "testUUIDs: little endian: " + test.toString());
-
-        // Train to convert it to native order (Android big endian)
-        ByteBuffer byteBufferTwo = ByteBuffer.allocate(16);
-        byteBufferTwo
-                .putLong(test.getLeastSignificantBits())
-                .putLong(test.getMostSignificantBits());
-        byteBufferTwo.rewind();
-        byteBufferTwo.order(ByteOrder.nativeOrder());
-        test = new UUID(byteBufferTwo.getLong(), byteBufferTwo.getLong());
-        Log.d(TAG, "testUUIDs: native order endian: " + test.toString());
-
-        if (ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN)) {
-            System.out.println("testUUIDs Big-endian");
-        } else {
-            System.out.println("testUUIDs Little-endian");
-        }
-
     }
 
 }

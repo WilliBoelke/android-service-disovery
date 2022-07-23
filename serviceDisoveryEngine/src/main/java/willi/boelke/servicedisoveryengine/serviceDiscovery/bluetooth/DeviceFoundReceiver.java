@@ -25,7 +25,7 @@ public class DeviceFoundReceiver extends BroadcastReceiver
         {
             //Getting  new BTDevice from intent
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            Log.d(TAG, "foundDeviceReceiver: onReceive: discovered new device " + engine.getDeviceString(device));
+            Log.d(TAG, "foundDeviceReceiver: onReceive: discovered new device " + Utils.getBluetoothDeviceString(device));
             this.engine.onDeviceDiscovered(device);
         }
     }

@@ -94,14 +94,6 @@ public class SdpBluetoothEngine
     private final ArrayList<BluetoothDevice> discoveredDevices;
 
     /**
-     * Stores a Parcelable array (containing UUIDs)
-     * and a MAC address as String (KEY).
-     * This is used to remember once fetched UUIDs of a device
-     * even over possible disconnects
-     */
-    private final HashMap<String, Parcelable[]> rememberedUUIDs;
-
-    /**
      * Stores UUIDs of services which should be discovered
      * (and connected to)
      */
@@ -127,6 +119,7 @@ public class SdpBluetoothEngine
      * though {@link #stopDiscovery()}
      */
     private boolean shouldDiscover;
+    private boolean checkLittleEndianUuids;
 
     //
     //  ----------  initialisation and setup ----------
@@ -149,7 +142,6 @@ public class SdpBluetoothEngine
         }
         return instance;
     }
-
 
     public static SdpBluetoothEngine getInstance()
     {
@@ -176,10 +168,10 @@ public class SdpBluetoothEngine
         this.connectionManager = new SdpBluetoothConnectionManager();
         this.deviceUUIDsFetchedTimeStamps = new HashMap<>();
         this.serviceClients = new HashMap<>();
-        this.rememberedUUIDs = new HashMap<>();
         this.shouldDiscover = false;
         this.foundDeviceReceiver = new DeviceFoundReceiver(this);
         this.fetchedUuidReceiver = new UUIDFetchedReceiver(this);
+        this.checkLittleEndianUuids = true;
     }
 
     private void registerReceivers()
@@ -190,13 +182,11 @@ public class SdpBluetoothEngine
         context.registerReceiver(foundDeviceReceiver, discoverDevicesIntent);
     }
 
-
     public void startEngine()
     {
         this.enableBluetooth();
         this.registerReceivers();
     }
-
 
     //
     //  ----------  shutdown and teardown ----------
@@ -459,25 +449,25 @@ public class SdpBluetoothEngine
             try
             {
                 // Looking for each UUID on the device and if it matches open a connection
-                for (Parcelable uuid : rememberedUUIDs.get(device.getAddress()))
+                for (ParcelUuid uuid : device.getUuids())
                 {
-                    UUID tUUID = UUID.fromString(uuid.toString()); // TODO there needs to be a better way
-                    if (uuid.toString().equals(serviceUUID.toString()))
+                    UUID tUUID = uuid.getUuid();
+                    if (tUUID.equals(serviceUUID) || (this.checkLittleEndianUuids && Utils.bytewiseReverseUuid(tUUID).equals(serviceUUID)))
                     {
                         if (!this.isConnectionAlreadyEstablished(device.getAddress(), serviceUUID))
                         {
-                            Log.d(TAG, "tryToConnectToServiceAlreadyInRange:  service " + serviceUUID + " has already been discovered on " + getDeviceString(device));
+                            Log.d(TAG, "tryToConnectToServiceAlreadyInRange:  service " + serviceUUID + " has already been discovered on " + Utils.getBluetoothDeviceString(device));
                             // Okay the service was discovered
                             // and here was is no connection open to it, lets change that and connect
-                            tryToConnectToService(device, tUUID);
+                            tryToConnectToService(device, serviceUUID);
                         }
                     }
                 }
             }
             catch (NullPointerException e)
             {
-                //e.printStackTrace();
-                Log.e(TAG, "tryToConnectToServiceAlreadyInRange: we have no uuids of his device " + getDeviceString(device));
+                e.printStackTrace();
+                Log.e(TAG, "tryToConnectToServiceAlreadyInRange: we have no uuids of his device " + Utils.getBluetoothDeviceString(device));
             }
         }
     }
@@ -533,12 +523,12 @@ public class SdpBluetoothEngine
             Log.d(TAG, "tryToConnectToService: Connecting manually");
             if (this.serviceClients.get(serviceUUID).shouldConnectTo(device.getAddress(), serviceUUID))
             {
-                Log.d(TAG, "tryToConnectToService: staring client thread to " + getDeviceString(device));
+                Log.d(TAG, "tryToConnectToService: staring client thread to " + Utils.getBluetoothDeviceString(device));
                 startClientThread(device, serviceUUID);
             }
             else
             {
-                Log.d(TAG, "tryToConnectToService: should not connect to " + getDeviceString(device));
+                Log.d(TAG, "tryToConnectToService: should not connect to " + Utils.getBluetoothDeviceString(device));
             }
         }
     }
@@ -570,15 +560,15 @@ public class SdpBluetoothEngine
                 // Log.d(TAG, "connectIfServiceAvailableAndNoConnectedAlready: Services to look for = " + this.servicesToLookFor);
                 for (UUID uuidToLookFor : this.servicesToLookFor)
                 {
-                    // Log.d(TAG, "connectIfServiceAvailableAndNoConnectedAlready: comparing: " + uuidToLookFor + " === " + tUUID);
-                    if (tUUID.equals(uuidToLookFor)) // NOTE TO SELF removed toString() from both
+                    // Log.d(TAG, "connectIfServiceAvailableAndNoConnectedAlready: comparing: " + uuidToLookFor + " => " + Utils.bytewiseReverseUuid(tUUID));
+                    if (tUUID.equals(uuidToLookFor) || (this.checkLittleEndianUuids && Utils.bytewiseReverseUuid(tUUID).equals(uuidToLookFor)))
                     {
-                        Log.d(TAG, "connectIfServiceAvailableAndNoConnectedAlready: Service found on " + getDeviceString(device));
+                        Log.d(TAG, "connectIfServiceAvailableAndNoConnectedAlready: Service found on " + Utils.getBluetoothDeviceString(device));
                         if (!this.isConnectionAlreadyEstablished(device.getAddress(), uuidToLookFor))
                         {
                             //Notify client about discovery
-                            this.serviceClients.get(tUUID).onServiceDiscovered(device.getAddress(), tUUID);
-                            tryToConnectToService(device, tUUID);
+                            this.serviceClients.get(uuidToLookFor).onServiceDiscovered(device.getAddress(), uuidToLookFor);
+                            tryToConnectToService(device, uuidToLookFor);
                         }
 
                         found = true;
@@ -588,7 +578,7 @@ public class SdpBluetoothEngine
         }
         catch (NullPointerException e)
         {
-            Log.e(TAG, "connectIfServiceAvailableAndNoConnectedAlready: No UUIDs available on device  " + getDeviceString(device));
+            Log.e(TAG, "connectIfServiceAvailableAndNoConnectedAlready: No UUIDs available on device  " + Utils.getBluetoothDeviceString(device));
         }
         return found;
     }
@@ -863,7 +853,7 @@ public class SdpBluetoothEngine
 
         if (device.getUuids() != null)
         {
-            Log.d(TAG, "onDeviceDiscovered: the device " + getDeviceString(device) + " already gave us UUIDs, no need to fetch");
+            Log.d(TAG, "onDeviceDiscovered: the device " + Utils.getBluetoothDeviceString(device) + " already gave us UUIDs, no need to fetch");
             this.rememberedUUIDs.put(device.getAddress(), device.getUuids());
             addFetchedDeviceTimestamp(device.getAddress()); // also we an add a timestamp here since we go the UUIDs
             connectIfServiceAvailableAndNoConnectedAlready(device, device.getUuids());
@@ -872,10 +862,10 @@ public class SdpBluetoothEngine
         }
          */
 
-        Log.d(TAG, "onDeviceDiscovered: the device " + getDeviceString(device) + " did not transferred any UUIDs");
+        Log.d(TAG, "onDeviceDiscovered: the device " + Utils.getBluetoothDeviceString(device) + " did not transferred any UUIDs");
         if (shouldFetchUUIDsAgain(device.getAddress()))
         {
-            Log.d(TAG, "onDeviceDiscovered: the UUIDs on " + getDeviceString(device) + " weren't refreshed recently, fetching them now");
+            Log.d(TAG, "onDeviceDiscovered: the UUIDs on " + Utils.getBluetoothDeviceString(device) + " weren't refreshed recently, fetching them now");
 
             bluetoothAdapter.cancelDiscovery(); //  We need to cancel he discovery here, so we an receive the fetched UUIDs quickly
             device.fetchUuidsWithSdp();
@@ -888,7 +878,7 @@ public class SdpBluetoothEngine
     }
 
     protected void onUuidsFetched(BluetoothDevice device, Parcelable[] uuidExtra){
-        Log.d(TAG, "fetchedUuidReceiver: received UUIDS fot " + getDeviceString(device));
+        Log.d(TAG, "fetchedUuidReceiver: received UUIDS fot " + Utils.getBluetoothDeviceString(device));
         if(!shouldFetchUUIDsAgain(device.getAddress()))
         {
             Log.d(TAG, "fetchedUuidReceiver: UUIDs where refreshed only recently. blocked");
@@ -899,7 +889,6 @@ public class SdpBluetoothEngine
         try
         {
             // Getting the Service UUIDs
-            rememberedUUIDs.put(device.getAddress(), uuidExtra);
             connectIfServiceAvailableAndNoConnectedAlready(device, uuidExtra); // Does that work??
         }
         catch (NullPointerException e)
@@ -913,25 +902,10 @@ public class SdpBluetoothEngine
     //  ----------  helper ----------
     //
 
-    /**
-     * Builds a string containing the important information about a BluetoothDevice
-     *
-     * @param device
-     *         The device
-     *
-     * @return Sting conning name and address of the device
-     */
-    String getDeviceString(BluetoothDevice device)
-    {
-        return "DEVICE { " + device.getName() + " | " + device.getAddress() + " }";
-    }
-
 
     //
     //  ----------  unused / debugging code ----------
     //
-
-
 
     /*
 
@@ -957,7 +931,7 @@ public class SdpBluetoothEngine
             else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action))
             {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                Log.e(TAG, "Device Disconnected " + getDeviceString(device));
+                Log.e(TAG, "Device Disconnected " + Utils.getBluetoothDeviceString(device));
                 devicesInRange.remove(device);
                 for (HashMap.Entry<UUID, BluetoothServiceClient> set : serviceClients.entrySet())
                 {

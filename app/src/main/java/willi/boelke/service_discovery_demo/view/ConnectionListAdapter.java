@@ -1,15 +1,11 @@
 package willi.boelke.service_discovery_demo.view;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
-
-import androidx.core.app.ActivityCompat;
 
 import java.util.ArrayList;
 
