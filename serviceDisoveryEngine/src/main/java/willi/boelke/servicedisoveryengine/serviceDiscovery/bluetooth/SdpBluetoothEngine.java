@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.UUID;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnectionManager;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpClientServerInterfaces.SdpBluetoothServiceClient;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpClientServerInterfaces.SdpBluetoothServiceServer;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpConnectorThreads.BluetoothClientConnector;
@@ -37,10 +36,17 @@ public class SdpBluetoothEngine
     //  ---------- static members ----------
     //
 
-    public static final int DEFAULT_DISCOVERY_TIME_IN_SECONDS = 120;
-    public static final long UUID_REFRESH_TIME_IN_MILLIS_SHORT = 30000;
-    public static final long UUID_REFRESH_TIME_IN_MILLIS_MEDIUM = 60000;
-    public static final long UUID_REFRESH_TIME_IN_MILLIS_LONG = 120000;
+    public static final int DEFAULT_DISCOVERABLE_TIME = 120;
+    public static final int SHORT_DISCOVERABLE_TIME = 60;
+    public static final int MIN_DISCOVERABLE_TIME = 10;
+    public static final int LONG_DISCOVERABLE_TIME = 180;
+    public static final int MAX_DISCOVERABLE_TIME = 300;
+
+    public static final long DEFAULT_UUID_REFRESH_TIMEOUT = 20000;
+    public static final long MEDIUM_UUID_REFRESH_TIMEOUT = 50000;
+    public static final long LONG_UUID_REFRESH_TIMEOUT = 120000;
+
+    public static final long MANUAL_REFRESH_TIME = 10000;
 
     /**
      * Instance of the class following the singleton pattern
@@ -76,7 +82,7 @@ public class SdpBluetoothEngine
      */
     private final boolean automaticallyConnectWhenServiceFound;
 
-    private final int discoverabilityTimeInSeconds;
+    private int discoverableTimeInSeconds;
 
     /**
      * This is used to sore a timestamp (Long)
@@ -103,15 +109,15 @@ public class SdpBluetoothEngine
     /**
      *
      */
-    private List<BluetoothServiceConnector> runningServiceConnectors;
+    private final List<BluetoothServiceConnector> runningServiceConnectors;
 
-    private List<BluetoothClientConnector> runningClientConnectors;
+    private final List<BluetoothClientConnector> runningClientConnectors;
 
-    private SdpBluetoothConnectionManager connectionManager;
+    private final SdpBluetoothConnectionManager connectionManager;
 
-    private BroadcastReceiver foundDeviceReceiver;
+    private final BroadcastReceiver foundDeviceReceiver;
 
-    private BroadcastReceiver fetchedUuidReceiver;
+    private final BroadcastReceiver fetchedUuidReceiver;
 
     /**
      * This prevents the engine from starting the discovery again
@@ -119,7 +125,25 @@ public class SdpBluetoothEngine
      * though {@link #stopDiscovery()}
      */
     private boolean shouldDiscover;
+
+    private boolean refreshing;
+
+    private long refreshingTimeStamp;
+
+    /**
+     * Determines whether discovered service UUIDs
+     * should only be evaluated the way the where received
+     * or also in a bytewise revered format
+     * This is to workaround a issue which causes UUIDs
+     * to be received in a little endian format.
+     *
+     * It is true by default, to ensure everything working correctly.
+     * But can be disabled be the user.
+     * @see SdpBluetoothEngine#shouldCheckLittleEndianUuids(boolean)
+     */
     private boolean checkLittleEndianUuids;
+
+    private long uuidRefreshTimeout;
 
     //
     //  ----------  initialisation and setup ----------
@@ -151,7 +175,7 @@ public class SdpBluetoothEngine
         }
         else
         {
-            return null; // TODO exception
+            return null;
         }
     }
 
@@ -159,7 +183,6 @@ public class SdpBluetoothEngine
     {
         this.context = context;
         this.bluetoothAdapter = adapter;
-        this.discoverabilityTimeInSeconds = DEFAULT_DISCOVERY_TIME_IN_SECONDS;
         this.automaticallyConnectWhenServiceFound = false;
         this.runningServiceConnectors = Collections.synchronizedList(new ArrayList<BluetoothServiceConnector>());
         this.runningClientConnectors = Collections.synchronizedList(new ArrayList<BluetoothClientConnector>());
@@ -172,6 +195,10 @@ public class SdpBluetoothEngine
         this.foundDeviceReceiver = new DeviceFoundReceiver(this);
         this.fetchedUuidReceiver = new UUIDFetchedReceiver(this);
         this.checkLittleEndianUuids = true;
+        this.refreshing = false;
+        this.refreshingTimeStamp = 0;
+        this.setDefaultDiscoverableTimeInSeconds(DEFAULT_DISCOVERABLE_TIME);
+        this.setServerRefreshTimeout(DEFAULT_UUID_REFRESH_TIMEOUT);
     }
 
     private void registerReceivers()
@@ -210,6 +237,8 @@ public class SdpBluetoothEngine
      */
     protected void teardownEngine()
     {
+        // yes im logging this as error, just to make it visible
+        Log.e(TAG, "teardownEngine: ---resetting engine---");
         this.stopEngine();
         instance = null;
     }
@@ -279,10 +308,10 @@ public class SdpBluetoothEngine
      */
     public void askToMakeDeviceDiscoverable()
     {
-        Log.d(TAG, "makeDiscoverable: making device discoverable for " + discoverabilityTimeInSeconds + " ms");
+        Log.d(TAG, "makeDiscoverable: making device discoverable for " + discoverableTimeInSeconds + " ms");
         //Discoverable Intent
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, DEFAULT_DISCOVERY_TIME_IN_SECONDS);
+        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, DEFAULT_DISCOVERABLE_TIME);
         context.startActivity(discoverableIntent);
     }
 
@@ -291,6 +320,9 @@ public class SdpBluetoothEngine
      */
     public void startDiscovery()
     {
+        // in case a manual UUID refresh process is running it will end here
+        stopRefreshingNearbyDevices();
+
         Log.d(TAG, "startDiscovery: start looking for other devices");
         if (bluetoothAdapter.isDiscovering())
         {
@@ -311,11 +343,26 @@ public class SdpBluetoothEngine
         bluetoothAdapter.cancelDiscovery();
     }
 
+    /**
+     * This starts the discovery (only for internal use).
+     *
+     * For the engine i is not always allowed tto start he discovery
+     * (again) for example if it was disabled by the user.
+     * This method checks if it is okay to start again, and then starts
+     * else it just returns.
+     */
     private void startDiscoveryIfAllowed()
     {
-        Log.d(TAG, "startDiscoveryIfAllowed: starting discovery again");
-        if (this.shouldDiscover)
+        // if manual refresh process is running
+        if(!this.isRefreshProcessRunning())
         {
+            stopRefreshingNearbyDevices();
+        }
+        Log.d(TAG, "startDiscoveryIfAllowed: allowed to restart : " + this.shouldDiscover + " | " + !this.refreshing);
+        if (this.shouldDiscover && !this.refreshing)
+        {
+            Log.d(TAG, "startDiscoveryIfAllowed: starting discovery again");
+
             this.startDiscovery();
             return;
         }
@@ -549,6 +596,9 @@ public class SdpBluetoothEngine
      */
     private boolean connectIfServiceAvailableAndNoConnectedAlready(BluetoothDevice device, Parcelable[] uuidExtra)
     {
+        if( uuidExtra == null){
+            return false;
+        }
         boolean found = false;
         try
         {
@@ -578,7 +628,7 @@ public class SdpBluetoothEngine
         }
         catch (NullPointerException e)
         {
-            Log.e(TAG, "connectIfServiceAvailableAndNoConnectedAlready: No UUIDs available on device  " + Utils.getBluetoothDeviceString(device));
+           e.printStackTrace();
         }
         return found;
     }
@@ -596,6 +646,48 @@ public class SdpBluetoothEngine
         {
             bluetoothAdapter.cancelDiscovery();
         }
+    }
+
+    /**
+     * This will start a refreshing process
+     * of all nearby services.
+     * This will run a maximum of 10 seconds.
+     * It an be stopped by calling {@link #stopRefreshingNearbyDevices()}
+     *
+     * This also will cause the device discovery to stop.
+     * calling {@link #startDiscovery()} will resume the discovery of new devices
+     * but stop the refreshing process.
+     *
+     * Calling {@link #startDiscovery()} while this is running is not recommended.
+     * You can check if the refresh is still running using {@link #isRefreshProcessRunning()}
+     */
+    public void refreshNearbyServices(){
+        this.bluetoothAdapter.cancelDiscovery();
+        this.refreshing = true;
+        this.refreshingTimeStamp = System.currentTimeMillis();
+        for (BluetoothDevice deviceInRange: this.discoveredDevices)
+        {
+            deviceInRange.fetchUuidsWithSdp();
+        }
+    }
+
+    private void stopRefreshingNearbyDevices(){
+        Log.d(TAG, "stopRefreshingNearbyDevices: stop refresh process");
+        refreshing = false;
+        refreshingTimeStamp = 0;
+    }
+
+    public boolean isRefreshProcessRunning(){
+        Log.d(TAG, "isRefreshProcessRunning: refreshing : " + refreshing + " | timeout : " + (System.currentTimeMillis() - this.refreshingTimeStamp >= MANUAL_REFRESH_TIME));
+        if(!this.refreshing){
+            return false;
+        }
+        else if (System.currentTimeMillis() - this.refreshingTimeStamp >= MANUAL_REFRESH_TIME)
+        {
+            stopRefreshingNearbyDevices();
+            return false;
+        }
+        return true;
     }
 
     //
@@ -777,7 +869,7 @@ public class SdpBluetoothEngine
      * This is realised by saving a time swamp and the devices MAc address
      * into the {@link #deviceUUIDsFetchedTimeStamps} HashMap.
      *
-     * UUIDs will be fetched again after the specified time {@link #UUID_REFRESH_TIME_IN_MILLIS_SHORT}
+     * UUIDs will be fetched again after the specified time {@link #DEFAULT_UUID_REFRESH_TIMEOUT}
      * passed since the time stamp.
      *
      * @see #addFetchedDeviceTimestamp(String)
@@ -789,6 +881,10 @@ public class SdpBluetoothEngine
      */
     private boolean shouldFetchUUIDsAgain(String address)
     {
+        //manual refresh process always ignores timestamps
+        if (this.isRefreshProcessRunning()){
+            return true;
+        }
         long timestamp;
         try
         {
@@ -801,7 +897,7 @@ public class SdpBluetoothEngine
 
         long elapsedTime = System.currentTimeMillis() - timestamp;
         Log.d(TAG, "shouldFetchUUIDsAgain: device " + address + " was last refreshed " + elapsedTime + " millis ago");
-        return UUID_REFRESH_TIME_IN_MILLIS_SHORT <= elapsedTime;
+        return (uuidRefreshTimeout <= elapsedTime);
     }
 
     private void addFetchedDeviceTimestamp(String address)
@@ -811,10 +907,19 @@ public class SdpBluetoothEngine
 
 
     //
-    //  ----------  broadcast receiver ----------
+    //  ----------  on bluetooth events ----------
     //
 
-
+    /**
+     * This should be called when a new device was discovered
+     *
+     *  The device will be added to the discovered devices list, if it was not yet.
+     *  and notify the SdpClients about a new device // todo , this actually is just for my debugging and could be removed in final
+     *
+     *  It will also determine if he UUIDs of this device should be fetched (first discovery or refresh).
+     *  In this ase it will trigger the UUIDs fetching process and pause the discovery
+     * @param device
+     */
     public void onDeviceDiscovered(BluetoothDevice device)
     {
         // Adding the device to he discovered devices list
@@ -829,45 +934,22 @@ public class SdpBluetoothEngine
             }
         }
 
-        /*
         //----------------------------------
-        // NOTE : Here we get the UUIDs, There are two options a device
-        // already, gave us the UUIDs without a request being issued.
-        // That's good, because then we don't have to send a SDPRequest
-        // and interrupt discovery. This though isn't always  the case,
-        // then the getUuids method will return null.
-        // Then we need to explicitly ask for UUIDs.
-        // This seems to be rare on the android devices side as all
-        // my test devices (5 divergent android phones and tables)
-        // are giving the UUIDs implicitly and without a request.
-        // This means the discovery will mostly be interrupted by
-        // devices that wont have the service running a all.
-        // Bu there is no 100% certainty.
-        // UPDATE ON THIS :
+        // NOTE :
         // Sadly android will keep UUIDS till the BT Adapter restarts
         // (Bluetooth was turned on and off once). This means the UUIDS
-        // from .getUuids will be outdated mos of the time.
+        // from .getUuids() will be outdated most of the time.
         // even if the devices just connected getUuids() will return the
         // uuids from the first time the devices connected.
         //----------------------------------
 
-        if (device.getUuids() != null)
-        {
-            Log.d(TAG, "onDeviceDiscovered: the device " + Utils.getBluetoothDeviceString(device) + " already gave us UUIDs, no need to fetch");
-            this.rememberedUUIDs.put(device.getAddress(), device.getUuids());
-            addFetchedDeviceTimestamp(device.getAddress()); // also we an add a timestamp here since we go the UUIDs
-            connectIfServiceAvailableAndNoConnectedAlready(device, device.getUuids());
-        }
-        else {
-        }
-         */
 
         Log.d(TAG, "onDeviceDiscovered: the device " + Utils.getBluetoothDeviceString(device) + " did not transferred any UUIDs");
         if (shouldFetchUUIDsAgain(device.getAddress()))
         {
             Log.d(TAG, "onDeviceDiscovered: the UUIDs on " + Utils.getBluetoothDeviceString(device) + " weren't refreshed recently, fetching them now");
 
-            bluetoothAdapter.cancelDiscovery(); //  We need to cancel he discovery here, so we an receive the fetched UUIDs quickly
+            bluetoothAdapter.cancelDiscovery(); //  We need to cancel the discovery here, so we an receive the fetched UUIDs quickly
             device.fetchUuidsWithSdp();
         }
         else
@@ -877,163 +959,96 @@ public class SdpBluetoothEngine
 
     }
 
-    protected void onUuidsFetched(BluetoothDevice device, Parcelable[] uuidExtra){
+    public void onUuidsFetched(BluetoothDevice device, Parcelable[] uuidExtra){
         Log.d(TAG, "fetchedUuidReceiver: received UUIDS fot " + Utils.getBluetoothDeviceString(device));
-        if(!shouldFetchUUIDsAgain(device.getAddress()))
+        if(!this.shouldFetchUUIDsAgain(device.getAddress()))
         {
             Log.d(TAG, "fetchedUuidReceiver: UUIDs where refreshed only recently. blocked");
             return;
         }
-
         addFetchedDeviceTimestamp(device.getAddress());
-        try
-        {
-            // Getting the Service UUIDs
-            connectIfServiceAvailableAndNoConnectedAlready(device, uuidExtra); // Does that work??
-        }
-        catch (NullPointerException e)
-        {
-            Log.e(TAG, "fetchedUuidReceiver: Nu UUIDs received ");
+
+        if(uuidExtra != null){
+            connectIfServiceAvailableAndNoConnectedAlready(device, uuidExtra);
         }
         startDiscoveryIfAllowed();
     }
 
-    //
-    //  ----------  helper ----------
-    //
-
 
     //
-    //  ----------  unused / debugging code ----------
+    //  ---------- config ----------
     //
-
-    /*
-
-    //----------------------------------
-    // NOTE : The following code was and can be used for debugging
-    // I is not actually needed for anything to work.
-    // If u want to use those BroadcastReceivers don forget to register and unregister them.
-    // Just uncommenting wont make them work
-    //----------------------------------
-
-
-    private final BroadcastReceiver aclConnectionStateChanged = new BroadcastReceiver()
-    {
-        @Override
-        public void onReceive(Context context, Intent intent)
-        {
-            String action = intent.getAction();
-
-            if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action))
-            {
-                // Get the BluetoothDevice object from the Intent
-            }
-            else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action))
-            {
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                Log.e(TAG, "Device Disconnected " + Utils.getBluetoothDeviceString(device));
-                devicesInRange.remove(device);
-                for (HashMap.Entry<UUID, BluetoothServiceClient> set : serviceClients.entrySet())
-                {
-                    set.getValue().onDevicesInRangeChange(devicesInRange);
-                }
-
-            }
-        }
-    };
-
-    private final BroadcastReceiver bondStateChangedReceiver = new BroadcastReceiver()
-    {
-        @Override
-        public void onReceive(Context context, Intent intent)
-        {
-            final String action = intent.getAction();
-            if (action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED))
-            {
-                BluetoothDevice mDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                if (mDevice.getBondState() == BluetoothDevice.BOND_BONDED)
-                {
-                    Log.d(TAG, "mBroadcastReceiver4: BOND_BONDED.");
-                }
-                if (mDevice.getBondState() == BluetoothDevice.BOND_BONDING)
-                {
-                    Log.d(TAG, "mBroadcastReceiver4: BOND_BONDING.");
-                }
-                if (mDevice.getBondState() == BluetoothDevice.BOND_NONE)
-                {
-                    Log.d(TAG, "mBroadcastReceiver4: BOND_NONE.");
-                }
-            }
-        }
-    };
-
-    private final BroadcastReceiver actionStateChangedReceiver = new BroadcastReceiver()
-    {
-        public void onReceive(Context context, Intent intent)
-        {
-            String action = intent.getAction();
-
-            // When discovery finds a device
-            if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED))
-            {
-                final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
-
-                switch (state)
-                {
-                    case BluetoothAdapter.STATE_OFF:
-                        Log.d(TAG, "actionStateChangedReceiver: STATE OFF");
-                        break;
-                    case BluetoothAdapter.STATE_TURNING_OFF:
-                        Log.d(TAG, "actionStateChangedReceiver: STATE TURNING OFF");
-                        break;
-                    case BluetoothAdapter.STATE_ON:
-                        Log.d(TAG, "actionStateChangedReceiver: STATE ON");
-                        break;
-                    case BluetoothAdapter.STATE_TURNING_ON:
-                        Log.d(TAG, "actionStateChangedReceiver: STATE TURNING ON");
-                        break;
-                }
-            }
-        }
-    };
 
     /**
-     * BroadcastReceiver for Bluetooth ACTION_SCAN_MODE_CHANGED
-     * <p>
-     * (mainly for logging at this moment, can be disabled in production)
-
-    private final BroadcastReceiver actionScanModeChangedReceiver = new BroadcastReceiver()
-    {
-        public void onReceive(Context context, Intent intent)
-        {
-            String action = intent.getAction();
-
-            if (action.equals(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED))
-            {
-                int mode = intent.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.ERROR);
-                switch (mode)
-                {
-                    case BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE:
-                        Log.d(TAG, "actionScanModeChangedReceiver: Discoverability Enabled.");
-                        break;
-                    case BluetoothAdapter.SCAN_MODE_CONNECTABLE:
-                        Log.d(TAG, "actionScanModeChangedReceiver: Discoverability Disabled. Able to receive connections.");
-                        break;
-                    case BluetoothAdapter.SCAN_MODE_NONE:
-                        Log.d(TAG, "actionScanModeChangedReceiver: Discoverability Disabled. Not able to receive connections.");
-                        break;
-                    case BluetoothAdapter.STATE_CONNECTING:
-                        Log.d(TAG, "actionScanModeChangedReceiver: Connecting....");
-                        break;
-                    case BluetoothAdapter.STATE_CONNECTED:
-                        Log.d(TAG, "actionScanModeChangedReceiver: Connected.");
-                        break;
-                }
-            }
-        }
-    };
-
-
+     * On some devices service uuids will be
+     * received in a little endian format.
+     * The engine will by default reverse UUIDs and chek them as well
+     *
+     * Set this to `false` to disable this behaviour.
+     *
+     * @param checkLittleEndianUuids
+     * determines whether little endian UUIDs should be checked or not
      */
+    public void shouldCheckLittleEndianUuids (boolean checkLittleEndianUuids){
+        this.checkLittleEndianUuids = checkLittleEndianUuids;
+    }
+
+    /**
+     * Set the time the device should be made discoverable
+     * The max value here is 300 (seconds) and the
+     * min value is 10 (seconds).
+     * The value will be capped to fit this interval.
+     *
+     * If this method is not used, the discoverable time will
+     * be set to the default of 120 seconds.
+     *
+     * There are also predefined values which an be used here :
+     * @see SdpBluetoothEngine#DEFAULT_DISCOVERABLE_TIME
+     * @see SdpBluetoothEngine#MAX_DISCOVERABLE_TIME
+     * @see SdpBluetoothEngine#MIN_DISCOVERABLE_TIME
+     * @see SdpBluetoothEngine#LONG_DISCOVERABLE_TIME
+     * @see SdpBluetoothEngine#SHORT_DISCOVERABLE_TIME
+     *
+     * @param seconds
+     */
+    public void setDefaultDiscoverableTimeInSeconds(int seconds){
+        if(seconds > MAX_DISCOVERABLE_TIME){
+            seconds = MAX_DISCOVERABLE_TIME;
+        }
+        if(seconds < MIN_DISCOVERABLE_TIME)
+        {
+            seconds = MIN_DISCOVERABLE_TIME;
+        }
+        this.discoverableTimeInSeconds = seconds;
+    }
+
+    /**
+     * Sets a timeout to prevent refreshing UUIDs to often.
+     *
+     * The default timeout is set to {@link #DEFAULT_UUID_REFRESH_TIMEOUT}
+     * (20 seconds).
+     *
+     * The minimum value which an be applied here is 20 seconds.
+     * If a smaller value is given 20 seconds will be applied.
+     *
+     * UUIDs will be refreshed whenever a device is discovered.
+     * This an happen several times, when initiating the device discovery again
+     * through {@link #startDiscovery()}.
+     * The UUIDS don't need to be refreshed every single time, especially
+     * if it us sure that the network is relatively stable
+     * (Meaning services wont eb added or removed from devices very often).
+     *
+     *
+     * @param millis
+     */
+    public void setServerRefreshTimeout(long millis){
+        if(millis < DEFAULT_UUID_REFRESH_TIMEOUT){
+            this.uuidRefreshTimeout = DEFAULT_UUID_REFRESH_TIMEOUT;
+        }
+        else
+        {
+            this.uuidRefreshTimeout = millis;
+        }
+    }
 }
 

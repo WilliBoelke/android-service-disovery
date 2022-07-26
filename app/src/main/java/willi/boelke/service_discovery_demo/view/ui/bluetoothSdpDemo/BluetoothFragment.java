@@ -98,6 +98,8 @@ public class BluetoothFragment extends Fragment
         final Button startServiceTwoBtn = binding.startServiceTwoButton;
         final Button endServiceTwoBtn = binding.endServiceTwoButton;
 
+        final Button refreshBtn = binding.refreshButton;
+
         messageTextView = binding.msgTextView;
 
         startSdpOneBtn.setOnClickListener(new View.OnClickListener()
@@ -189,6 +191,15 @@ public class BluetoothFragment extends Fragment
             public void onClick(View v)
             {
                 bluetoothViewModel.starDiscovery();
+            }
+        });
+
+        refreshBtn.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                bluetoothViewModel.refreshServices();
             }
         });
 

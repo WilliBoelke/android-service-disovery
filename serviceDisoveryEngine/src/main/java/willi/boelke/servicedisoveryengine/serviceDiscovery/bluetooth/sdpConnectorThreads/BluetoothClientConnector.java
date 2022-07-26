@@ -26,11 +26,6 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
     private final String TAG = this.getClass().getSimpleName();
 
     /**
-     * A generated UUID needed for the BluetoothAdapter
-     */
-    private UUID serviceUUID;
-
-    /**
      * The BluetoothAdapter
      */
     private BluetoothAdapter mBluetoothAdapter;
@@ -51,7 +46,7 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
      */
     private BluetoothSocket mmSocket;
 
-    private Thread connectThread;
+
 
     //------------Constructors------------
 
@@ -63,16 +58,11 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
         this.mBluetoothAdapter = mBluetoothAdapter;
     }
 
-    //
-    //  ----------  on connection sate change interface ----------
-    //
-
-
     //------------Network Connection Methods ------------
 
     public void run()
     {
-        this.connectThread = currentThread();
+        this.thread = currentThread();
         BluetoothSocket tmp = null;
         Log.d(TAG, "run: ----ConnectThread is running---- \n trying to connect to " + this.server.getName() + " | " + this.server.getAddress());
         try
@@ -85,9 +75,7 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
             Log.d(TAG, "run: could not create a Rfcomm Socket");
             e.printStackTrace();
         }
-
         mmSocket = tmp;
-
         // Blocking call:
         // only return on successful connection or exception
         try
@@ -121,7 +109,7 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
     }
 
     public void cancel(){
-        this.connectThread.interrupt();
+        this.thread.interrupt();
         try
         {
             this.mmSocket.close();

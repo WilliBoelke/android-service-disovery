@@ -7,6 +7,15 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoot
 public abstract class BluetoothConnectorThread extends Thread
 {
 
+    /**
+     * The running thread
+     */
+    protected Thread thread;
+    /**
+     * A generated UUID needed for the BluetoothAdapter
+     */
+    protected UUID serviceUUID;
+
 
     public interface ConnectionEventListener
     {

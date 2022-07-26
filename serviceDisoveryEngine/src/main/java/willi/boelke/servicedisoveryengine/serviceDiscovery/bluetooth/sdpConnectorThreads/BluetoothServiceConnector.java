@@ -25,11 +25,6 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
     private final String TAG = this.getClass().getSimpleName();
 
     /**
-     * A generated UUID needed for the BluetoothAdapter
-     */
-    private final UUID serviceUUID;
-
-    /**
      * Name of he Service
      */
     private final String serviceName;
@@ -51,8 +46,6 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
     private BluetoothServerSocket serverSocket;
 
     private boolean running;
-
-    private Thread acceptThread;
 
     //
     //  ----------  constructor and initialisation ----------
@@ -104,7 +97,7 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
 
     public void run()
     {
-        this.acceptThread = currentThread();
+        this.thread = currentThread();
         while (this.running){
             acceptConnections();
         }
@@ -120,27 +113,33 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
      */
     private void acceptConnections()
     {
-        Log.d(TAG, "run:  Thread started");
-        BluetoothSocket socket = null;
-        //Blocking Call : Accept thread waits here till another device connects (or canceled)
-        Log.d(TAG, "run: RFCOM server socket started, waiting for connections ...");
-        try
-        {
-            socket = this.serverSocket.accept();
-            Log.d(TAG, "run: RFCOM server socked accepted client connection");
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+            Log.d(TAG, "run:  Thread started");
+            BluetoothSocket socket = null;
+            //Blocking Call : Accept thread waits here till another device connects (or canceled)
+            Log.d(TAG, "run: RFCOM server socket started, waiting for connections ...");
+            try
+            {
+                socket = this.serverSocket.accept();
+                Log.d(TAG, "run: RFCOM server socked accepted client connection");
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+            catch (Exception ie)
+            {
+                // there is an exception throw here, when interrupting in test cases
+                // i does not say which one, so i go with a general catch
+                Log.d(TAG, "acceptConnections: an unexpected exception occurred, this maybe is because thread was interrupted");
+            }
 
-        if(socket == null)
-        {
-            Log.d(TAG, "run: Thread was interrupted");
-            return;
-       }
-        Log.d(TAG, "run:  service accepted client connection, opening streams");
-        this.connectionEvenListener.inConnectionSuccess(new SdpBluetoothConnection(this.serviceUUID, socket, true));
+            if (socket == null)
+            {
+                Log.d(TAG, "run: Thread was interrupted");
+                return;
+            }
+            Log.d(TAG, "run:  service accepted client connection, opening streams");
+            this.connectionEvenListener.inConnectionSuccess(new SdpBluetoothConnection(this.serviceUUID, socket, true));
     }
 
 
@@ -152,10 +151,10 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
     {
         Log.d(TAG, "cancel: cancelling accept thread");
         this.running = false;
-        if(this.acceptThread != null)
+        if(this.thread != null)
         {
-            this.acceptThread.interrupt();
-            Log.d(TAG, "cancel:  accept thread interrupted");
+            this.thread.interrupt();
+            Log.d(TAG, "cancel: accept thread interrupted");
         }
         try
         {
@@ -164,7 +163,7 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
         }
         catch (NullPointerException | IOException e)
         {
-            Log.e(TAG, "closeService:  socket was null  ", e);
+            Log.e(TAG, "closeService: socket was null", e);
         }
     }
 

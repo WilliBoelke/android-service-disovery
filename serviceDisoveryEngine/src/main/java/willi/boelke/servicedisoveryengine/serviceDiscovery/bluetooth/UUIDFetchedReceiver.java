@@ -5,15 +5,35 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Parcelable;
+import android.util.Log;
 
-public class UUIDFetchedReceiver extends BroadcastReceiver
+class UUIDFetchedReceiver extends BroadcastReceiver
 {
+
+    //
+    //  ----------  instance variables ----------
+    //
+
+    /**
+     * Classname for logging
+     */
     private final String TAG = this.getClass().getSimpleName();
+
     private SdpBluetoothEngine engine;
+
+
+    //
+    //  ----------  constructor and initialisation ----------
+    //
 
     public UUIDFetchedReceiver(SdpBluetoothEngine engine) {
         this.engine = engine;
     }
+
+
+    //
+    //  ----------  broadcast receiver methods ----------
+    //
 
     @Override
     public void onReceive(Context context, Intent intent)
@@ -23,6 +43,7 @@ public class UUIDFetchedReceiver extends BroadcastReceiver
         {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             Parcelable[] uuidExtra = intent.getParcelableArrayExtra(BluetoothDevice.EXTRA_UUID);
+            Log.d(TAG, "onReceive: received UUIDs for " + Utils.getBluetoothDeviceString(device));
             this.engine.onUuidsFetched(device, uuidExtra);
         }
     }

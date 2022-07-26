@@ -1,9 +1,11 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth;
 
 import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.UUID;
+
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
 
 /**
  * Holds a list of {@link SdpBluetoothConnection}
@@ -15,13 +17,16 @@ import java.util.UUID;
  * <p>
  * This is utilized in the SdpBluetoothEngine
  */
-public class SdpBluetoothConnectionManager
+class SdpBluetoothConnectionManager
 {
 
     //
     //  ----------  instance variables ----------
     //
 
+    /**
+     * Classname for logging
+     */
     private final String TAG = this.getClass().getSimpleName();
 
     private ArrayList<SdpBluetoothConnection> openConnections;
