@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.os.ParcelUuid
-import android.util.Log
 import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner
 import io.mockk.*
 import junit.framework.Assert.*
@@ -23,10 +22,8 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpClientSe
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.lang.reflect.InvocationTargetException
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.concurrent.thread
 
 
 /**
@@ -103,7 +100,7 @@ class SdpBluetoothEngineTest {
 
         //Run
         SdpBluetoothEngine.initialize(mockedContext, mockedBtAdapter)
-        SdpBluetoothEngine.getInstance().startEngine()
+        SdpBluetoothEngine.getInstance().start()
         SdpBluetoothEngine.getInstance().startDiscovery()
     }
 
@@ -289,6 +286,88 @@ class SdpBluetoothEngineTest {
     }
 
 
+    @Test
+    fun itShouldConnectToServiceIfDiscoveryStartedAfterServiceWasDiscovered() {
+        var openedConnection: SdpBluetoothConnection? = null
+        SdpBluetoothEngine.getInstance()
+            .startSDPDiscoveryForServiceWithUUID(testUUIDTwo, object : SdpBluetoothServiceClient {
+                override fun onServiceDiscovered(address: String, serviceUUID: UUID) {
+                    // tested in other test cases
+                }
+                override fun onConnectedToService(connection: SdpBluetoothConnection) {
+                    // That's what this test case is about
+                    openedConnection = connection
+                }
+                override fun shouldConnectTo(address: String, serviceUUID: UUID): Boolean {
+                    // This needs to return true, to start a connection
+                    return true
+                }
+                override fun onDevicesInRangeChange(devices: ArrayList<BluetoothDevice>) {
+                    // tested in other test cases
+                }
+            })
+
+        // mocked objects
+        val testDeviceOne = getTestDeviceOne()
+        val mockedSocket = getSocketToTestDevice(getTestDeviceTwo())
+
+        // some further methods need tto be mocked
+        every { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) } returns  mockedSocket
+        justRun { mockedSocket.connect() }
+
+        // Discovery and SDP process
+        SdpBluetoothEngine.getInstance().onDeviceDiscovered(getTestDeviceOne())
+        Thread.sleep(400)
+        SdpBluetoothEngine.getInstance().onUuidsFetched(testDeviceOne, getTestUuidArrayOne())
+        Thread.sleep(500)
+
+        // checking the result and verifying some method calls
+        verify (exactly = 1){ testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) }
+        verify (exactly = 1){ mockedSocket.connect() }
+        assertEquals(getTestDeviceTwo().name, openedConnection?.remoteDevice?.name) // the remote device (testDeviceTwo)
+        assert(openedConnection?.isServerPeer == false) // connected as client
+    }
+
+    @Test
+    fun itShouldHandleIoExceptionsWhenTryingToConnect(){
+
+        SdpBluetoothEngine.getInstance()
+            .startSDPDiscoveryForServiceWithUUID(testUUIDTwo, object : SdpBluetoothServiceClient {
+                override fun onServiceDiscovered(address: String, serviceUUID: UUID) {
+                    // tested in other test cases
+                }
+                override fun onConnectedToService(connection: SdpBluetoothConnection) {
+                    // tested in other test cases
+                }
+                override fun shouldConnectTo(address: String, serviceUUID: UUID): Boolean {
+                    // This needs to return true, to start a connection
+                    return true
+                }
+                override fun onDevicesInRangeChange(devices: ArrayList<BluetoothDevice>) {
+                    // tested in other test cases
+                }
+            })
+
+        // mocked objects
+        val testDeviceOne = getTestDeviceOne()
+        val mockedSocket = getSocketToTestDevice(getTestDeviceTwo())
+
+        // some further methods need tto be mocked
+        every { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) } returns  mockedSocket
+        every { mockedSocket.connect() } throws IOException()
+
+        // Discovery and SDP process
+        SdpBluetoothEngine.getInstance().onDeviceDiscovered(getTestDeviceOne())
+        Thread.sleep(400)
+        SdpBluetoothEngine.getInstance().onUuidsFetched(testDeviceOne, getTestUuidArrayOne())
+        Thread.sleep(500)
+
+        // checking the result and verifying some method calls
+        verify (exactly = 1){ testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) }
+        verify (exactly = 1){ mockedSocket.connect() }
+        // When IO Exception is thrown
+        verify (exactly = 1){ mockedSocket.close() }
+    }
 
     /**
      * This is a little bit black box breaking,
@@ -625,8 +704,10 @@ class SdpBluetoothEngineTest {
     }
 
 
+
     @Test
-    fun itShouldConnectToServiceIfDiscoveryStartedAfterServiceWasDiscovered() {
+    fun itShouldNotConnectToServiceWhenClientImplementsShouldConnectFunction()
+    {
 
     }
 

@@ -78,6 +78,7 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
         mmSocket = tmp;
         // Blocking call:
         // only return on successful connection or exception
+        Log.d(TAG, "run: socket created - tyring to connect");
         try
         {
             mmSocket.connect();

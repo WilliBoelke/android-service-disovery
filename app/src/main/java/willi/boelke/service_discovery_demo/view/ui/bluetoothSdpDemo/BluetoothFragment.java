@@ -3,7 +3,6 @@ package willi.boelke.service_discovery_demo.view.ui.bluetoothSdpDemo;
 import android.Manifest;
 import android.bluetooth.BluetoothDevice;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,10 +16,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.UUID;
 
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.FragmentBluetoothBinding;
@@ -74,7 +70,7 @@ public class BluetoothFragment extends Fragment
                 MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);
 
         SdpBluetoothEngine.initialize(this.getContext());
-        SdpBluetoothEngine.getInstance().startEngine();
+        SdpBluetoothEngine.getInstance().start();
 
         this.connections = new ArrayList<>();
         this.clientConnectionsOne = new ArrayList<>();
@@ -215,7 +211,7 @@ public class BluetoothFragment extends Fragment
     public void onDestroyView()
     {
         super.onDestroyView();
-        SdpBluetoothEngine.getInstance().stopEngine();
+        SdpBluetoothEngine.getInstance().stop();
         binding = null;
     }
 

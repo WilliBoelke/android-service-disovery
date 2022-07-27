@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.nfc.Tag;
 import android.os.ParcelUuid;
 import android.os.Parcelable;
 import android.util.Log;
@@ -209,8 +210,12 @@ public class SdpBluetoothEngine
         context.registerReceiver(foundDeviceReceiver, discoverDevicesIntent);
     }
 
-    public void startEngine()
+    public void start()
     {
+        if (this.bluetoothAdapter == null) {
+            Log.e(TAG, "No BluetoothAdapter given, the probably does not support Bluetooth");
+            return;
+        }
         this.enableBluetooth();
         this.registerReceivers();
     }
@@ -222,7 +227,7 @@ public class SdpBluetoothEngine
     /**
      * This needs o be called o sop heSDP engine and unsubscribe all eh receivers
      */
-    public void stopEngine()
+    public void stop()
     {
         unregisterReceivers();
         stopDiscovery();
@@ -239,7 +244,7 @@ public class SdpBluetoothEngine
     {
         // yes im logging this as error, just to make it visible
         Log.e(TAG, "teardownEngine: ---resetting engine---");
-        this.stopEngine();
+        this.stop();
         instance = null;
     }
 
@@ -290,23 +295,18 @@ public class SdpBluetoothEngine
     private void enableBluetooth()
     {
         Log.d(TAG, "enableBluetooth: enabling Bluetooth");
-
-        if (bluetoothAdapter == null)
-        {
-            Log.e(TAG, "enableBluetooth: This Device does not support Bluetooth");
-        }
-        else if (!bluetoothAdapter.isEnabled())
+        if (!bluetoothAdapter.isEnabled())
         {
             // Enable Bluetooth
             Intent enableBluetoothIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            context.startActivity(enableBluetoothIntent);
+            context.sendBroadcast(enableBluetoothIntent);
         }
     }
 
     /**
      * Makes the device discoverable for other bluetooth devices
      */
-    public void askToMakeDeviceDiscoverable()
+    public void startDiscoverable()
     {
         Log.d(TAG, "makeDiscoverable: making device discoverable for " + discoverableTimeInSeconds + " ms");
         //Discoverable Intent
@@ -318,20 +318,26 @@ public class SdpBluetoothEngine
     /**
      * Starts discovering other devices
      */
-    public void startDiscovery()
+    public boolean startDiscovery()
     {
         // in case a manual UUID refresh process is running it will end here
         stopRefreshingNearbyDevices();
+        this.shouldDiscover = true;
 
         Log.d(TAG, "startDiscovery: start looking for other devices");
         if (bluetoothAdapter.isDiscovering())
         {
-            Log.d(TAG, "makeDiscoverable: already scanning, restarting ... ");
+            Log.d(TAG, "startDiscovery: already scanning, restarting ... ");
             this.bluetoothAdapter.cancelDiscovery();
         }
-        this.shouldDiscover = true;
-        bluetoothAdapter.startDiscovery();
-        Log.d(TAG, "startDiscovery: started device discovery");
+
+        if(this.bluetoothAdapter.startDiscovery()) {
+            Log.d(TAG, "startDiscovery: started device discovery");
+            return true;
+        } else {
+            Log.e(TAG, "startDiscovery: could not start Discovery");
+            return false;
+        }
     }
 
     /*

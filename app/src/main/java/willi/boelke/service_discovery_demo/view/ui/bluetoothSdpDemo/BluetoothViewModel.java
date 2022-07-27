@@ -41,7 +41,7 @@ public class BluetoothViewModel extends ViewModel
     }
 
     protected void enableDiscoverable(){
-        SdpBluetoothEngine.getInstance().askToMakeDeviceDiscoverable();
+        SdpBluetoothEngine.getInstance().startDiscoverable();
     }
 
     protected void startServiceOne()
