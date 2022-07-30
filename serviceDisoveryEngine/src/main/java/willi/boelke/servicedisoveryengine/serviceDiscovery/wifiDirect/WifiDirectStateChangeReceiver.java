@@ -1,4 +1,4 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirectServiceDiscovery;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

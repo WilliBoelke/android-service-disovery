@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.os.Parcelable;
 import android.util.Log;
 
+import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
+
 class UUIDFetchedReceiver extends BroadcastReceiver
 {
 
@@ -43,7 +45,7 @@ class UUIDFetchedReceiver extends BroadcastReceiver
         {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             Parcelable[] uuidExtra = intent.getParcelableArrayExtra(BluetoothDevice.EXTRA_UUID);
-            Log.d(TAG, "onReceive: received UUIDs for " + Utils.getBluetoothDeviceString(device));
+            Log.d(TAG, "onReceive: received UUIDs for " + Utils.getRemoteDeviceString(device));
             this.engine.onUuidsFetched(device, uuidExtra);
         }
     }

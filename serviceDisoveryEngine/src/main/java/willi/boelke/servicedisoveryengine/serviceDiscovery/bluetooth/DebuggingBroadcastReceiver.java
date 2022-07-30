@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
+
 /**
  * This Broadcast Receiver can be used in the SdpBluetoothEngine
  * it needs o be registered and also unregistered in
@@ -45,32 +47,34 @@ class DebuggingBroadcastReceiver extends BroadcastReceiver
                 case BluetoothAdapter.STATE_CONNECTED:
                     Log.d(TAG, "EXTRA_SCAN_MODE: Connected");
                     break;
+                default:
+                    Log.d(TAG, "onReceive: unknown scan mode change");
             }
         }
         else if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action))
         {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            Log.e(TAG, "ACTION_ACL_CONNECTED: Low level connection established with "+ Utils.getBluetoothDeviceString(device));
+            Log.e(TAG, "ACTION_ACL_CONNECTED: Low level connection established with "+ Utils.getRemoteDeviceString(device));
         }
         else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action))
         {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            Log.e(TAG, "ACTION_ACL_DISCONNECTED: Low level connection ended with " + Utils.getBluetoothDeviceString(device));
+            Log.e(TAG, "ACTION_ACL_DISCONNECTED: Low level connection ended with " + Utils.getRemoteDeviceString(device));
         }
         else if (action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED))
         {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             if (device.getBondState() == BluetoothDevice.BOND_BONDED)
             {
-                Log.d(TAG, "ACTION_BOND_STATE_CHANGED: BOND_BONDED with " + Utils.getBluetoothDeviceString(device));
+                Log.d(TAG, "ACTION_BOND_STATE_CHANGED: BOND_BONDED with " + Utils.getRemoteDeviceString(device));
             }
             if (device.getBondState() == BluetoothDevice.BOND_BONDING)
             {
-                Log.d(TAG, "ACTION_BOND_STATE_CHANGED: BOND_BONDING with" + Utils.getBluetoothDeviceString(device));
+                Log.d(TAG, "ACTION_BOND_STATE_CHANGED: BOND_BONDING with" + Utils.getRemoteDeviceString(device));
             }
             if (device.getBondState() == BluetoothDevice.BOND_NONE)
             {
-                Log.d(TAG, "ACTION_BOND_STATE_CHANGED: BOND_NONE with" + Utils.getBluetoothDeviceString(device));
+                Log.d(TAG, "ACTION_BOND_STATE_CHANGED: BOND_NONE with" + Utils.getRemoteDeviceString(device));
             }
         }
         else if(BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action))

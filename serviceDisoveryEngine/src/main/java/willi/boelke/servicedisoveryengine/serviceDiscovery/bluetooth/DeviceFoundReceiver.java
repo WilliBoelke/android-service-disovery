@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
+
 /**
  * While a bluetooth device discovery is running, this
  * broadcast receiver will notify the SdpBluetooth engine 
@@ -50,7 +52,7 @@ class DeviceFoundReceiver extends BroadcastReceiver
         {
             //Getting new BTDevice from intent
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            Log.d(TAG, "onReceive: discovered new device " + Utils.getBluetoothDeviceString(device));
+            Log.d(TAG, "onReceive: discovered new device " + Utils.getRemoteDeviceString(device));
             this.engine.onDeviceDiscovered(device);
         }
     }

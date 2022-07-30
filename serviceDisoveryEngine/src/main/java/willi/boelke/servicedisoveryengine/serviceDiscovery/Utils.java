@@ -1,15 +1,26 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth;
+package willi.boelke.servicedisoveryengine.serviceDiscovery;
+
+import static android.net.wifi.p2p.WifiP2pManager.BUSY;
+import static android.net.wifi.p2p.WifiP2pManager.ERROR;
+import static android.net.wifi.p2p.WifiP2pManager.NO_SERVICE_REQUESTS;
+import static android.net.wifi.p2p.WifiP2pManager.P2P_UNSUPPORTED;
 
 import android.bluetooth.BluetoothDevice;
+import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pManager;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.UUID;
 
-class Utils
+public class Utils
 {
-    private final String TAG = this.getClass().getSimpleName();
+
+    /**
+     * Classname for logging
+     */
+    private static final String TAG = Utils.class.getSimpleName();
 
     /**
      * This method reverses a UUID Bytewise
@@ -33,7 +44,7 @@ class Utils
      * @return
      * the revered uuid
      */
-    static UUID bytewiseReverseUuid(UUID uuid){
+   public static UUID bytewiseReverseUuid(UUID uuid){
         ByteBuffer byteBuffer = ByteBuffer.allocate(16);
         byteBuffer
                 .putLong(uuid.getLeastSignificantBits())
@@ -43,9 +54,38 @@ class Utils
         return new UUID(byteBuffer.getLong(), byteBuffer.getLong());
     }
 
-    static String getBluetoothDeviceString(BluetoothDevice device)
+    public static String getRemoteDeviceString(BluetoothDevice device)
     {
-        return "DEVICE { " + device.getName() + " | " + device.getAddress() + " }";
+        return "DEVICE-B{ " + device.getName() + " | " + device.getAddress() + " }";
+    }
+
+    public static String getRemoteDeviceString(WifiP2pDevice device)
+    {
+        return "DEVICE-W{ " + device.deviceName + " | " + device.deviceAddress + " }";
+    }
+
+    public static void logReason(String msg, int arg0)
+    {
+        String reason;
+        switch (arg0)
+        {
+            case ERROR:
+                reason = "error";
+                break;
+            case NO_SERVICE_REQUESTS:
+                reason = "no service requests";
+                break;
+            case BUSY:
+                reason = "busy";
+                break;
+            case P2P_UNSUPPORTED:
+                reason = "unsupported";
+                break;
+            default:
+                reason = "unexpected error";
+        }
+
+        Log.e(TAG, msg +" reason : " + reason);
     }
 
 

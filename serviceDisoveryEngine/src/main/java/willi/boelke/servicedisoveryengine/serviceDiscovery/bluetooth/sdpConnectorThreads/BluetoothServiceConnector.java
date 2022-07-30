@@ -129,7 +129,9 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
             catch (Exception ie)
             {
                 // there is an exception throw here, when interrupting in test cases
-                // i does not say which one, so i go with a general catch
+                // it does not say which one...or why, so i go with a general catch.
+                // I guess that it is somehow related to interrupting the thread while it waits for an async
+                // response from a mocked method, which also runs a thread, but i am not really sure in the end
                 Log.d(TAG, "acceptConnections: an unexpected exception occurred, this maybe is because thread was interrupted");
             }
 
