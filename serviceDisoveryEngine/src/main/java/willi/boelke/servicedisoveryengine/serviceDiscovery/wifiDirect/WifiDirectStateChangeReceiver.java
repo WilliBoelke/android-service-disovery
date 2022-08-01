@@ -15,13 +15,15 @@ public class WifiDirectStateChangeReceiver extends BroadcastReceiver
     private final String TAG = this.getClass().getSimpleName();
     private final WifiP2pManager manager;
     private final WifiP2pManager.Channel channel;
+    private final WifiP2pManager.ConnectionInfoListener connectionInfoListener;
 
     public WifiDirectStateChangeReceiver(WifiP2pManager manager
-    , WifiP2pManager.Channel channel)
+    , WifiP2pManager.Channel channel, WifiDirectConnectionInfoListener connectionInfoListener)
     {
         super();
         this.manager = manager;
         this.channel = channel;
+        this.connectionInfoListener = connectionInfoListener;
     }
 
     @Override
@@ -39,12 +41,10 @@ public class WifiDirectStateChangeReceiver extends BroadcastReceiver
             if (state == WifiP2pManager.WIFI_P2P_STATE_ENABLED)
             {
                 Log.d(TAG, "Wifi direct was enabled");
-                //activity.setIsWifiP2pEnabled(true);
             }
             else
             {
                 Log.d(TAG, "Wifi direct was disabled");
-                //activity.setIsWifiP2pEnabled(false);
             }
         }
         else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action))
@@ -61,13 +61,13 @@ public class WifiDirectStateChangeReceiver extends BroadcastReceiver
 
             if (networkInfo.isConnected())
             {
-                //manager.requestConnectionInfo(channel, connectionListener);
+                manager.requestConnectionInfo(channel, connectionInfoListener);
             }
 
         }
         else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action))
         {
-            //intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE);
+            intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE);
         }
     }
 }

@@ -73,45 +73,53 @@ public class WifiDirectFragment extends Fragment implements SdpBluetoothServiceC
         final Button endServiceOneBtn = binding.endServiceOneBtn;
 
 
-        discoveryBtn.setOnClickListener(new View.OnClickListener()
+        discoveryBtn.setOnClickListener(v ->
         {
-            @Override
-            public void onClick(View v)
+            if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             {
-                if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-                {
-                    Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
-                    return;
-                }
-                SdpWifiEngine.getInstance().startDiscovery();
+                Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
+                return;
             }
+            SdpWifiEngine.getInstance().startDiscovery();
         });
 
-        startServiceOneBtn.setOnClickListener(new View.OnClickListener()
+        startServiceOneBtn.setOnClickListener(v ->
         {
-            @Override
-            public void onClick(View v)
+            if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             {
-                if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-                {
-                    Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
-                    return;
-                }
-                SdpWifiEngine.getInstance().startSDPService("testService1", UUID.fromString("4be0643f-1d98-573b-97cd-ca98a65347dd"), new SdpBluetoothServiceServer()
-                {
-                    @Override
-                    public void onClientConnected(SdpBluetoothConnection connection)
-                    {
-                        Log.d(TAG, "onClientConnected: a client connected");
-                    }
-                });
+                Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
+                return;
             }
+            SdpWifiEngine.getInstance().startSDPService("testService1", UUID.fromString("1be0643f-1d98-573b-97cd-ca98a65347dd"), new SdpBluetoothServiceServer()
+            {
+                @Override
+                public void onClientConnected(SdpBluetoothConnection connection)
+                {
+                    Log.d(TAG, "onClientConnected: a client connected");
+                }
+            });
+            SdpWifiEngine.getInstance().startSDPService("testService1", UUID.fromString("4be0643f-1d98-573b-97cd-ca98a65347dd"), new SdpBluetoothServiceServer()
+            {
+                @Override
+                public void onClientConnected(SdpBluetoothConnection connection)
+                {
+                    Log.d(TAG, "onClientConnected: a client connected");
+                }
+            });
         });
 
-        endServiceOneBtn.setOnClickListener(v -> SdpWifiEngine.getInstance().stopSDPService(UUID.fromString("4be0643f-1d98-573b-97cd-ca98a65347dd")));
+        endServiceOneBtn.setOnClickListener((v) -> {
+            SdpWifiEngine.getInstance().stopSDPService();
+        });
 
-        endSdpOneBtn.setOnClickListener(v -> SdpWifiEngine.getInstance().stopSDPDiscoveryForServiceWithUUID(UUID.fromString("4be0643f-1d98-573b-97cd-ca98a65347dd")));
-        startSdpOneBtn.setOnClickListener(v -> SdpWifiEngine.getInstance().startSDPDiscoveryForServiceWithUUID(UUID.fromString("4be0643f-1d98-573b-97cd-ca98a65347dd"), this));
+        endSdpOneBtn.setOnClickListener((v) ->{
+                    SdpWifiEngine.getInstance().stopSDPDiscovery();
+                    SdpWifiEngine.getInstance().stopSDPDiscovery();
+        });
+        startSdpOneBtn.setOnClickListener((v)->{
+            SdpWifiEngine.getInstance().startSDPDiscoveryForServiceWithUUID(UUID.fromString("1be0643f-1d98-573b-97cd-ca98a65347dd"), this);
+        });
+
 
 
         return root;

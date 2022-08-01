@@ -7,7 +7,12 @@ import android.util.Log;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 
+/**
+ * Discoveries nearby Bonjour services
+ * can be stopped as soon as a connection between tw devices was established
+ */
 @SuppressLint("MissingPermission")
+@Deprecated
 public class DiscoveryThread extends Thread
 {
     /**
@@ -47,28 +52,6 @@ public class DiscoveryThread extends Thread
         this.thread = currentThread();
         while(isDiscovering)
         {
-            WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, record, device) ->
-            {
-                Log.d(TAG, "run: found service record: on  " + Utils.getRemoteDeviceString(device) + " record: " + record);
-                engine.onServiceDiscovered(device, record, fullDomain);
-            };
-
-            // service listener
-            WifiP2pManager.DnsSdServiceResponseListener servListener = (instanceName, registrationType, resourceType) ->
-            {
-                //----------------------------------
-                // NOTE : Right now i don't see any
-                // use in the information give here,
-                // though i will let it here -
-                // for logging and for easy later use
-                //----------------------------------
-                Log.d(TAG, "run: bonjour service available :\n" +
-                        "name =" + instanceName +"\n"+
-                        "registration type = " + registrationType +"\n" +
-                        "resource type = " + resourceType);
-            };
-
-            mManager.setDnsSdResponseListeners(mChannel, servListener, txtListener);
             // Stop running service request
             mManager.clearServiceRequests(mChannel, new WifiP2pManager.ActionListener()
             {
@@ -130,6 +113,29 @@ public class DiscoveryThread extends Thread
 
 
 
+
+            WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, record, device) ->
+            {
+                Log.d(TAG, "run: found service record: on  " + Utils.getRemoteDeviceString(device) + " record: " + record);
+                engine.onServiceDiscovered(device, record, fullDomain);
+            };
+
+            // service listener
+            WifiP2pManager.DnsSdServiceResponseListener servListener = (instanceName, registrationType, resourceType) ->
+            {
+                //----------------------------------
+                // NOTE : Right now i don't see any
+                // use in the information give here,
+                // though i will let it here -
+                // for logging and for easy later use
+                //----------------------------------
+                Log.d(TAG, "run: bonjour service available :\n" +
+                        "name =" + instanceName +"\n"+
+                        "registration type = " + registrationType +"\n" +
+                        "resource type = " + resourceType);
+            };
+
+            mManager.setDnsSdResponseListeners(mChannel, servListener, txtListener);
 
             synchronized(this)
             {

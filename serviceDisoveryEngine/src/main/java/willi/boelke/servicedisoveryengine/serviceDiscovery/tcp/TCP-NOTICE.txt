@@ -1,0 +1,16 @@
+Alle, sich in diesem Package (tcp), befriended Klassen wurden
+direkt und ohne Veränderung dem ASAPAndroid Projekt entnommen.
+
+Und sollte somit nicht als arbeit meinerseits im Rahmen dieser Arbeit gewertet werden.
+
+Der grund für diese entscheidung kliegt darin, dass ich eine funktionierede Demo Anwendung, inklusive eines verbindungsaufbaus
+und Nachrichtenaustausches realisieren will.
+
+Dies überschreitet den Ursprünglichen Rahmen der Arbeit, in welcher es hauptsächlich nur im die Service Discovery gehen sollte.
+
+Gleichzeitig soll der Code aber möglichst nahe an ASAPAndroid bleiben, um eine übertargung in ASAP Android zu erleichtern / überhapt sinnvoll zu ermöglichen.
+
+Die Nutzung dieser Klassen ermöglicht es mir beides zu tun.
+Ohne das ich dabei eine möglichst gleiche "aber andere", eigene implementierung vornehmen muss.
+
+

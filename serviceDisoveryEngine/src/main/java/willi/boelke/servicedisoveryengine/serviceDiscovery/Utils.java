@@ -7,7 +7,6 @@ import static android.net.wifi.p2p.WifiP2pManager.P2P_UNSUPPORTED;
 
 import android.bluetooth.BluetoothDevice;
 import android.net.wifi.p2p.WifiP2pDevice;
-import android.net.wifi.p2p.WifiP2pManager;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
@@ -125,5 +124,6 @@ public class Utils
         }
 
     }
+
 
 }
