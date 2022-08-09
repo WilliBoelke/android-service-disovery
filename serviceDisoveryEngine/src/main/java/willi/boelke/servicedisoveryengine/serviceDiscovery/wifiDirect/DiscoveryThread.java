@@ -11,19 +11,12 @@ import java.util.Map;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 
 /**
- * Discovers nearby services periodically as long as {@link #isDiscovering}
- * is `true`.
- * The discovery will be restarted every 5 seconds, to ensure the discovery
- * of nearby services.
+ * This implementation follows the example google gave,
+ * its for measuring performance differences in a number of
+ * experiments.
  *
- * There will be no filter applied to discovered services,  this thread does not care
- * what he discovers.
- * Also a connection wont be established from here.
- *
- * Every advertised and discovered service will be passed to {@link SdpWifiEngine#onServiceDiscovered(WifiP2pDevice, Map, String)}
- * only there the service records will be evaluated and a connection may be establish.
- *
- * @author {willi boelke}
+ * (In this case the while Thread actually is not needed since there wont me any looping and
+ * re-starting the discovery)
  */
 public class DiscoveryThread extends Thread
 {
@@ -53,19 +46,15 @@ public class DiscoveryThread extends Thread
             this.channel = channel;
             this.engine = engine;
     }
-    
 
     @Override
     public void run()
     {
-
-
-            isDiscovering = true;
-            this.thread = currentThread();
-            setupDiscoveryCallbacks();
-            startDiscovery();
-            Log.d(TAG, "run: discovery thread ended final");
-
+        isDiscovering = true;
+        this.thread = currentThread();
+        setupDiscoveryCallbacks();
+        startDiscovery();
+        Log.d(TAG, "run: discovery thread ended final");
     }
 
 
@@ -80,19 +69,13 @@ public class DiscoveryThread extends Thread
         WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, record, device) ->
         {
             Log.d(TAG, "run: found service record: on  " + Utils.getRemoteDeviceString(device) + " record: " + record);
-            engine.onServiceDiscovered(device, record, fullDomain);
+            // just testing dont want connections here engine.onServiceDiscovered(device, record, fullDomain);
         };
 
         //--- Service response listener - gives additional service info ---//
 
         WifiP2pManager.DnsSdServiceResponseListener servListener = (instanceName, registrationType, resourceType) ->
         {
-            //----------------------------------
-            // NOTE : Right now i don't see any
-            // use in the information give here,
-            // though i will let it here -
-            // for logging and for easy later use
-            //----------------------------------
             Log.d(TAG, "run: bonjour service available :\n" +
                     "name =" + instanceName +"\n"+
                     "registration type = " + registrationType +"\n" +
@@ -108,87 +91,34 @@ public class DiscoveryThread extends Thread
     @SuppressLint("MissingPermission")
     private void startDiscovery(){
 
-        //--- clearing already running service requests ---//
+        manager.addServiceRequest(channel,  WifiP2pDnsSdServiceRequest.newInstance(),
+                new WifiP2pManager.ActionListener() {
 
-        manager.clearServiceRequests(channel, new WifiP2pManager.ActionListener()
-        {
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "startDiscovery: added service requests");
+                    }
+
+                    @Override
+                    public void onFailure(int arg0) {
+                        Utils.logReason("startDiscovery: failed to add servcie request", arg0);
+                    }
+        });
+
+        manager.discoverServices(channel, new WifiP2pManager.ActionListener() {
+
             @Override
-            public void onSuccess()
-            {
-                Log.d(TAG, "Cleared local service requests");
-
-                //--- adding service requests (again) ---//
-                
-                //----------------------------------
-                // NOTE : Bonjour services are used,
-                // so WifiP2pDnsSdServiceRequests are
-                // used here.
-                //----------------------------------
-                manager.addServiceRequest(channel, WifiP2pDnsSdServiceRequest.newInstance(), new WifiP2pManager.ActionListener()
-                {
-                    @Override
-                    public void onSuccess()
-                    {
-                        //--- starting the service discovery (again) ---//
-
-                        manager.discoverServices(channel, new WifiP2pManager.ActionListener()
-                        {
-                            @Override
-                            public void onSuccess()
-                            {
-                                Log.d(TAG, "Started service discovery");
-                            }
-
-                            @Override
-                            public void onFailure(int code)
-                            {
-                                Log.d(TAG, "failed to start service discovery");
-                                onServiceDiscoveryFailure();
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onFailure(int code)
-                    {
-                        Log.d(TAG, "failed to add service discovery request");
-                        onServiceDiscoveryFailure();
-                    }
-                });
+            public void onSuccess() {
+                Log.d(TAG, "startDiscovery: initiated service discovery");
             }
+
             @Override
-            public void onFailure(int code)
-            {
-                Log.d(TAG, "Failed to clear local service requests");
-                onServiceDiscoveryFailure();
+            public void onFailure(int arg0) {
+                Utils.logReason("startDiscovery: failed to initiate service discoevry", arg0);
             }
         });
-    }
 
-    private void pause(int pause) throws InterruptedException
-    {
-        synchronized(this)
-        {
-            try
-            {
-                this.wait(pause);
-            }
-            catch (InterruptedException e)
-            {
-                Log.d(TAG, "pause: interrupted wait");
-                throw e; // throw again, this will be caught in `run`
-            }
-        }
     }
-
-    private void onServiceDiscoveryFailure(){
-        //----------------------------------
-        // NOTE : There doesn't seem to be
-        // much i can do here, wifi could be restarted
-        // (of / on) but that's all
-        //----------------------------------
-    }
-
 
     //
     //  ---------- others ----------
