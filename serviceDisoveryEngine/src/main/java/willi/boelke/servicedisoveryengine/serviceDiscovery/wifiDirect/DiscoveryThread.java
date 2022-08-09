@@ -11,19 +11,12 @@ import java.util.Map;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 
 /**
- * Discovers nearby services periodically as long as {@link #isDiscovering}
- * is `true`.
- * The discovery will be restarted every 5 seconds, to ensure the discovery
- * of nearby services.
+ * This is just for testing
+ * the thread here is not actually needed
+ * since there wont be any looping or restarting the discovery
+ * also there wont be any connection establishment.
+ * Its just for testing the discovery reliability
  *
- * There will be no filter applied to discovered services,  this thread does not care
- * what he discovers.
- * Also a connection wont be established from here.
- *
- * Every advertised and discovered service will be passed to {@link SdpWifiEngine#onServiceDiscovered(WifiP2pDevice, Map, String)}
- * only there the service records will be evaluated and a connection may be establish.
- *
- * @author {willi boelke}
  */
 public class DiscoveryThread extends Thread
 {
@@ -58,14 +51,11 @@ public class DiscoveryThread extends Thread
     @Override
     public void run()
     {
-
-
-            isDiscovering = true;
-            this.thread = currentThread();
-            setupDiscoveryCallbacks();
-            startDiscovery();
-            Log.d(TAG, "run: discovery thread ended final");
-
+        isDiscovering = true;
+        this.thread = currentThread();
+        setupDiscoveryCallbacks();
+        startDiscovery();
+        Log.d(TAG, "run: discovery thread ended final");
     }
 
 
@@ -80,7 +70,7 @@ public class DiscoveryThread extends Thread
         WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, record, device) ->
         {
             Log.d(TAG, "run: found service record: on  " + Utils.getRemoteDeviceString(device) + " record: " + record);
-            engine.onServiceDiscovered(device, record, fullDomain);
+            // no connection here engine.onServiceDiscovered(device, record, fullDomain);
         };
 
         //--- Service response listener - gives additional service info ---//
