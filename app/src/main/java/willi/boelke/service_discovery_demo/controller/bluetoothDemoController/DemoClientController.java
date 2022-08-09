@@ -1,4 +1,4 @@
-package willi.boelke.service_discovery_demo.controller;
+package willi.boelke.service_discovery_demo.controller.bluetoothDemoController;
 
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
@@ -13,23 +13,37 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.SdpBluetoot
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpClientServerInterfaces.SdpBluetoothServiceClient;
 
-
+/**
+ * This is a demo implementation for a a bluetooth sdp "client"
+ * as defined in the interface {@link SdpBluetoothServiceClient}
+ * <p>
+ * This works as a client for the {@link DemoServerController}.
+ * <p>
+ * It will report every change in discovered devices and connected services to the view
+ * using LiveData.
+ * <p>
+ * It will start listening on opened connections and report received messages to the view
+ * using LiveData objects.
+ *
+ * @author Willi Boelke
+ */
 public class DemoClientController implements SdpBluetoothServiceClient
 {
 
-  private final String TAG = this.getClass().getSimpleName();
+    private final String TAG = this.getClass().getSimpleName();
 
-    private MutableLiveData<ArrayList<SdpBluetoothConnection>> connections;
+    private final MutableLiveData<ArrayList<SdpBluetoothConnection>> connections;
 
-    private MutableLiveData<String> currentMessage;
+    private final MutableLiveData<String> currentMessage;
 
-    private MutableLiveData<ArrayList<BluetoothDevice>> devicesInRange;
+    private final MutableLiveData<ArrayList<BluetoothDevice>> devicesInRange;
 
     private ReadThread reader;
 
-    private UUID serviceUUID;
+    private final UUID serviceUUID;
 
-    public DemoClientController(UUID uuid){
+    public DemoClientController(UUID uuid)
+    {
         this.serviceUUID = uuid;
         this.reader = new ReadThread();
         this.connections = new MutableLiveData<>();
@@ -43,7 +57,7 @@ public class DemoClientController implements SdpBluetoothServiceClient
     @Override
     public void onServiceDiscovered(String address, UUID serviceUUID)
     {
-        Log.d(TAG, "onServiceDiscovered: a service with the UUID " +serviceUUID+ " has been discovered");
+        Log.d(TAG, "onServiceDiscovered: a service with the UUID " + serviceUUID + " has been discovered");
     }
 
     @Override
@@ -68,15 +82,18 @@ public class DemoClientController implements SdpBluetoothServiceClient
         this.devicesInRange.postValue(devices);
     }
 
-    public MutableLiveData<ArrayList<SdpBluetoothConnection>> getConnections(){
+    public MutableLiveData<ArrayList<SdpBluetoothConnection>> getConnections()
+    {
         return this.connections;
     }
 
-    public MutableLiveData<String> getLatestMessage(){
+    public MutableLiveData<String> getLatestMessage()
+    {
         return this.currentMessage;
     }
 
-    public MutableLiveData<ArrayList<BluetoothDevice>> getDevicesInRange(){
+    public MutableLiveData<ArrayList<BluetoothDevice>> getDevicesInRange()
+    {
         return this.devicesInRange;
     }
 
@@ -85,32 +102,37 @@ public class DemoClientController implements SdpBluetoothServiceClient
         SdpBluetoothEngine.getInstance().startSDPDiscoveryForServiceWithUUID(serviceUUID, this);
     }
 
-    public void endClient(){
+    public void endClient()
+    {
         SdpBluetoothEngine.getInstance().stopSDPDiscoveryForServiceWithUUID(serviceUUID);
     }
 
-    public void startReading(){
+    public void startReading()
+    {
         reader = new ReadThread();
         reader.start();
     }
 
-    private class ReadThread extends Thread {
+    private class ReadThread extends Thread
+    {
 
-        private  boolean running = true;
+        private boolean running = true;
 
-        private  Thread  thread;
+        private Thread thread;
 
-        public void run(){
+        public void run()
+        {
 
             this.thread = Thread.currentThread();
 
-            while(running)
+            while (running)
             {
                 ArrayList<SdpBluetoothConnection> disconnecedConnections = new ArrayList<>();
                 ArrayList<SdpBluetoothConnection> tmpConnections = (ArrayList<SdpBluetoothConnection>) connections.getValue().clone();
                 for (SdpBluetoothConnection connection : tmpConnections)
                 {
-                    if (connection.isConnected()){
+                    if (connection.isConnected())
+                    {
                         try
                         {
                             byte[] buffer = new byte[2048];
@@ -118,14 +140,15 @@ public class DemoClientController implements SdpBluetoothServiceClient
                             bytes = connection.getConnectionSocket().getInputStream().read(buffer);
                             String incomingTransmission = new String(buffer, 0, bytes);
                             currentMessage.postValue(incomingTransmission);
-                            // Log.d(TAG, "run: Received " + incomingTransmission);
+                            Log.d(TAG, "run: Received " + incomingTransmission);
                         }
                         catch (IOException e)
                         {
                             disconnecedConnections.add(connection);
                         }
                     }
-                    else{
+                    else
+                    {
                         disconnecedConnections.add(connection);
                     }
                 }
@@ -139,14 +162,12 @@ public class DemoClientController implements SdpBluetoothServiceClient
             }
         }
 
-        public void cancel(){
+        public void cancel()
+        {
             this.running = false;
             this.thread.interrupt();
         }
     }
-
-
-
 }
 
 

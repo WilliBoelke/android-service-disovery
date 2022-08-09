@@ -1,35 +1,34 @@
 package willi.boelke.service_discovery_demo.view.ui.wifiDirecServiceDiscoveryDemo;
 
 import android.Manifest;
-import android.bluetooth.BluetoothDevice;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresPermission;
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.UUID;
 
+import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.FragmentWifiDirectBinding;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpClientServerInterfaces.SdpBluetoothServiceClient;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpClientServerInterfaces.SdpBluetoothServiceServer;
+import willi.boelke.service_discovery_demo.view.WifiConnectionListAdapter;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiConnection;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiEngine;
 
 
-public class WifiDirectFragment extends Fragment implements SdpBluetoothServiceClient
+public class WifiDirectFragment extends Fragment
 {
 
     /**
@@ -41,41 +40,55 @@ public class WifiDirectFragment extends Fragment implements SdpBluetoothServiceC
 
     private SdpWifiEngine wifiDirectEngine;
 
+    private WifiDirectViewModel viewModel;
+
+    private TextView messageTextView;
 
     //
     //  ----------  activity/fragment lifecycle ----------
     //
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             ViewGroup container, Bundle savedInstanceState)
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
 
-        WifiDirectViewModel dashboardViewModel =
-                new ViewModelProvider(this).get(WifiDirectViewModel.class);
 
+        viewModel = new ViewModelProvider(this).get(WifiDirectViewModel.class);
         binding = FragmentWifiDirectBinding.inflate(inflater, container, false);
+
         View root = binding.getRoot();
+
+        // Init the engine
         if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
             Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
         }
-        this.wifiDirectEngine = SdpWifiEngine.initialize(this.getContext());
-        wifiDirectEngine.start();
+        else
+        {
+            this.wifiDirectEngine = SdpWifiEngine.initialize(this.getContext());
+        }
 
+        setupViews();
+        setupMessageOneObserver();
+        setupConnectionObserver();
+
+        return root;
+    }
+
+    private void setupViews()
+    {
         final Button discoveryBtn = binding.startWifiBtn;
-
         final Button startSdpOneBtn = binding.startDiscoveryOneBtn;
         final Button endSdpOneBtn = binding.endDiscoveryOneBtn;
-
-
-        final Button startServiceOneBtn = binding.startServiceOneBtn;
-        final Button endServiceOneBtn = binding.endServiceOneBtn;
+        final Button startSdpTwoBtn = binding.startDiscoveryTwoBtn;
+        final Button endSdpTwoBtn = binding.endDiscoveryTwoBtn;
+        final Button endDiscoveryButton = binding.endDiscoveryButton;
+        messageTextView = binding.msgTextView;
 
 
         discoveryBtn.setOnClickListener(v ->
         {
-            if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             {
                 Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
                 return;
@@ -83,46 +96,60 @@ public class WifiDirectFragment extends Fragment implements SdpBluetoothServiceC
             SdpWifiEngine.getInstance().startDiscovery();
         });
 
-        startServiceOneBtn.setOnClickListener(v ->
+
+        endDiscoveryButton.setOnClickListener(v ->
         {
-            if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             {
                 Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
                 return;
             }
-            SdpWifiEngine.getInstance().startSDPService("testService1", UUID.fromString("1be0643f-1d98-573b-97cd-ca98a65347dd"), new SdpBluetoothServiceServer()
+            SdpWifiEngine.getInstance().stopDiscovery();
+        });
+
+
+        startSdpOneBtn.setOnClickListener((v) ->
+        {
+            if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             {
-                @Override
-                public void onClientConnected(SdpBluetoothConnection connection)
-                {
-                    Log.d(TAG, "onClientConnected: a client connected");
-                }
-            });
-            SdpWifiEngine.getInstance().startSDPService("testService1", UUID.fromString("4be0643f-1d98-573b-97cd-ca98a65347dd"), new SdpBluetoothServiceServer()
+                Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
+                return;
+            }
+            viewModel.startServiceOne();
+        });
+
+
+        endSdpOneBtn.setOnClickListener((v) ->
+        {
+            if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             {
-                @Override
-                public void onClientConnected(SdpBluetoothConnection connection)
-                {
-                    Log.d(TAG, "onClientConnected: a client connected");
-                }
-            });
-        });
-
-        endServiceOneBtn.setOnClickListener((v) -> {
-            SdpWifiEngine.getInstance().stopSDPService();
-        });
-
-        endSdpOneBtn.setOnClickListener((v) ->{
-                    SdpWifiEngine.getInstance().stopSDPDiscovery();
-                    SdpWifiEngine.getInstance().stopSDPDiscovery();
-        });
-        startSdpOneBtn.setOnClickListener((v)->{
-            SdpWifiEngine.getInstance().startSDPDiscoveryForServiceWithUUID(UUID.fromString("1be0643f-1d98-573b-97cd-ca98a65347dd"), this);
+                Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
+                return;
+            }
+            viewModel.stopServiceOne();
         });
 
 
+        startSdpTwoBtn.setOnClickListener((v) ->
+        {
+            if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            {
+                Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
+                return;
+            }
+            viewModel.startServiceTwo();
+        });
 
-        return root;
+
+        endSdpTwoBtn.setOnClickListener((v) ->
+        {
+            if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            {
+                Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
+                return;
+            }
+            viewModel.stopServiceTwo();
+        });
     }
 
 
@@ -130,36 +157,66 @@ public class WifiDirectFragment extends Fragment implements SdpBluetoothServiceC
     public void onDestroyView()
     {
         super.onDestroyView();
-        this.wifiDirectEngine.stop();
+        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+        {
+            this.wifiDirectEngine.stop();
+        }
+
         binding = null;
     }
 
-    @Override
-    public void onServiceDiscovered(String address, UUID serviceUUID)
+    //
+    //  ---------- live data observers ----------
+    //
+
+    private void setupMessageOneObserver()
     {
-        this.getActivity().runOnUiThread(new Runnable() {
-            public void run() {
-                Toast.makeText(getActivity(), "discovered service on " + address , Toast.LENGTH_LONG).show();
+        viewModel.getCurrentMessageOne().observe(this.getViewLifecycleOwner(), new Observer<String>()
+        {
+            @Override
+            public void onChanged(String message)
+            {
+                messageTextView.setText(message);
+            }
+        });
+
+        viewModel.getCurrentMessageTwo().observe(this.getViewLifecycleOwner(), new Observer<String>()
+        {
+            @Override
+            public void onChanged(String message)
+            {
+                messageTextView.setText(message);
             }
         });
     }
 
-    @Override
-    public void onConnectedToService(SdpBluetoothConnection connection)
-    {
+  private void setupConnectionObserver(){
+      viewModel.getConnectionsOne().observe(this.getViewLifecycleOwner(), new Observer<ArrayList<SdpWifiConnection>>()
+      {
+          @Override
+          public void onChanged(ArrayList<SdpWifiConnection> connections)
+          {
 
-    }
+              ListView openConnectionsListView = binding.connectionsListView;
+              WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.recycler_card_connection, connections);
+              openConnectionsListView.setAdapter(connectionListAdapter);
+          }
+      });
 
-    @Override
-    public boolean shouldConnectTo(String address, UUID serviceUUID)
-    {
-        return true;
-    }
+      viewModel.getConnectionsTwo().observe(this.getViewLifecycleOwner(), new Observer<ArrayList<SdpWifiConnection>>()
+      {
+          @Override
+          public void onChanged(ArrayList<SdpWifiConnection> connections)
+          {
 
-    @Override
-    public void onDevicesInRangeChange(ArrayList<BluetoothDevice> devices)
-    {
+              ListView openConnectionsListView = binding.connectionsListView;
+              WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.recycler_card_connection, connections);
+              openConnectionsListView.setAdapter(connectionListAdapter);
+          }
+      });
+  }
 
-    }
+
+
 }
 

@@ -27,4 +27,5 @@
     <string name="discoverabe">Discoverabe</string>
     <string name="discovery">Discovery</string>
     <string name="refresh_btn_label">r</string>
+    <string name="end_discovery">E Discovery</string>
 </resources>

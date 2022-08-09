@@ -21,14 +21,15 @@ class UUIDFetchedReceiver extends BroadcastReceiver
      */
     private final String TAG = this.getClass().getSimpleName();
 
-    private SdpBluetoothEngine engine;
+    private final SdpBluetoothEngine engine;
 
 
     //
     //  ----------  constructor and initialisation ----------
     //
 
-    public UUIDFetchedReceiver(SdpBluetoothEngine engine) {
+      public UUIDFetchedReceiver(SdpBluetoothEngine engine)
+    {
         this.engine = engine;
     }
 

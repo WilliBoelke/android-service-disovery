@@ -124,7 +124,25 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
             }
             catch (IOException e)
             {
-                e.printStackTrace();
+                Log.e(TAG, "acceptConnections: an IOException occurred, trying to fix");
+                try
+                {
+                    Log.e(TAG, "acceptConnections: trying to close socket");
+                    this.serverSocket.close();
+                }
+                catch (IOException e1){
+                    Log.e(TAG, "acceptConnections: could not close the socket");
+                }
+                try
+                {
+                    Log.e(TAG, "acceptConnections: trying to open new server socket");
+                    this.openServerSocket();
+                }
+                catch (IOException e2){
+                    Log.e(TAG, "acceptConnections: failed to open new server socked...shutting down");
+                    // todo notify engine / shutdown
+                }
+
             }
             catch (Exception ie)
             {

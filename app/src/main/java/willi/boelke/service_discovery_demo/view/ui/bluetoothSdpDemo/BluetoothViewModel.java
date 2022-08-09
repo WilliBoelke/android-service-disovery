@@ -10,8 +10,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import willi.boelke.service_discovery_demo.controller.DemoClientController;
-import willi.boelke.service_discovery_demo.controller.DemoServerController;
+import willi.boelke.service_discovery_demo.controller.bluetoothDemoController.DemoClientController;
+import willi.boelke.service_discovery_demo.controller.bluetoothDemoController.DemoServerController;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.SdpBluetoothEngine;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
 
@@ -115,6 +115,7 @@ public class BluetoothViewModel extends ViewModel
     {
         return clientControllerOne.getLatestMessage();
     }
+
     protected LiveData<String> getMessageServiceTwo()
     {
         return clientControllerTwo.getLatestMessage();

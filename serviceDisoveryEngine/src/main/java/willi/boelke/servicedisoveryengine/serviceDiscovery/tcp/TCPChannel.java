@@ -30,20 +30,30 @@ abstract class TCPChannel {
      *
      * @throws IOException
      */
-    private void checkConnected() throws IOException {
-        if(!this.isConnected()) {
+    private void checkConnected() throws IOException
+    {
+        if (!this.isConnected())
+        {
             throw new IOException("no connection established - cannot get streams.");
-        };
+        }
     }
 
-    InputStream getInputStream() throws IOException {
+    InputStream getInputStream() throws IOException
+    {
         this.checkConnected();
         return this.socket.getInputStream();
     }
 
-    OutputStream getOutputStream() throws IOException {
+    OutputStream getOutputStream() throws IOException
+    {
         this.checkConnected();
         return this.socket.getOutputStream();
+    }
+
+    Socket getSocket() throws IOException
+    {
+        this.checkConnected();
+        return this.socket;
     }
 
     /**
@@ -54,8 +64,8 @@ abstract class TCPChannel {
      *
      * @throws IOException
      */
-
-    void nextConnection() throws IOException {
+    void nextConnection() throws IOException
+    {
         throw new IOException("no further connections possible");
     }
 

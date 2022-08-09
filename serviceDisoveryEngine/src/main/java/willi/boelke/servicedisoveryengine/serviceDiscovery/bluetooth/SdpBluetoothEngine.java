@@ -81,7 +81,7 @@ public class SdpBluetoothEngine
      * callback methods will be ignored and a connection will be established with every
      * discovered service.
      */
-    private final boolean automaticallyConnectWhenServiceFound;
+    private final boolean automaticallyConnectWhenServiceFound = false;;
 
     private int discoverableTimeInSeconds;
 
@@ -91,28 +91,28 @@ public class SdpBluetoothEngine
      * indicating when the UUIDs for this device where
      * fetched the last time.
      */
-    private final HashMap<String, Long> deviceUUIDsFetchedTimeStamps;
+    private final HashMap<String, Long> deviceUUIDsFetchedTimeStamps = new HashMap<>();
 
     /**
      * This keeps track of all bluetooth devices which are discovered.
      * A bluetoothDevice will be added on ACTION_FOUND (if no yet on this list)
      * and removed on ACTION_ACL_DISCONNECTED.
      */
-    private final ArrayList<BluetoothDevice> discoveredDevices;
+    private final ArrayList<BluetoothDevice> discoveredDevices =  new ArrayList<>();
 
     /**
      * Stores UUIDs of services which should be discovered
      * (and connected to)
      */
-    private final ArrayList<UUID> servicesToLookFor;
+    private final ArrayList<UUID> servicesToLookFor =  new ArrayList<>();
 
-    private final HashMap<UUID, SdpBluetoothServiceClient> serviceClients;
+    private final HashMap<UUID, SdpBluetoothServiceClient> serviceClients = new HashMap<>();
     /**
      *
      */
-    private final List<BluetoothServiceConnector> runningServiceConnectors;
+    private final List<BluetoothServiceConnector> runningServiceConnectors = new ArrayList<>();
 
-    private final List<BluetoothClientConnector> runningClientConnectors;
+    private final List<BluetoothClientConnector> runningClientConnectors  = new ArrayList<>();
 
     private final SdpBluetoothConnectionManager connectionManager;
 
@@ -125,11 +125,11 @@ public class SdpBluetoothEngine
      * (for example after fetching UUIDs) even though it was disabled
      * though {@link #stopDiscovery()}
      */
-    private boolean shouldDiscover;
+    private boolean shouldDiscover = false;
 
     private boolean refreshing;
 
-    private long refreshingTimeStamp;
+    private long refreshingTimeStamp  = 0;;
 
     /**
      * Determines whether discovered service UUIDs
@@ -142,7 +142,7 @@ public class SdpBluetoothEngine
      * But can be disabled be the user.
      * @see SdpBluetoothEngine#shouldCheckLittleEndianUuids(boolean)
      */
-    private boolean checkLittleEndianUuids;
+    private boolean checkLittleEndianUuids = true;
 
     private long uuidRefreshTimeout;
 
@@ -150,6 +150,18 @@ public class SdpBluetoothEngine
     //  ----------  initialisation and setup ----------
     //
 
+    /**
+     * Initializes the SdpBluetoothEngine with the given context and 
+     * the default bluetooth adapter. 
+     * After initialisation the instance can be obtained by calling {@link SdpBluetoothEngine#getInstance()}.
+     *
+     * A not default bluetooth adapter can be used by calling {@link SdpBluetoothEngine#initialize(Context, BluetoothAdapter)}.
+     *
+     * @param context
+     *  the app context
+     * @return
+     *  the created (or already existing) instance of the SdpBluetoothEngine
+     */
     public static SdpBluetoothEngine initialize(Context context)
     {
         if (instance == null)
@@ -159,6 +171,18 @@ public class SdpBluetoothEngine
         return instance;
     }
 
+    /**
+     * Initializes the singleton instance of the SDpBluetooth engine with app context and a
+     * BluetoothAdapter.
+     *
+     * @param context
+     * @param adapter
+     *  A Bluetooth Adapter, if the default adapter ({@link BluetoothAdapter#getDefaultAdapter()})
+     *  is set to be used this can be skipped and just {@link SdpBluetoothEngine#initialize(Context)}
+     *  needs to be called.
+     * @return
+     * the created (or already existing) instance of the SdpBluetoothEngine
+     */
     public static SdpBluetoothEngine initialize(Context context, BluetoothAdapter adapter)
     {
         if (instance == null)
@@ -168,6 +192,18 @@ public class SdpBluetoothEngine
         return instance;
     }
 
+    /**
+     * Returns the singleton instance of the SdpBluetoothEngine.
+     * Requires {@link #initialize(Context)} or {@link #initialize(Context, BluetoothAdapter)}
+     * to have been called prior.
+     *
+     * This method will not create a new instance if the engine was not yet initialized.
+     * It will return `null` instead.
+     *
+     * @return
+     * The instance of the SDPBluetoothEngine created by calling {@link #initialize(Context)}
+     * else returns `null`
+     */
     public static SdpBluetoothEngine getInstance()
     {
         if (instance != null)
@@ -184,20 +220,10 @@ public class SdpBluetoothEngine
     {
         this.context = context;
         this.bluetoothAdapter = adapter;
-        this.automaticallyConnectWhenServiceFound = false;
-        this.runningServiceConnectors = Collections.synchronizedList(new ArrayList<BluetoothServiceConnector>());
-        this.runningClientConnectors = Collections.synchronizedList(new ArrayList<BluetoothClientConnector>());
-        this.discoveredDevices = new ArrayList<>();
-        this.servicesToLookFor = new ArrayList<>();
         this.connectionManager = new SdpBluetoothConnectionManager();
-        this.deviceUUIDsFetchedTimeStamps = new HashMap<>();
-        this.serviceClients = new HashMap<>();
-        this.shouldDiscover = false;
         this.foundDeviceReceiver = new DeviceFoundReceiver(this);
         this.fetchedUuidReceiver = new UUIDFetchedReceiver(this);
-        this.checkLittleEndianUuids = true;
         this.refreshing = false;
-        this.refreshingTimeStamp = 0;
         this.setDefaultDiscoverableTimeInSeconds(DEFAULT_DISCOVERABLE_TIME);
         this.setServerRefreshTimeout(DEFAULT_UUID_REFRESH_TIMEOUT);
     }
@@ -456,10 +482,10 @@ public class SdpBluetoothEngine
                 connectorsToClose.add(clientConnector);
             }
         }
-        for (BluetoothClientConnector connetorClose : connectorsToClose)
+        for (BluetoothClientConnector connectorToClose : connectorsToClose)
         {
-            this.runningClientConnectors.remove(connetorClose);
-            connetorClose.cancel();
+            this.runningClientConnectors.remove(connectorToClose);
+            connectorToClose.cancel();
         }
 
         // removing the client from the list
@@ -611,12 +637,10 @@ public class SdpBluetoothEngine
             for (Parcelable uuid : uuidExtra)
             {
                 UUID tUUID = ((ParcelUuid) uuid).getUuid();
-
                 Log.d(TAG, "connectIfServiceAvailableAndNoConnectedAlready: Service found on " + device.getName() + "  | uuid:  " + uuid);
-                // Log.d(TAG, "connectIfServiceAvailableAndNoConnectedAlready: Services to look for = " + this.servicesToLookFor);
+
                 for (UUID uuidToLookFor : this.servicesToLookFor)
                 {
-                    // Log.d(TAG, "connectIfServiceAvailableAndNoConnectedAlready: comparing: " + uuidToLookFor + " => " + Utils.bytewiseReverseUuid(tUUID));
                     if (tUUID.equals(uuidToLookFor) || (this.checkLittleEndianUuids && Utils.bytewiseReverseUuid(tUUID).equals(uuidToLookFor)))
                     {
                         Log.d(TAG, "connectIfServiceAvailableAndNoConnectedAlready: Service found on " + Utils.getRemoteDeviceString(device));
@@ -648,7 +672,7 @@ public class SdpBluetoothEngine
      */
     private void cancelDiscoveryIfNothingToLookFor()
     {
-        if (this.servicesToLookFor.size() == 0)
+        if (this.servicesToLookFor.isEmpty())
         {
             bluetoothAdapter.cancelDiscovery();
         }
@@ -668,11 +692,14 @@ public class SdpBluetoothEngine
      * You can check if the refresh is still running using {@link #isRefreshProcessRunning()}
      */
     public void refreshNearbyServices(){
+        Log.d(TAG, "refreshNearbyServices: start refreshing");
         this.bluetoothAdapter.cancelDiscovery();
         this.refreshing = true;
         this.refreshingTimeStamp = System.currentTimeMillis();
+        Log.d(TAG, "refreshNearbyServices: refreshing set up, fetching UUIDs");
         for (BluetoothDevice deviceInRange: this.discoveredDevices)
         {
+            Log.d(TAG, "refreshNearbyServices: for " + Utils.getRemoteDeviceString(deviceInRange));
             deviceInRange.fetchUuidsWithSdp();
         }
     }
@@ -932,8 +959,8 @@ public class SdpBluetoothEngine
         if (!discoveredDevices.contains(device))
         {
             discoveredDevices.add(device);
+
             // Notifying client about newly found devices
-            // serviceClients.onDevicesInRangeChange(devicesInRange);
             for (HashMap.Entry<UUID, SdpBluetoothServiceClient> set : serviceClients.entrySet())
             {
                 set.getValue().onDevicesInRangeChange(discoveredDevices);
@@ -966,6 +993,7 @@ public class SdpBluetoothEngine
     }
 
     public void onUuidsFetched(BluetoothDevice device, Parcelable[] uuidExtra){
+        Log.e(TAG, "onUuidsFetched: is discovering " + bluetoothAdapter.isDiscovering() );
         Log.d(TAG, "fetchedUuidReceiver: received UUIDS fot " + Utils.getRemoteDeviceString(device));
         if(!this.shouldFetchUUIDsAgain(device.getAddress()))
         {
@@ -978,6 +1006,7 @@ public class SdpBluetoothEngine
             connectIfServiceAvailableAndNoConnectedAlready(device, uuidExtra);
         }
         startDiscoveryIfAllowed();
+        Log.e(TAG, "onUuidsFetched: is discovering " + bluetoothAdapter.isDiscovering() );
     }
 
 

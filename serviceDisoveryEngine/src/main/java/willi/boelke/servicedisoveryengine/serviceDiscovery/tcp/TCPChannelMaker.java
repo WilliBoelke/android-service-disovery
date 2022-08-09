@@ -1,8 +1,11 @@
 package willi.boelke.servicedisoveryengine.serviceDiscovery.tcp;
 
+import android.util.Log;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Socket;
 
 /**
  * TCP creates a virtual channel between to communication partners. Only during binding procedure,
@@ -13,7 +16,7 @@ import java.io.OutputStream;
  * getting e.g. a server channel makes no difference as soon as a connection is established.
  *
  * After object creation, start that channel thread simply by calling start().
- * Call @see isConnected() to check if a connection was created or @see waitUntilConnectionEstablished()
+ * Call {@link TCPChannel#isConnected()} to check if a connection was created or @see waitUntilConnectionEstablished()
  * which blocks the calling thread until a connection was established.
  *
  * After connection establishment, methods by @see getInputStream() and @see getOutputStream()
@@ -26,7 +29,14 @@ import java.io.OutputStream;
  *
  * @author thsc
  */
-public class TCPChannelMaker extends Thread {
+public class TCPChannelMaker extends Thread
+{
+
+    /**
+     * Classname for logging
+     */
+    private final String TAG = this.getClass().getSimpleName();
+
     private final int port;
     private final boolean asServer;
     private final String hostname;
@@ -98,62 +108,77 @@ public class TCPChannelMaker extends Thread {
      * Called when calling @see createSocket. Do not call this method directly.
      */
     @Override
-    public void run() {
+    public void run()
+    {
         this.threadRunning = true;
-        try {
+        Log.e(TAG, "run: thread started - creating channel");
+        try
+        {
             if(this.asServer) {
+                Log.e(TAG, "run: create server");
                 this.channel = new TCPServer(this.port, this.multiple);
+                Log.e(TAG, "run: server created + " + (channel != null));
             } else {
+                Log.e(TAG, "run: create client");
                 this.channel = new TCPClient(this.hostname, this.port);
             }
 
             // this can take a while
             this.channel.createSocket();
 
-        } catch (IOException ex) {
-            //<<<<<<<<<<<<<<<<<<debug
-            String s = "couldn't esatblish connection";
-            System.out.println(s);
+        } catch (IOException ex)
+        {
+            Log.e(TAG, "run: could not establish connection");
             this.fatalError = true;
         }
     }
 
-    public void close() throws IOException {
-        if(this.channel != null) {
+    public void close() throws IOException
+    {
+        if(this.channel != null)
+        {
             this.channel.close();
-            //<<<<<<<<<<<<<<<<<<debug
-            System.out.println("socket closed");
+            Log.d(TAG, "close: channel closed");
         }
     }
 
     /**
      * holds thread until a connection is established
      */
-    public void waitUntilConnectionEstablished() throws IOException {
-        if(!this.threadRunning) {
+    public void waitUntilConnectionEstablished() throws IOException
+    {
+        if(!this.threadRunning)
+        {
             /* in unit tests there is a race condition between the test
             thread and those newly created tests to establish a connection.
 
             Thus, this call could be in the right order - give it a
             second chance
             */
-
-            try {
+            try
+            {
                 Thread.sleep(wait_for_next_connection_try);
-            } catch (InterruptedException ex) {
+            }
+            catch (InterruptedException ex)
+            {
                 // ignore
             }
 
-            if(!this.threadRunning) {
+            if (!this.threadRunning)
+            {
                 // that's probably wrong usage:
                 throw new IOException("must start TCPChannel thread first by calling start()");
             }
         }
 
-        while(!this.fatalError && !this.isConnected()) {
-            try {
+        while (!this.fatalError && !this.isConnected())
+        {
+            try
+            {
                 Thread.sleep(wait_for_next_connection_try);
-            } catch (InterruptedException ex) {
+            }
+            catch (InterruptedException ex)
+            {
                 // ignore
             }
         }
@@ -164,10 +189,12 @@ public class TCPChannelMaker extends Thread {
      *
      * @param listener
      */
-    public void notifyWhenConnectionEstablishmened(TCPChannelMakerListener listener) {
+    public void notifyWhenConnectionEstablished(TCPChannelMakerListener listener)
+    {
         Thread waiterThread = new WaitAndNotifyThread(listener, this.channel);
         waiterThread.start();
     }
+
 
     private class WaitAndNotifyThread extends Thread {
         private final TCPChannelMakerListener listener;
@@ -178,31 +205,42 @@ public class TCPChannelMaker extends Thread {
             this.channel = channel;
         }
 
-        public void run() {
-          try {
-            waitUntilConnectionEstablished();
-            // done
-              this.listener.onConnectionEstablished(this.channel);
-            } catch (IOException e) {
+        @Override
+        public void run()
+        {
+          try
+          {
+                waitUntilConnectionEstablished();
+                this.listener.onConnectionEstablished(this.channel);
+          }
+          catch (IOException e)
+          {
                 this.listener.onConnectionEstablishmentFailed(this.channel, e.getLocalizedMessage());
-            }
+          }
         }
     }
 
     /**
-     *
      * @return connection established or not yet
      */
-    public boolean isConnected() {
+    public boolean isConnected()
+    {
         return this.channel.isConnected();
     }
 
-    public InputStream getInputStream() throws IOException {
+    public InputStream getInputStream() throws IOException
+    {
         return this.channel.getInputStream();
     }
 
-    public OutputStream getOutputStream() throws IOException {
+    public OutputStream getOutputStream() throws IOException
+    {
         return this.channel.getOutputStream();
+    }
+
+    public Socket getSocket() throws IOException
+    {
+        return this.channel.getSocket();
     }
 
     /**
@@ -213,7 +251,8 @@ public class TCPChannelMaker extends Thread {
      *
      * @throws IOException
      */
-    public void nextConnection() throws IOException {
+    public void nextConnection() throws IOException
+    {
         this.channel.nextConnection();
     }
 }

@@ -30,38 +30,53 @@ class TCPServer extends TCPChannel {
     /**
      * That method is called within a thread. If multiple is set true
      * each client connection is accept and kept in a socketlist.
+     *
      * @return next or only socke4t
+     *
      * @throws IOException
      */
-    void createSocket() throws IOException {
+    void createSocket() throws IOException
+    {
         Log.d("TCPServer:", "createSocket called");
 
         // called first time
-        if(this.acceptThread == null) {
+        if (this.acceptThread == null)
+        {
             Log.d("TCPServer:", "accept thread null - going to accept");
             // wait for connection attempt
             Socket newSocket = srvSocket.accept();
 
             // got a socket
-            if(multiple) {
+            if (multiple)
+            {
                 Log.d("TCPServer:", "out of accept - multiple set");
                 // create a new thread to collect other sockets
-                this.acceptThread = new Thread() {
-                    public void run() {
-                        try {
+                this.acceptThread = new Thread()
+                {
+                    public void run()
+                    {
+                        try
+                        {
                             Log.d("TCPServer/AcceptThread:", "started");
-                            while(multiple) {
+                            while (multiple)
+                            {
                                 // loop will be broken when close called which closes srvSocket
                                 socketList.add(srvSocket.accept());
                                 Log.d("AcceptThread:", "new socket");
                             }
-                        } catch (IOException e) {
+                        }
+                        catch (IOException e)
+                        {
                             // leave loop
                         }
-                        finally {
-                            try {
+                        finally
+                        {
+                            try
+                            {
                                 srvSocket.close();
-                            } catch (IOException e1) {
+                            }
+                            catch (IOException e1)
+                            {
                                 // ignore
                             }
                             srvSocket = null; // remember invalid server socket
@@ -76,37 +91,47 @@ class TCPServer extends TCPChannel {
             // set first found socket on top of the queue
             Log.d("TCPServer:", "new socket found");
             this.setSocket(newSocket);
-
-        } else {
+        }
+        else
+        {
             Log.d("TCPServer:", "accept thread running");
             // an accept thread was already called
 
             // was is successful?
             boolean found = false;
-            do {
-                if (!this.socketList.isEmpty()) {
+            do
+            {
+                if (!this.socketList.isEmpty())
+                {
                     Log.d("TCPServer:", "socket list not empty");
                     // make first socket on waiting list to current socket
                     this.setSocket(this.socketList.remove(0));
                     found = true;
-                } else {
+                }
+                else
+                {
                     // wait
-                    try {
+                    try
+                    {
                         // TODO: that's polling! replace with thread synchronization
                         Log.d("TCPServer:", "socket list empty, wait/retry");
                         Thread.sleep(WAIT_LOOP_IN_MILLIS);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e)
+                    {
                         // ignore
                     }
                 }
-            } while(!found);
+            } while (!found);
         }
     }
 
-    void close() throws IOException {
+    void close() throws IOException
+    {
         super.close();
 
-        if(this.srvSocket != null) {
+        if (this.srvSocket != null)
+        {
             this.srvSocket.close();
         }
     }
@@ -119,16 +144,18 @@ class TCPServer extends TCPChannel {
      *
      * @throws IOException
      */
-
-    void nextConnection() throws IOException {
+    void nextConnection() throws IOException
+    {
         Log.d("TCPServer:", "nextConnection called");
-        if(!this.multiple) {
+        if(!this.multiple)
+        {
             String message = "multiple flag not set - no further connections";
             Log.d("TCPServer:", message);
             throw new IOException(message);
         }
 
-        if(this.srvSocket == null) {
+        if(this.srvSocket == null)
+        {
             String message = "no open server socket, cannot create another connection";
             Log.d("TCPServer:", message);
             throw new IOException(message);

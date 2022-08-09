@@ -1,4 +1,4 @@
-package willi.boelke.service_discovery_demo.controller;
+package willi.boelke.service_discovery_demo.controller.bluetoothDemoController;
 
 import android.util.Log;
 
@@ -13,24 +13,56 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoot
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpClientServerInterfaces.SdpBluetoothServiceServer;
 
 /**
- * This is a Demo Service Server
- * Tt will count up and integer and broadcast it to all connected
- * peers (clients)
+ * This is a demo implementation of a bluetooth sdp "server"
+ * as described in the {@link SdpBluetoothServiceServer}.
+ * <p>
+ * It will report opened client connections to the view using LiveData objets.
+ * <p>
+ * It will start writing periodic messages to open client connections, reporting which service
+ * it is and counting up the message number.
+ *
+ * @author Willi Boelke
  */
 public class DemoServerController implements SdpBluetoothServiceServer
 {
+
+    /**
+     * Classname for logging
+     */
     private final String TAG = this.getClass().getSimpleName();
 
-    private MutableLiveData<ArrayList<SdpBluetoothConnection>> connections;
+    /**
+     * LiveData ArrayList, this will be updated when new connections
+     * are reported or connections closed.
+     * <p>
+     * It can be obtained using {@link #getConnections()}
+     * Other entities may listen to updates on this object to get notified about changes.
+     */
+    private final MutableLiveData<ArrayList<SdpBluetoothConnection>> connections;
 
+    /**
+     * Instance of the WriteThread,
+     * will write messages in a periodical interval
+     * to all open connections
+     */
     private WriteThread writer;
 
-    private UUID serviceUUID;
+    /**
+     * The UUID of the advertised service
+     */
+    private final UUID serviceUUID;
+
 
     //
     //  ---------- constructor and initialisation ----------
     //
 
+    /**
+     * Public constructor
+     *
+     * @param uuid
+     *         the UUID of the advertised service
+     */
     public DemoServerController(UUID uuid)
     {
         this.serviceUUID = uuid;
@@ -58,28 +90,44 @@ public class DemoServerController implements SdpBluetoothServiceServer
     //  ---------- start / stop service ----------
     //
 
+    /**
+     * Starts the WriteThread if i is not
+     * already running
+     */
     public void startWriting()
     {
-        if(!writer.isRunning()){
+        if (!writer.isRunning())
+        {
             writer = new WriteThread();
             writer.start();
         }
     }
 
-    public void stopWriting(){
-        if(writer.isRunning()){
+    /**
+     * Stops the WriteThread
+     */
+    public void stopWriting()
+    {
+        if (writer.isRunning())
+        {
             writer.cancel();
         }
     }
 
     /**
-     * Starts a bluetooth service
+     * This starts the advertisement of the service
+     * using the {@link SdpBluetoothEngine}.
+     *
+     * Please not that the SdpBluetooth engine is require to be initialized at this point.
      */
     public void startService()
     {
-        SdpBluetoothEngine.getInstance().startSDPService("Counting Service", serviceUUID , this);
+        SdpBluetoothEngine.getInstance().startSDPService("Counting Service", serviceUUID, this);
     }
 
+    /**
+     * Stops the advertisement of the service.
+     */
     public void stopService()
     {
         SdpBluetoothEngine.getInstance().stopSDPService(this.serviceUUID);
@@ -90,7 +138,14 @@ public class DemoServerController implements SdpBluetoothServiceServer
     //  ---------- getter and setter ----------
     //
 
-    public MutableLiveData<ArrayList<SdpBluetoothConnection>> getConnections(){
+    /**
+     * Returns a LiveData object containing a
+     * up to date list of the currently active connections
+     * @return
+     * LiveData Array list contracting the connections
+     */
+    public MutableLiveData<ArrayList<SdpBluetoothConnection>> getConnections()
+    {
         return this.connections;
     }
 
@@ -99,36 +154,50 @@ public class DemoServerController implements SdpBluetoothServiceServer
     ////------------  the write thread ---------------
     ////
 
-    private class WriteThread extends Thread {
+    /**
+     * The Write thread will iterate through the list of
+     * open connections, and write a message to each of them.
+     *
+     * This will happen periodically with a random waiting time in between.
+     *
+     * The WriteThread will run indefinitely till it is stopped by calling
+     * its `cancel` method.
+     *
+     * @author Willi Boelke
+     */
+    private class WriteThread extends Thread
+    {
         private final String TAG = this.getClass().getSimpleName();
-      private boolean shouldRun = true;
-      private boolean isRunning = false;
-      private Thread thread;
+        private boolean shouldRun = true;
+        private boolean isRunning = false;
+        private Thread thread;
 
-        public void run(){
+        public void run()
+        {
             this.isRunning = true;
             this.thread = Thread.currentThread();
             int counter = 0;
-            while(shouldRun)
+            while (shouldRun)
             {
                 ArrayList<SdpBluetoothConnection> disconnectedConnections = new ArrayList<>();
                 ArrayList<SdpBluetoothConnection> tmpConnections = (ArrayList<SdpBluetoothConnection>) connections.getValue().clone();
                 for (SdpBluetoothConnection connection : tmpConnections)
                 {
-                    if (connection.isConnected()){
+                    if (connection.isConnected())
+                    {
                         try
                         {
                             String msg = "Test message number " + counter + " from service: " + serviceUUID;
                             connection.getConnectionSocket().getOutputStream().write(msg.getBytes());
-                            //Log.d(TAG, "run: writing" + counter );
+                            Log.d(TAG, "run: writing" + counter );
                         }
                         catch (IOException e)
-                         {
-                             disconnectedConnections.add(connection);
-
+                        {
+                            disconnectedConnections.add(connection);
                         }
                     }
-                    else{
+                    else
+                    {
 
                         disconnectedConnections.add(connection);
                     }
@@ -142,14 +211,17 @@ public class DemoServerController implements SdpBluetoothServiceServer
 
                 try
                 {
-                    synchronized(this){
+                    synchronized (this)
+                    {
                         int timeOut = 600 + (int) ((Math.random() * (400 - 100)) + 100);
-                         this.wait(timeOut);
+                        this.wait(timeOut);
                     }
-                    if(counter < Integer.MAX_VALUE){
+                    if (counter < Integer.MAX_VALUE)
+                    {
                         counter++;
                     }
-                    else{
+                    else
+                    {
                         counter = 0;
                     }
                 }
@@ -157,18 +229,20 @@ public class DemoServerController implements SdpBluetoothServiceServer
                 {
                     e.printStackTrace();
                 }
-                }
             }
+        }
 
-            public void cancel(){
-                Log.d(TAG, "cancel: stopping write thread");
-                this.shouldRun = false;
-                this.isRunning = false;
-                this.thread.interrupt();
-            }
+        public void cancel()
+        {
+            Log.d(TAG, "cancel: stopping write thread");
+            this.shouldRun = false;
+            this.isRunning = false;
+            this.thread.interrupt();
+        }
 
-            public boolean isRunning(){
-                return this.isRunning;
-            }
+        public boolean isRunning()
+        {
+            return this.isRunning;
+        }
     }
 }

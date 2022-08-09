@@ -1,18 +1,30 @@
 package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect;
 
 import android.annotation.SuppressLint;
+import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 import android.util.Log;
 
+import java.util.Map;
+
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 
 /**
- * Discoveries nearby Bonjour services
- * can be stopped as soon as a connection between tw devices was established
+ * Discovers nearby services periodically as long as {@link #isDiscovering}
+ * is `true`.
+ * The discovery will be restarted every 5 seconds, to ensure the discovery
+ * of nearby services.
+ *
+ * There will be no filter applied to discovered services,  this thread does not care
+ * what he discovers.
+ * Also a connection wont be established from here.
+ *
+ * Every advertised and discovered service will be passed to {@link SdpWifiEngine#onServiceDiscovered(WifiP2pDevice, Map, String)}
+ * only there the service records will be evaluated and a connection may be establish.
+ *
+ * @author {willi boelke}
  */
-@SuppressLint("MissingPermission")
-@Deprecated
 public class DiscoveryThread extends Thread
 {
     /**
@@ -20,135 +32,187 @@ public class DiscoveryThread extends Thread
      */
     private final String TAG = this.getClass().getSimpleName();
 
+    private final int WAIT_BEFORE_RETRY = 10000;
+
     private final SdpWifiEngine engine;
 
     private boolean isDiscovering;
 
-    private WifiP2pManager mManager;
+    private WifiP2pManager manager;
 
-    private WifiP2pManager.Channel mChannel;
+    private WifiP2pManager.Channel channel;
 
     private Thread thread;
 
     //
-    //  ----------  constructor and initialisation ----------
+    //  ---------- constructor and initialisation ----------
     //
 
     public DiscoveryThread(WifiP2pManager manager, WifiP2pManager.Channel channel, SdpWifiEngine engine){
-            mManager = manager;
-            mChannel = channel;
+            this.manager = manager;
+            this.channel = channel;
             this.engine = engine;
     }
-
-    public void cancel(){
-        this.thread.interrupt();
-        this.isDiscovering = false;
-    }
+    
 
     @Override
     public void run()
     {
-        isDiscovering = true;
-        this.thread = currentThread();
-        while(isDiscovering)
+
+
+            isDiscovering = true;
+            this.thread = currentThread();
+            setupDiscoveryCallbacks();
+            startDiscovery();
+            Log.d(TAG, "run: discovery thread ended final");
+
+    }
+
+
+    //
+    //  ---------- discovery ----------
+    //
+
+    private void setupDiscoveryCallbacks(){
+
+        //--- TXT Record listener ---//
+
+        WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, record, device) ->
         {
-            // Stop running service request
-            mManager.clearServiceRequests(mChannel, new WifiP2pManager.ActionListener()
-            {
-                @Override
-                public void onSuccess()
-                {
-                    Log.d(TAG, "Cleared local service requests");
+            Log.d(TAG, "run: found service record: on  " + Utils.getRemoteDeviceString(device) + " record: " + record);
+            engine.onServiceDiscovered(device, record, fullDomain);
+        };
 
-                    mManager.addServiceRequest(mChannel, WifiP2pDnsSdServiceRequest.newInstance(), new WifiP2pManager.ActionListener()
+        //--- Service response listener - gives additional service info ---//
+
+        WifiP2pManager.DnsSdServiceResponseListener servListener = (instanceName, registrationType, resourceType) ->
+        {
+            //----------------------------------
+            // NOTE : Right now i don't see any
+            // use in the information give here,
+            // though i will let it here -
+            // for logging and for easy later use
+            //----------------------------------
+            Log.d(TAG, "run: bonjour service available :\n" +
+                    "name =" + instanceName +"\n"+
+                    "registration type = " + registrationType +"\n" +
+                    "resource type = " + resourceType);
+        };
+
+        //--- setting the listeners ---//
+        
+        manager.setDnsSdResponseListeners(channel, servListener, txtListener);
+    }
+
+
+    @SuppressLint("MissingPermission")
+    private void startDiscovery(){
+
+        //--- clearing already running service requests ---//
+
+        manager.clearServiceRequests(channel, new WifiP2pManager.ActionListener()
+        {
+            @Override
+            public void onSuccess()
+            {
+                Log.d(TAG, "Cleared local service requests");
+
+                //--- adding service requests (again) ---//
+                
+                //----------------------------------
+                // NOTE : Bonjour services are used,
+                // so WifiP2pDnsSdServiceRequests are
+                // used here.
+                //----------------------------------
+                manager.addServiceRequest(channel, WifiP2pDnsSdServiceRequest.newInstance(), new WifiP2pManager.ActionListener()
+                {
+                    @Override
+                    public void onSuccess()
                     {
-                        @Override
-                        public void onSuccess()
+                        //--- starting the service discovery (again) ---//
+
+                        manager.discoverServices(channel, new WifiP2pManager.ActionListener()
                         {
-                            Log.d(TAG, "Added service requests");
-                            mManager.discoverPeers(mChannel, new WifiP2pManager.ActionListener()
+                            @Override
+                            public void onSuccess()
                             {
-                                @Override
-                                public void onSuccess()
-                                {
-                                    Log.d(TAG, "Started peer discovery");
-                                    mManager.discoverServices(mChannel, new WifiP2pManager.ActionListener()
-                                    {
-                                        @Override
-                                        public void onSuccess()
-                                        {
-                                            Log.d(TAG, "Started service discovery");
-                                        }
+                                Log.d(TAG, "Started service discovery");
+                            }
 
-                                        @Override
-                                        public void onFailure(int code)
-                                        {
-                                            Log.d(TAG, "failed to start service discovery");
-                                        }
-                                    });
-                                }
+                            @Override
+                            public void onFailure(int code)
+                            {
+                                Log.d(TAG, "failed to start service discovery");
+                                onServiceDiscoveryFailure();
+                            }
+                        });
+                    }
 
-                                @Override
-                                public void onFailure(int code)
-                                {
-                                    Log.d(TAG, "failed to start peer discovery");
-                                }
-                            });
-                        }
-
-                        @Override
-                        public void onFailure(int code)
-                        {
-                            Log.d(TAG, "failed to add service discovery request");
-                        }
-                    });
-                }
-
-                @Override
-                public void onFailure(int code)
-                {
-                    Log.d(TAG, "Failed to clear local service requests");
-                }
-            });
-
-
-
-
-            WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, record, device) ->
+                    @Override
+                    public void onFailure(int code)
+                    {
+                        Log.d(TAG, "failed to add service discovery request");
+                        onServiceDiscoveryFailure();
+                    }
+                });
+            }
+            @Override
+            public void onFailure(int code)
             {
-                Log.d(TAG, "run: found service record: on  " + Utils.getRemoteDeviceString(device) + " record: " + record);
-                engine.onServiceDiscovered(device, record, fullDomain);
-            };
+                Log.d(TAG, "Failed to clear local service requests");
+                onServiceDiscoveryFailure();
+            }
+        });
+    }
 
-            // service listener
-            WifiP2pManager.DnsSdServiceResponseListener servListener = (instanceName, registrationType, resourceType) ->
+    private void pause(int pause) throws InterruptedException
+    {
+        synchronized(this)
+        {
+            try
             {
-                //----------------------------------
-                // NOTE : Right now i don't see any
-                // use in the information give here,
-                // though i will let it here -
-                // for logging and for easy later use
-                //----------------------------------
-                Log.d(TAG, "run: bonjour service available :\n" +
-                        "name =" + instanceName +"\n"+
-                        "registration type = " + registrationType +"\n" +
-                        "resource type = " + resourceType);
-            };
-
-            mManager.setDnsSdResponseListeners(mChannel, servListener, txtListener);
-
-            synchronized(this)
+                this.wait(pause);
+            }
+            catch (InterruptedException e)
             {
-                try
-                {
-                    this.wait(10000);
-                }
-                catch (InterruptedException e)
-                {
-                    e.printStackTrace();
-                }
+                Log.d(TAG, "pause: interrupted wait");
+                throw e; // throw again, this will be caught in `run`
             }
         }
+    }
+
+    private void onServiceDiscoveryFailure(){
+        //----------------------------------
+        // NOTE : There doesn't seem to be
+        // much i can do here, wifi could be restarted
+        // (of / on) but that's all
+        //----------------------------------
+    }
+
+
+    //
+    //  ---------- others ----------
+    //
+
+    public void cancel(){
+        Log.d(TAG, "cancel: canceling service discovery");
+        this.thread.interrupt();
+        this.isDiscovering = false;
+        manager.clearServiceRequests(channel, new WifiP2pManager.ActionListener()
+        {
+            @Override
+            public void onSuccess()
+            {
+                Log.d(TAG, "cancel: cleared service requests");
+            }
+
+            @Override
+            public void onFailure(int reason)
+            {
+                Utils.logReason("cancel: could not clear service request ", reason);
+            }
+        });
+        Log.d(TAG, "cancel: canceled service discovery");
     }
 
     public boolean isDiscovering(){
