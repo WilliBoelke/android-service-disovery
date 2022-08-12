@@ -32,7 +32,9 @@ public class DiscoveryThread extends Thread
      */
     private final String TAG = this.getClass().getSimpleName();
 
-    private final int WAIT_BEFORE_RETRY = 10000;
+    private final int WAIT_BEFORE_RETRY = 7000;
+
+    private final int TRIES = 3;
 
     private final SdpWifiEngine engine;
 
@@ -63,12 +65,14 @@ public class DiscoveryThread extends Thread
 
         //--- setting up callbacks ---//
         setupDiscoveryCallbacks();
+        int tryCounter = 0;
 
-        while (isDiscovering){
+        while (isDiscovering && tryCounter < TRIES){
+            tryCounter++;
             try
             {
                 startDiscovery();
-                pause(15000);
+                pause(WAIT_BEFORE_RETRY);
             }
             catch (InterruptedException e)
             {
