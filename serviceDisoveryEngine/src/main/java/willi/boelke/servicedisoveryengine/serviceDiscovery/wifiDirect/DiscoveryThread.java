@@ -58,14 +58,24 @@ public class DiscoveryThread extends Thread
     @Override
     public void run()
     {
+        isDiscovering = true;
+        this.thread = currentThread();
 
+        //--- setting up callbacks ---//
+        setupDiscoveryCallbacks();
 
-            isDiscovering = true;
-            this.thread = currentThread();
-            setupDiscoveryCallbacks();
-            startDiscovery();
-            Log.d(TAG, "run: discovery thread ended final");
-
+        while (isDiscovering){
+            try
+            {
+                startDiscovery();
+                pause(15000);
+            }
+            catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+        }
+        Log.d(TAG, "run: discovery thread ended final");
     }
 
 
@@ -80,7 +90,7 @@ public class DiscoveryThread extends Thread
         WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, record, device) ->
         {
             Log.d(TAG, "run: found service record: on  " + Utils.getRemoteDeviceString(device) + " record: " + record);
-            engine.onServiceDiscovered(device, record, fullDomain);
+            // don't make a connection here engine.onServiceDiscovered(device, record, fullDomain);
         };
 
         //--- Service response listener - gives additional service info ---//
