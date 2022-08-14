@@ -232,6 +232,10 @@ public class SdpBluetoothEngine
     {
         IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         IntentFilter actionUUID = new IntentFilter(BluetoothDevice.ACTION_UUID);
+        IntentFilter debuggingFilter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        DebuggingBroadcastReceiver receiver = new DebuggingBroadcastReceiver(this);
+        context.registerReceiver(receiver, debuggingFilter);
+
         context.registerReceiver(fetchedUuidReceiver, actionUUID);
         context.registerReceiver(foundDeviceReceiver, discoverDevicesIntent);
     }
@@ -561,6 +565,7 @@ public class SdpBluetoothEngine
      */
     private boolean isServiceAlreadyInDiscoveryList(UUID serviceUUID)
     {
+        if(servicesToLookFor.contains(serviceUUID))
         for (UUID uuid : this.servicesToLookFor)
         {
             if (uuid.equals(serviceUUID))
@@ -839,6 +844,7 @@ public class SdpBluetoothEngine
     //  ----------  starting the connection threads ----------
     //
 
+
     private void startClientThread(BluetoothDevice device, UUID serviceUUID)
     {
         Log.d(TAG, "Staring Client");
@@ -967,15 +973,9 @@ public class SdpBluetoothEngine
             }
         }
 
-        //----------------------------------
-        // NOTE :
-        // Sadly android will keep UUIDS till the BT Adapter restarts
-        // (Bluetooth was turned on and off once). This means the UUIDS
-        // from .getUuids() will be outdated most of the time.
-        // even if the devices just connected getUuids() will return the
-        // uuids from the first time the devices connected.
-        //----------------------------------
+        /*
 
+        Not fetching in this test
 
         Log.d(TAG, "onDeviceDiscovered: the device " + Utils.getRemoteDeviceString(device) + " did not transferred any UUIDs");
         if (shouldFetchUUIDsAgain(device.getAddress()))
@@ -989,26 +989,30 @@ public class SdpBluetoothEngine
         {
             Log.d(TAG, "onDeviceDiscovered: UUIDs where refreshed recently, no need to fetch");
         }
+         */
 
     }
 
     public void onUuidsFetched(BluetoothDevice device, Parcelable[] uuidExtra){
         Log.e(TAG, "onUuidsFetched: is discovering " + bluetoothAdapter.isDiscovering() );
         Log.d(TAG, "fetchedUuidReceiver: received UUIDS fot " + Utils.getRemoteDeviceString(device));
+        /*
         if(!this.shouldFetchUUIDsAgain(device.getAddress()))
         {
             Log.d(TAG, "fetchedUuidReceiver: UUIDs where refreshed only recently. blocked");
             return;
         }
-        addFetchedDeviceTimestamp(device.getAddress());
+        addFetchedDeviceTimestamp(device.getAddress()); */
 
         if(uuidExtra != null){
             connectIfServiceAvailableAndNoConnectedAlready(device, uuidExtra);
         }
-        startDiscoveryIfAllowed();
-        Log.e(TAG, "onUuidsFetched: is discovering " + bluetoothAdapter.isDiscovering() );
+        // startDiscoveryIfAllowed();
     }
 
+    public void onDeviceDiscoveryFinished(){
+        this.refreshNearbyServices();
+    }
 
     //
     //  ---------- config ----------

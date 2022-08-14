@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import javax.security.auth.SubjectDomainCombiner;
+
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 
 /**
@@ -21,7 +23,17 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
  */
 class DebuggingBroadcastReceiver extends BroadcastReceiver
 {
+    /**
+     * Classname for logging
+     */
     private final String TAG = this.getClass().getSimpleName();
+    private SdpBluetoothEngine engine;
+
+    public DebuggingBroadcastReceiver(SdpBluetoothEngine engine){
+            this.engine = engine;
+    }
+
+
     @Override
     public void onReceive(Context context, Intent intent)
     {
@@ -84,6 +96,7 @@ class DebuggingBroadcastReceiver extends BroadcastReceiver
         }
         if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
         {
+            engine.onDeviceDiscoveryFinished();
             Log.e(TAG, "ACTION_DISCOVERY_STARTED: Finished Discovery");
         }
     }
