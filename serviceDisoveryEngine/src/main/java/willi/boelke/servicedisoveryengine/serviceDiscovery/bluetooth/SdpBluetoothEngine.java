@@ -43,9 +43,6 @@ public class SdpBluetoothEngine
     public static final int LONG_DISCOVERABLE_TIME = 180;
     public static final int MAX_DISCOVERABLE_TIME = 300;
 
-    public static final long DEFAULT_UUID_REFRESH_TIMEOUT = 20000;
-    public static final long MEDIUM_UUID_REFRESH_TIMEOUT = 50000;
-    public static final long LONG_UUID_REFRESH_TIMEOUT = 120000;
 
     public static final long MANUAL_REFRESH_TIME = 10000;
 
@@ -81,17 +78,9 @@ public class SdpBluetoothEngine
      * callback methods will be ignored and a connection will be established with every
      * discovered service.
      */
-    private final boolean automaticallyConnectWhenServiceFound = false;;
+    private final boolean automaticallyConnectWhenServiceFound = false;
 
     private int discoverableTimeInSeconds;
-
-    /**
-     * This is used to sore a timestamp (Long)
-     * for every discovered devices MAc Address,
-     * indicating when the UUIDs for this device where
-     * fetched the last time.
-     */
-    private final HashMap<String, Long> deviceUUIDsFetchedTimeStamps = new HashMap<>();
 
     /**
      * This keeps track of all bluetooth devices which are discovered.
@@ -120,16 +109,9 @@ public class SdpBluetoothEngine
 
     private final BroadcastReceiver fetchedUuidReceiver;
 
-    /**
-     * This prevents the engine from starting the discovery again
-     * (for example after fetching UUIDs) even though it was disabled
-     * though {@link #stopDiscovery()}
-     */
-    private boolean shouldDiscover = false;
-
     private boolean refreshing;
 
-    private long refreshingTimeStamp  = 0;;
+    private long refreshingTimeStamp  = 0;
 
     /**
      * Determines whether discovered service UUIDs
@@ -143,8 +125,6 @@ public class SdpBluetoothEngine
      * @see SdpBluetoothEngine#shouldCheckLittleEndianUuids(boolean)
      */
     private boolean checkLittleEndianUuids = true;
-
-    private long uuidRefreshTimeout;
 
     //
     //  ----------  initialisation and setup ----------
@@ -225,7 +205,6 @@ public class SdpBluetoothEngine
         this.fetchedUuidReceiver = new UUIDFetchedReceiver(this);
         this.refreshing = false;
         this.setDefaultDiscoverableTimeInSeconds(DEFAULT_DISCOVERABLE_TIME);
-        this.setServerRefreshTimeout(DEFAULT_UUID_REFRESH_TIMEOUT);
     }
 
     private void registerReceivers()
@@ -352,7 +331,6 @@ public class SdpBluetoothEngine
     {
         // in case a manual UUID refresh process is running it will end here
         stopRefreshingNearbyDevices();
-        this.shouldDiscover = true;
 
         Log.d(TAG, "startDiscovery: start looking for other devices");
         if (bluetoothAdapter.isDiscovering())
@@ -375,36 +353,8 @@ public class SdpBluetoothEngine
      */
     public void stopDiscovery()
     {
-        this.shouldDiscover = false;
         bluetoothAdapter.cancelDiscovery();
     }
-
-    /**
-     * This starts the discovery (only for internal use).
-     *
-     * For the engine i is not always allowed tto start he discovery
-     * (again) for example if it was disabled by the user.
-     * This method checks if it is okay to start again, and then starts
-     * else it just returns.
-     */
-    private void startDiscoveryIfAllowed()
-    {
-        // if manual refresh process is running
-        if(!this.isRefreshProcessRunning())
-        {
-            stopRefreshingNearbyDevices();
-        }
-        Log.d(TAG, "startDiscoveryIfAllowed: allowed to restart : " + this.shouldDiscover + " | " + !this.refreshing);
-        if (this.shouldDiscover && !this.refreshing)
-        {
-            Log.d(TAG, "startDiscoveryIfAllowed: starting discovery again");
-
-            this.startDiscovery();
-            return;
-        }
-        Log.d(TAG, "startDiscoveryIfAllowed: discovery restart is not allowed");
-    }
-
 
     ////
     ////------------  SDP SPECIFIC METHODS  ---------------
@@ -900,50 +850,6 @@ public class SdpBluetoothEngine
     //  ----------  uuid fetched timestamps ----------
     //
 
-    /**
-     * This method determines weather uuids for a devices
-     * should be fetched again (causing a discovery interruption and restart)
-     * his will be decided based on when the UUID for he given devices where
-     * fetched the last time.
-     * This is realised by saving a time swamp and the devices MAc address
-     * into the {@link #deviceUUIDsFetchedTimeStamps} HashMap.
-     *
-     * UUIDs will be fetched again after the specified time {@link #DEFAULT_UUID_REFRESH_TIMEOUT}
-     * passed since the time stamp.
-     *
-     * @see #addFetchedDeviceTimestamp(String)
-     * Adds a timestamp after UUIDs where fetched
-     * @param address
-     * The MAC address of the device
-     * @return
-     * true, when the UUIDS can be fetched again, else false
-     */
-    private boolean shouldFetchUUIDsAgain(String address)
-    {
-        //manual refresh process always ignores timestamps
-        if (this.isRefreshProcessRunning()){
-            return true;
-        }
-        long timestamp;
-        try
-        {
-            timestamp = this.deviceUUIDsFetchedTimeStamps.get(address);
-        }
-        catch (NullPointerException e)
-        {
-            return true;
-        }
-
-        long elapsedTime = System.currentTimeMillis() - timestamp;
-        Log.d(TAG, "shouldFetchUUIDsAgain: device " + address + " was last refreshed " + elapsedTime + " millis ago");
-        return (uuidRefreshTimeout <= elapsedTime);
-    }
-
-    private void addFetchedDeviceTimestamp(String address)
-    {
-        this.deviceUUIDsFetchedTimeStamps.put(address, System.currentTimeMillis());
-    }
-
 
     //
     //  ----------  on bluetooth events ----------
@@ -973,41 +879,15 @@ public class SdpBluetoothEngine
             }
         }
 
-        /*
-
-        Not fetching in this test
-
-        Log.d(TAG, "onDeviceDiscovered: the device " + Utils.getRemoteDeviceString(device) + " did not transferred any UUIDs");
-        if (shouldFetchUUIDsAgain(device.getAddress()))
-        {
-            Log.d(TAG, "onDeviceDiscovered: the UUIDs on " + Utils.getRemoteDeviceString(device) + " weren't refreshed recently, fetching them now");
-
-            bluetoothAdapter.cancelDiscovery(); //  We need to cancel the discovery here, so we an receive the fetched UUIDs quickly
-            device.fetchUuidsWithSdp();
-        }
-        else
-        {
-            Log.d(TAG, "onDeviceDiscovered: UUIDs where refreshed recently, no need to fetch");
-        }
-         */
-
     }
 
     public void onUuidsFetched(BluetoothDevice device, Parcelable[] uuidExtra){
         Log.e(TAG, "onUuidsFetched: is discovering " + bluetoothAdapter.isDiscovering() );
         Log.d(TAG, "fetchedUuidReceiver: received UUIDS fot " + Utils.getRemoteDeviceString(device));
-        /*
-        if(!this.shouldFetchUUIDsAgain(device.getAddress()))
-        {
-            Log.d(TAG, "fetchedUuidReceiver: UUIDs where refreshed only recently. blocked");
-            return;
-        }
-        addFetchedDeviceTimestamp(device.getAddress()); */
 
         if(uuidExtra != null){
             connectIfServiceAvailableAndNoConnectedAlready(device, uuidExtra);
         }
-        // startDiscoveryIfAllowed();
     }
 
     public void onDeviceDiscoveryFinished(){
@@ -1059,35 +939,6 @@ public class SdpBluetoothEngine
             seconds = MIN_DISCOVERABLE_TIME;
         }
         this.discoverableTimeInSeconds = seconds;
-    }
-
-    /**
-     * Sets a timeout to prevent refreshing UUIDs to often.
-     *
-     * The default timeout is set to {@link #DEFAULT_UUID_REFRESH_TIMEOUT}
-     * (20 seconds).
-     *
-     * The minimum value which an be applied here is 20 seconds.
-     * If a smaller value is given 20 seconds will be applied.
-     *
-     * UUIDs will be refreshed whenever a device is discovered.
-     * This an happen several times, when initiating the device discovery again
-     * through {@link #startDiscovery()}.
-     * The UUIDS don't need to be refreshed every single time, especially
-     * if it us sure that the network is relatively stable
-     * (Meaning services wont eb added or removed from devices very often).
-     *
-     *
-     * @param millis
-     */
-    public void setServerRefreshTimeout(long millis){
-        if(millis < DEFAULT_UUID_REFRESH_TIMEOUT){
-            this.uuidRefreshTimeout = DEFAULT_UUID_REFRESH_TIMEOUT;
-        }
-        else
-        {
-            this.uuidRefreshTimeout = millis;
-        }
     }
 }
 
