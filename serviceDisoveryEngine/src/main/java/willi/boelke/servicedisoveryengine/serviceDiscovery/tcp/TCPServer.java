@@ -49,43 +49,7 @@ class TCPServer extends TCPChannel {
             // got a socket
             if (multiple)
             {
-                Log.d("TCPServer:", "out of accept - multiple set");
-                // create a new thread to collect other sockets
-                this.acceptThread = new Thread()
-                {
-                    public void run()
-                    {
-                        try
-                        {
-                            Log.d("TCPServer/AcceptThread:", "started");
-                            while (multiple)
-                            {
-                                // loop will be broken when close called which closes srvSocket
-                                socketList.add(srvSocket.accept());
-                                Log.d("AcceptThread:", "new socket");
-                            }
-                        }
-                        catch (IOException e)
-                        {
-                            // leave loop
-                        }
-                        finally
-                        {
-                            try
-                            {
-                                srvSocket.close();
-                            }
-                            catch (IOException e1)
-                            {
-                                // ignore
-                            }
-                            srvSocket = null; // remember invalid server socket
-                        }
-                        Log.d("TCPServer/AcceptThread:", "ended");
-                    }
-                };
-                Log.d("TCPServer:", "start accept thread");
-                this.acceptThread.start();
+               this.startAcceptThread();
             }
 
             // set first found socket on top of the queue
@@ -163,5 +127,45 @@ class TCPServer extends TCPChannel {
 
         // try to get next socket
         this.createSocket();
+    }
+
+    private void startAcceptThread(){
+        Log.d("TCPServer:", "out of accept - multiple set");
+        // create a new thread to collect other sockets
+        this.acceptThread = new Thread()
+        {
+            public void run()
+            {
+                try
+                {
+                    Log.d("TCPServer/AcceptThread:", "started");
+                    while (multiple)
+                    {
+                        // loop will be broken when close called which closes srvSocket
+                        socketList.add(srvSocket.accept());
+                        Log.d("AcceptThread:", "new socket");
+                    }
+                }
+                catch (IOException e)
+                {
+                    // leave loop
+                }
+                finally
+                {
+                    try
+                    {
+                        srvSocket.close();
+                    }
+                    catch (IOException e1)
+                    {
+                        // ignore
+                    }
+                    srvSocket = null; // remember invalid server socket
+                }
+                Log.d("TCPServer/AcceptThread:", "ended");
+            }
+        };
+        Log.d("TCPServer:", "start accept thread");
+        this.acceptThread.start();
     }
 }

@@ -108,9 +108,9 @@ public class AsyncSdpWifiConnectionCreator extends Thread
             {
                 this.socket.close();
             }
-            catch (IOException ex)
+            catch (IOException | NullPointerException ex )
             {
-                Log.e(TAG, "run: cannot close the socket...", e);
+                Log.e(TAG, "run: cannot close the socket...", ex);
             }
         }
     }

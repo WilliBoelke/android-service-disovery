@@ -10,7 +10,7 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.tcp.TCPChannelMaker;
 /**
  *
  */
-public class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoListener, WifiP2pManager.GroupInfoListener
+public class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoListener
 {
 
 
@@ -44,19 +44,24 @@ public class WifiDirectConnectionInfoListener implements WifiP2pManager.Connecti
     public void onConnectionInfoAvailable(WifiP2pInfo info)
     {
         //----------------------------------
-        // NOTE : this code is partially taken from the ASAPAndroid WifiConnectionPeerInfoListener
+        // NOTE : apparently this method will also be called
+        // when a client leaves a group, with this containing.
+        // the GO will try to establish a connection to the given device,
+        // and this will end in a infinite loop
+        // in the TCPServer...
         //----------------------------------
+
         Log.d(TAG, "onConnectionInfoAvailable: received connection info");
         Log.d(TAG, "onConnectionInfoAvailable: " + info);
         TCPChannelMaker.max_connection_loops = 10;
         TCPChannelMaker channelCreator = null;
         if(info.isGroupOwner)
         {
-            sdpWifiEngine.onBecameGroupOwner();
-            Log.d(TAG, "onConnectionInfoAvailable: local peer became group owner");
+            //--- creating server channel - just once as group owner ---//
 
             if(this.serverChannelCreator == null)
             {
+                sdpWifiEngine.onBecameGroupOwner();
                 Log.d(TAG, "onConnectionInfoAvailable: start server channel");
                 this.serverChannelCreator = TCPChannelMaker.getTCPServerCreator(sdpWifiEngine.getPortNumber(), true);
             }
@@ -74,13 +79,7 @@ public class WifiDirectConnectionInfoListener implements WifiP2pManager.Connecti
 
             channelCreator = TCPChannelMaker.getTCPClientCreator(hostAddress, sdpWifiEngine.getPortNumber());
         }
-        Log.e(TAG, "onConnectionInfoAvailable: channel createort is null = " + (channelCreator == null) );
+        Log.e(TAG, "onConnectionInfoAvailable: channel creator is null = " + (channelCreator == null) );
         this.sdpWifiEngine.onSocketConnectionStarted(channelCreator);
-    }
-
-    @Override
-    public void onGroupInfoAvailable(WifiP2pGroup group)
-    {
-        Log.d(TAG, "onGroupInfoAvailable: " +group);
     }
 }

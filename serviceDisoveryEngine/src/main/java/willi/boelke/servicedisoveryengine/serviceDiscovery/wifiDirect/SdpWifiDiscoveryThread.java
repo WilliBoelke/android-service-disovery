@@ -6,9 +6,13 @@ import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.UUID;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpConnectorThreads.BluetoothClientConnector;
 
 /**
  * Discovers nearby services periodically as long as {@link #isDiscovering}
@@ -25,7 +29,7 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
  *
  * @author {willi boelke}
  */
-public class DiscoveryThread extends Thread
+public class SdpWifiDiscoveryThread extends Thread
 {
     /**
      * Classname for logging
@@ -36,7 +40,9 @@ public class DiscoveryThread extends Thread
 
     private final int TRIES = 3;
 
-    private final SdpWifiEngine engine;
+    private int runningTries = 0;
+
+    private WifiSdpServiceDiscoveryListener listener;
 
     private boolean isDiscovering;
 
@@ -46,29 +52,46 @@ public class DiscoveryThread extends Thread
 
     private Thread thread;
 
+    private ArrayList<Map<String, String>> discoveredServices = new ArrayList();
+
     //
     //  ---------- constructor and initialisation ----------
     //
 
-    public DiscoveryThread(WifiP2pManager manager, WifiP2pManager.Channel channel, SdpWifiEngine engine){
+    /**
+     * Constructor
+     *
+     * @param manager
+     * The WifiP2P manager
+     * @param channel
+     *  The Channel
+     * @param listener
+     * an implementation of the listener interface,
+     * to get updated on new discoveries.
+     */
+    public SdpWifiDiscoveryThread(WifiP2pManager manager, WifiP2pManager.Channel channel, WifiSdpServiceDiscoveryListener listener){
             this.manager = manager;
             this.channel = channel;
-            this.engine = engine;
+            this.listener = listener;
     }
     
 
     @Override
     public void run()
     {
+        //--- setting to running ---//
+
         isDiscovering = true;
         this.thread = currentThread();
 
         //--- setting up callbacks ---//
-        setupDiscoveryCallbacks();
-        int tryCounter = 0;
 
-        while (isDiscovering && tryCounter < TRIES){
-            tryCounter++;
+        setupDiscoveryCallbacks();
+
+        //--- discovery loop ---//
+
+        while (isDiscovering && runningTries < TRIES){
+            runningTries++;
             try
             {
                 startDiscovery();
@@ -79,22 +102,41 @@ public class DiscoveryThread extends Thread
                 e.printStackTrace();
             }
         }
+
+        //--- end ---//
+
+        listener.onDiscoveryFinished();
+        isDiscovering = false;
         Log.d(TAG, "run: discovery thread ended final");
     }
-
 
     //
     //  ---------- discovery ----------
     //
 
+    /**
+     * Setting up the callbacks which wil be called when
+     * a service was discovered, proving the TXT records and other
+     * service information.
+     *
+     * This only needs to be set up once, at the Thread start.
+     * It shouldn't called while lopping (re-starting service discovery).
+     *
+     */
     private void setupDiscoveryCallbacks(){
 
         //--- TXT Record listener ---//
 
-        WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, record, device) ->
+        WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, txtRecord, device) ->
         {
-            Log.d(TAG, "run: found service record: on  " + Utils.getRemoteDeviceString(device) + " record: " + record);
-            // don't make a connection here engine.onServiceDiscovered(device, record, fullDomain);
+            Log.d(TAG, "run: found service record: on  " + Utils.getRemoteDeviceString(device) + " record: " + txtRecord);
+            if(this.checkIfNewService(device, txtRecord))
+            {
+                listener.onServiceDiscovered(device, txtRecord, fullDomain);
+            }
+            else {
+                Log.d(TAG, "setupDiscoveryCallbacks: service was discovered before");
+            }
         };
 
         //--- Service response listener - gives additional service info ---//
@@ -107,15 +149,29 @@ public class DiscoveryThread extends Thread
             // though i will let it here -
             // for logging and for easy later use
             //----------------------------------
+            /*
             Log.d(TAG, "run: bonjour service available :\n" +
-                    "name =" + instanceName +"\n"+
-                    "registration type = " + registrationType +"\n" +
-                    "resource type = " + resourceType);
+            "name =" + instanceName +"\n"+
+            "registration type = " + registrationType +"\n" +
+            "resource type = " + resourceType);
+             */
+             
         };
 
         //--- setting the listeners ---//
         
         manager.setDnsSdResponseListeners(channel, servListener, txtListener);
+    }
+
+    private boolean checkIfNewService(WifiP2pDevice device, Map<String,String> record)
+    {
+        record.put("addr", device.deviceAddress);
+        if(this.discoveredServices.contains(record))
+        {
+            return true;
+        }
+        discoveredServices.add(record);
+        return false;
     }
 
 
@@ -179,6 +235,16 @@ public class DiscoveryThread extends Thread
         });
     }
 
+    /**
+     * Pauses after the discovery started to wait if any
+     * services can be found.
+     *
+     * @param pause
+     * time in millis
+     *
+     * @throws InterruptedException
+     * when the thread was interrupted
+     */
     private void pause(int pause) throws InterruptedException
     {
         synchronized(this)
@@ -194,15 +260,6 @@ public class DiscoveryThread extends Thread
             }
         }
     }
-
-    private void onServiceDiscoveryFailure(){
-        //----------------------------------
-        // NOTE : There doesn't seem to be
-        // much i can do here, wifi could be restarted
-        // (of / on) but that's all
-        //----------------------------------
-    }
-
 
     //
     //  ---------- others ----------
@@ -231,5 +288,38 @@ public class DiscoveryThread extends Thread
 
     public boolean isDiscovering(){
         return this.isDiscovering;
+    }
+
+
+    /**
+     * Interface to be implemented by classes using the {@link SdpWifiDiscoveryThread}
+     */
+    public interface WifiSdpServiceDiscoveryListener
+    {
+        /**
+         * Called when a service has been discovered, providing
+         * the listener with all means to connect to a service / remote device
+         *
+         * @param device
+         * The device which hosts the service
+         * @param txtRecord
+         * the services TXT records
+         * @param fullDomain
+         * the services domain
+         */
+         void onServiceDiscovered(WifiP2pDevice device, Map<String, String> txtRecord, String fullDomain);
+
+        /**
+         * called when the discovery process finished
+         */
+        void onDiscoveryFinished();
+    }
+
+    private void onServiceDiscoveryFailure(){
+        //----------------------------------
+        // NOTE : There doesn't seem to be
+        // much i can do here, wifi could be restarted
+        // (of / on) but that's all
+        //----------------------------------
     }
 }

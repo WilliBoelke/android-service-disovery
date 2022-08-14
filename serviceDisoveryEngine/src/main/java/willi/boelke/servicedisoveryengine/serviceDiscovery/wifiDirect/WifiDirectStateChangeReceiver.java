@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.NetworkInfo;
+import android.net.wifi.p2p.WifiP2pGroup;
+import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.util.Log;
 
@@ -50,17 +52,26 @@ public class WifiDirectStateChangeReceiver extends BroadcastReceiver
         }
         else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action))
         {
+            NetworkInfo networkInfo = (NetworkInfo) intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
+            WifiP2pInfo wifiInfo = (WifiP2pInfo) intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_INFO);
+            WifiP2pGroup groupInfo = (WifiP2pGroup) intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_GROUP);
+
+            Log.e(TAG, "--------------- \n" +
+                    networkInfo +
+                    "\n--\n" +
+                    wifiInfo +
+                    "\n--\n" +
+                    groupInfo +
+                    "--------------- \n");
             //----------------------------------
             // NOTE : NetworkInfo is apparently deprecated, official android documentation
             // though only gives this way and does not provide any replacement
-            // EXTRA fields in this intent. TODO check that again
+            // EXTRA fields in this intent.
             //----------------------------------
-            NetworkInfo networkInfo = (NetworkInfo) intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
             if (networkInfo.isConnected())
             {
                 Log.e(TAG, "onReceive: connection changed, connected to peer ");
                 manager.requestConnectionInfo(channel, connectionInfoListener);
-                manager.requestGroupInfo(channel, (WifiP2pManager.GroupInfoListener) connectionInfoListener);
             }
 
         }
