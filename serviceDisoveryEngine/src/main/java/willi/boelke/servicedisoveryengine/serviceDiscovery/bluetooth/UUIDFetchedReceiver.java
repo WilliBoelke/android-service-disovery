@@ -9,6 +9,11 @@ import android.util.Log;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 
+/**
+ * Listens on {@link BluetoothDevice#ACTION_UUID}, notifies the
+ * engine by calling {@link SdpBluetoothEngine#onUuidsFetched(BluetoothDevice, Parcelable[])}
+ * when UUIDs where fetched.
+ */
 class UUIDFetchedReceiver extends BroadcastReceiver
 {
 
@@ -21,6 +26,9 @@ class UUIDFetchedReceiver extends BroadcastReceiver
      */
     private final String TAG = this.getClass().getSimpleName();
 
+    /**
+     *
+     */
     private final SdpBluetoothEngine engine;
 
 

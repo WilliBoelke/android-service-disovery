@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 import willi.boelke.service_discovery_demo.controller.wifiDemoController.WifiDemoController;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiConnection;
 
 public class WifiDirectViewModel extends ViewModel
@@ -25,8 +26,13 @@ public class WifiDirectViewModel extends ViewModel
 
     public WifiDirectViewModel()
     {
-        this.wifiDemoControllerOne = new WifiDemoController(UUID.fromString("1be0643f-1d98-573b-97cd-ca98a65347dd"));
-        this.wifiDemoControllerTwo = new WifiDemoController(UUID.fromString("4be0643f-1d98-573b-97cd-ca98a65347dd"));
+        ServiceDescription descriptionForServiceOne = new ServiceDescription("Service Counting One");
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Service Counting Two");
+        descriptionForServiceOne.addAttribute("info", "this service counts upwards and sends it to all clients");
+        descriptionForServiceTwo.addAttribute("info", "this service als counts upwards and sends it to all clients");
+
+        this.wifiDemoControllerOne = new WifiDemoController(descriptionForServiceOne);
+        this.wifiDemoControllerTwo = new WifiDemoController(descriptionForServiceOne);
     }
 
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)

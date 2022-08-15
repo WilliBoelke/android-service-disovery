@@ -9,10 +9,9 @@ import androidx.lifecycle.MutableLiveData;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.UUID;
 
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiConnection;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiEngine;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClientServerInterfaces.SdpWifiPeer;
@@ -37,7 +36,7 @@ public class WifiDemoController implements SdpWifiPeer
     /**
      * UUID of the service being advertised / looked for using this controller
      */
-    private final UUID serviceUuid;
+    private final ServiceDescription description;
 
     private MutableLiveData<String> currentMessage = new MutableLiveData<>("");
     private MutableLiveData<Boolean> isGroupOwner = new MutableLiveData<>(Boolean.FALSE);
@@ -58,13 +57,13 @@ public class WifiDemoController implements SdpWifiPeer
     /**
      * Public constructor
      *
-     * @param serviceUUID
-     *         The UUID of the service
+     * @param description
+     *   A service description to identify the service and prove additional information about it.
      */
-    public WifiDemoController(UUID serviceUUID)
+    public WifiDemoController(ServiceDescription description)
     {
         this.openConnections.setValue(new ArrayList<>());
-        this.serviceUuid = serviceUUID;
+        this.description = description;
     }
 
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -72,8 +71,7 @@ public class WifiDemoController implements SdpWifiPeer
     {
         this.writeThread = new WriteThread();
         this.readThread = new ReadThread();
-        SdpWifiEngine.getInstance().start(
-                "testServiceName1", this.serviceUuid, this);
+        SdpWifiEngine.getInstance().start(this.description, this);
     }
 
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -110,7 +108,7 @@ public class WifiDemoController implements SdpWifiPeer
     }
 
     @Override
-    public void onServiceDiscovered(String address, UUID serviceUUID)
+    public void onServiceDiscovered(String address, ServiceDescription description)
     {
         // this is just for information reasons, there is not much to do at this point
     }
@@ -153,13 +151,11 @@ public class WifiDemoController implements SdpWifiPeer
     }
 
     @Override
-    public boolean shouldConnectTo(String address, UUID serviceUUID)
+    public boolean shouldConnectTo(String address, ServiceDescription description)
     {
         //todo use that actually in the engine
         return true;
     }
-
-
 
 
 
@@ -201,7 +197,7 @@ public class WifiDemoController implements SdpWifiPeer
                     {
                         try
                         {
-                            String msg = "Test message number " + counter + " from service: " + serviceUuid;
+                            String msg = "Test message number " + counter + " from service: " + description;
                             connection.getConnectionSocket().getOutputStream().write(msg.getBytes());
                             connection.getConnectionSocket().getOutputStream().flush();
                         }

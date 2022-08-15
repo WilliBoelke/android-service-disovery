@@ -1,14 +1,11 @@
 package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect;
 
-import android.net.wifi.p2p.WifiP2pDevice;
 import android.util.Log;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
-import java.util.UUID;
 
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.tcp.TCPChannelMaker;
 
 /**
@@ -33,12 +30,12 @@ public class AsyncSdpWifiConnectionCreator extends Thread
 
     private final TCPChannelMaker channelMaker;
     private final SdpWifiEngine engine;
-    private final UUID serviceUuid;
+    private final ServiceDescription serviceDescription;
     private Socket socket;
 
-    public AsyncSdpWifiConnectionCreator(TCPChannelMaker channelMaker, SdpWifiEngine engine, UUID serviceUuid)
+    public AsyncSdpWifiConnectionCreator(TCPChannelMaker channelMaker, SdpWifiEngine engine, ServiceDescription description)
     {
-        this.serviceUuid = serviceUuid; 
+        this.serviceDescription = description;
         this.channelMaker = channelMaker;
         this.socket = null;
         this.engine = engine;
@@ -61,44 +58,14 @@ public class AsyncSdpWifiConnectionCreator extends Thread
                 {
                     this.channelMaker.nextConnection();
                 }
-                
-                //----------------------------------
-                // NOTE : There is a race condition between this and the Channel maker.
-                // The channel maker may not have created the channel when calling this,
-                // leading to a NullPointerException when calling `channel.isConnected()`
-                // We will give it a try (since it works in about 80% of the cases) and then
-                // wait before trying again.
-                // This fix actually works very well now after testing it a while, though there may
-                // be room for improvements ? reties ?
-                //----------------------------------
-                Log.d(TAG, "channel maker started, wait for connection");
-                try
-                {
-                    this.channelMaker.waitUntilConnectionEstablished();
-                }
-                catch (NullPointerException e)
-                {
-                    synchronized (this)
-                    {
-                        Log.e(TAG, "run: race condition happened");
-                        try
-                        {
-                            this.wait(1000);
-                        }
-                        catch (InterruptedException ex)
-                        {
-                            ex.printStackTrace();
-                        }
-                    }
-                    this.channelMaker.waitUntilConnectionEstablished();
-                }
-                Log.d(TAG, "connected - start handle connection");
+
+                awaitConnection();
                 this.socket = channelMaker.getSocket();
                 Log.d(TAG, "run: socket " + socket);
             }
 
             // Creating the connection
-            SdpWifiConnection connection = new SdpWifiConnection(this.socket, this.serviceUuid);
+            SdpWifiConnection connection = new SdpWifiConnection(this.socket, this.serviceDescription);
             this.engine.onSocketConnected(connection);
         }
         catch (IOException e)
@@ -112,6 +79,43 @@ public class AsyncSdpWifiConnectionCreator extends Thread
             {
                 Log.e(TAG, "run: cannot close the socket...", ex);
             }
+        }
+    }
+
+    private void awaitConnection() throws IOException
+    {
+        //----------------------------------
+        // NOTE : There is a race condition between
+        // this and the Channel maker. The channel
+        // maker may not have created the channel
+        // when calling this, leading to a
+        // NullPointerException when calling
+        // `channel.isConnected()` We will give it
+        // a try (since it works in about 80% of the
+        // cases) and then wait before trying again.
+        // This fix actually works very well now
+        // after testing it a while, though there may
+        // be room for improvements ? reties ?
+        //----------------------------------
+        try
+        {
+            this.channelMaker.waitUntilConnectionEstablished();
+        }
+        catch (NullPointerException e)
+        {
+            synchronized (this)
+            {
+                Log.e(TAG, "run: race condition happened");
+                try
+                {
+                    this.wait(1000);
+                }
+                catch (InterruptedException ex)
+                {
+                    ex.printStackTrace();
+                }
+            }
+            this.channelMaker.waitUntilConnectionEstablished();
         }
     }
 }

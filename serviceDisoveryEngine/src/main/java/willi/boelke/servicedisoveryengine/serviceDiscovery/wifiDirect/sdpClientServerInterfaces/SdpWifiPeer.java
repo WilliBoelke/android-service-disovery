@@ -3,12 +3,13 @@ package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClient
 
 import java.util.UUID;
 
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiConnection;
 
 
 public interface SdpWifiPeer
 {
-    void onServiceDiscovered(String address, UUID serviceUUID);
+    void onServiceDiscovered(String address, ServiceDescription description);
 
     void onBecameGroupOwner();
 
@@ -16,5 +17,5 @@ public interface SdpWifiPeer
 
     void onConnectionEstablished(SdpWifiConnection connection);
 
-    boolean shouldConnectTo(String address, UUID serviceUUID);
+    boolean shouldConnectTo(String address, ServiceDescription description);
 }

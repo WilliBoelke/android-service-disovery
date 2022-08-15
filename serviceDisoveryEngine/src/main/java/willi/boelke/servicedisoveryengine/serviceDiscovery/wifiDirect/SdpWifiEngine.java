@@ -9,7 +9,6 @@ import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
-import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 import android.net.wifi.p2p.nsd.WifiP2pServiceInfo;
 import android.util.Log;
 
@@ -22,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.tcp.TCPChannelMaker;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClientServerInterfaces.SdpWifiPeer;
 
@@ -34,7 +34,7 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClientS
  * ------------------------------------------------------------
  *
  * To start an service or a discovery (for a specific service) please refer to
- * {@link #start(String, UUID, SdpWifiPeer)}, to start the general service discovery (which is needed to find a service)
+ * {@link #start(ServiceDescription, SdpWifiPeer)}, to start the general service discovery (which is needed to find a service)
  * call {@link #startDiscovery()}
  *
  * To use the engine and get notified about established connections, group
@@ -74,17 +74,6 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
      */
     private static SdpWifiEngine instance;
 
-
-    /**
-     * Key for the service name in the services txt records
-     */
-    private static final String SERVICE_NAME = "service-name";
-
-    /**
-     * Key for the service UUID in the services txt records
-     */
-    private static final String SERVICE_UUID = "service-uuid";
-
     //
     //  ----------  instance members ----------
     //
@@ -114,7 +103,7 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
     private HashMap<UUID, ArrayList<WifiP2pDevice>> discoveredServices = new HashMap<>();
 
     /**
-     * Service registered in {@link #startSDPService(String, UUID)}
+     * Service registered in {@link #startSDPService(ServiceDescription)}
      * and unregistered in {@link #stopSDPDiscovery()}
      */
     private WifiP2pServiceInfo runningService;
@@ -126,9 +115,9 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
 
     /**
      * The UUID of the service to discover
-     * this will be set in {@link #startSDPDiscoveryForServiceWithUUID(UUID)}
+     * this will be set in {@link #startSDPDiscoveryForService(ServiceDescription)}
      */
-    private UUID serviceToLookFor;
+    private ServiceDescription serviceToLookFor;
 
     /**
      * Implemented SdpWifiPeer interface
@@ -220,24 +209,21 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
     //
 
     /**
-     * This registers the service for discovery, other devices can find this service then. 
+     * This registers the service for discovery, other devices can find this service then.
      * Also the service with the given UUID (serviceUUID) will be looked for.
-     * The service discovery however needs to be started and stopped separately, for that please 
-     * refer to {@link #startDiscovery()} and {@link #stopDiscovery()} respectivly. 
+     * The service discovery however needs to be started and stopped separately, for that please
+     * refer to {@link #startDiscovery()} and {@link #stopDiscovery()} respectivly.
      *
-     * @param serviceName
-     * The name of the service as displayed int the service records
-     * @param serviceUUID
-     * The service UUID for uniquely identifying a service
+     * @param description
+     *         Service description
      * @param serviceClient
-     * Implementation of the SdpWifiPeer interface
+     *         Implementation of the SdpWifiPeer interface
      *
-     * @return
-     * true if a service discovery could be started, false if another service discovery
-     * is running already
+     * @return true if a service discovery could be started, false if another service discovery
+     *         is running already
      */
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    public boolean start(String serviceName, UUID serviceUUID, SdpWifiPeer serviceClient)
+    public boolean start(ServiceDescription description, SdpWifiPeer serviceClient)
     {
         //--- check if a service discovery is already running ---//
 
@@ -251,8 +237,8 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
 
         this.peer = serviceClient;
         this.registerReceiver();
-        this.startSDPService(serviceName, serviceUUID);
-        this.startSDPDiscoveryForServiceWithUUID(serviceUUID);
+        this.startSDPService(description);
+        this.startSDPDiscoveryForService(description);
 
         return true;
     }
@@ -260,7 +246,7 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
     /**
      * This stops the engine that means other devices cant find the advertised service anymore,
      * the discovery will stop and the discovered service will be unset,
-     * to start the engine again call {@link #start(String, UUID, SdpWifiPeer)}.
+     * to start the engine again call {@link #start(ServiceDescription, SdpWifiPeer)}.
      *
      * This however wont cancel existing connections,
      * to leave the current group call {@link #disconnectFromGroup()}.
@@ -336,7 +322,7 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
     /**
      * This starts the discovery process, which will discover all nearby services
      * a connection will only be established if a service was specified with in
-     * {@link #start(String, UUID, SdpWifiPeer)}
+     * {@link #start(ServiceDescription, SdpWifiPeer)}
      */
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     public void startDiscovery()
@@ -369,10 +355,10 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
     /**
      * Starts looking for the service specified with the `serviceUUID` parameter.
      *
-     * @param serviceUUID
-     * @param serviceClient
+     * @param description
+     *         The Service description
      */
-    private void startSDPDiscoveryForServiceWithUUID(UUID serviceUUID)
+    private void startSDPDiscoveryForService(ServiceDescription description)
     {
         Log.d(TAG, "Starting service discovery");
         // Are we already looking for he service?
@@ -384,14 +370,14 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
         //----------------------------------
 
         // Trying to find service on devices hat where discovered earlier in the engine run
-        this.tryToConnectToServiceAlreadyInRange(serviceUUID);
+        this.tryToConnectToServiceAlreadyInRange(description);
         // Adding the service to  be found in the future
-        this.serviceToLookFor = serviceUUID;
+        this.serviceToLookFor = description;
     }
 
     /**
      * This stops the discovery for the service given previously
-     * trough calling {@link #startSDPDiscoveryForServiceWithUUID(UUID)} (UUID, SdpWifiPeer)}.
+     * trough calling {@link #startSDPDiscoveryForService(ServiceDescription)} (UUID, SdpWifiPeer)}.
      *
      * This however does not end any existing connections and does not cancel the overall service discovery
      * refer to {@link #stopDiscovery()}
@@ -399,19 +385,17 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     private void stopSDPDiscovery()
     {
-        Log.d(TAG, "End service discovery for service with UUID " + serviceToLookFor);
+        Log.d(TAG, "End service discovery for service with " + serviceToLookFor);
 
         this.serviceToLookFor = null;
         this.peer = null;
         this.stopDiscovery();
     }
 
-
-    private void tryToConnectToServiceAlreadyInRange(UUID serviceUUID)
+    private void tryToConnectToServiceAlreadyInRange(ServiceDescription description)
     {
-
+        // TODO
     }
-
 
     //
     //  ----------  "server" side ----------
@@ -419,27 +403,25 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
 
     /**
      *
-     * @param serviceName
-     * @param serviceUUID
      */
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    private void startSDPService(String serviceName, UUID serviceUUID)
+    private void startSDPService(ServiceDescription description)
     {
-        Log.d(TAG, "startSDPService: starting service : " + serviceName + " | " + serviceUUID);
-        WifiP2pServiceInfo serviceRecords = generateServiceRecords(serviceName, serviceUUID);
+        Log.d(TAG, "startSDPService: starting service : " + description);
+        WifiP2pServiceInfo serviceRecords = WifiP2pDnsSdServiceInfo.newInstance(description.getServiceName(), "_presence._tcp", description.getServiceRecord());
         manager.addLocalService(channel, serviceRecords, new WifiP2pManager.ActionListener()
         {
             @Override
             public void onSuccess()
             {
-                Log.d(TAG, "startSDPService: service successfully added : " + serviceName + " | " + serviceUUID);
+                Log.d(TAG, "startSDPService: service successfully added : " + description);
                 runningService = serviceRecords;
             }
 
             @Override
             public void onFailure(int arg0)
             {
-                Utils.logReason("startSDPService: service could not be added : " + serviceName + " | " + serviceUUID, arg0);
+                Utils.logReason("startSDPService: service could not be added : " + description , arg0);
             }
         });
 
@@ -475,79 +457,50 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
         });
     }
 
-    private WifiP2pDnsSdServiceInfo generateServiceRecords(String serviceName, UUID serviceUUID)
-    {
-        Log.d(TAG, "generateServiceRecords: generating service records");
-        Map<String, String> serviceRecords = new HashMap<>();
-        serviceRecords.put(SERVICE_UUID, serviceUUID.toString());
-        serviceRecords.put(SERVICE_NAME, serviceName);
-        Log.d(TAG, "generateServiceRecords: generated records : " + serviceRecords);
-
-        return WifiP2pDnsSdServiceInfo.newInstance(serviceName, "_presence._tcp", serviceRecords);
-    }
-
 
     //
     //  ----------  SdpWifiServiceDiscoverListener interface ----------
     //
+
 
     /**
      * Called by the {@link SdpWifiDiscoveryThread} as described
      * in the interface {@link SdpWifiDiscoveryThread.WifiSdpServiceDiscoveryListener}
      *
      * @param device
-     * The device which hosts the service
-     * @param record
-     * The services TXT Records
+     *         The device which hosts the service
+     * @param serviceRecord
+     *         The services TXT Records
      * @param fullDomain
-     * The services domain
+     *         The services domain
      */
     @Override
-    public void onServiceDiscovered(WifiP2pDevice device, Map<String, String> record, String fullDomain)
+    public void onServiceDiscovered(WifiP2pDevice device, Map<String, String> serviceRecord, String fullDomain)
     {
         Log.d(TAG, "onServiceDiscovered: discovered a new Service on " + Utils.getRemoteDeviceString(device));
 
-        //--- checking if a `service-uuid` is available in the record ---//
-
-        String uuidAsString = record.get(SERVICE_UUID);
-        if(uuidAsString == null)
-        {
-            Log.d(TAG, "onServiceDiscovered: no uuid in service records");
-            // no uuid in record
-            return;
-        }
-
-        //--- getting the UUID and  validating its format ---//
-
-        Log.d(TAG, "onServiceDiscovered: received UUID " + uuidAsString);
-        UUID serviceUUID;
-        try
-        {
-           serviceUUID = UUID.fromString(uuidAsString);
-        }
-        catch (IllegalArgumentException e)
-        {
-            Log.d(TAG, "onServiceDiscovered: UUID was not formatted correctly");
-            return;
-        }
+        ServiceDescription description = new ServiceDescription(serviceRecord);
+        Log.d(TAG, "onServiceDiscovered: received " + description);
 
         if (this.peer != null)
         {
-            peer.onServiceDiscovered(device.deviceAddress, serviceUUID);
+            peer.onServiceDiscovered(device.deviceAddress, description);
         }
 
         //--- adding to list of remembered services ---//
 
-        ArrayList<WifiP2pDevice> serviceDevices = this.discoveredServices.get(serviceUUID);
+        ArrayList<WifiP2pDevice> serviceDevices = this.discoveredServices.get(description.getServiceUuid());
         if (serviceDevices == null)
         {
             serviceDevices = new ArrayList<>();
         }
+
         serviceDevices.add(device);
-        this.discoveredServices.put(serviceUUID, serviceDevices);
+        this.discoveredServices.put(description.getServiceUuid(), serviceDevices);
 
         //--- trying to connect ---//
-        this.connectIfServiceAvailableAndNoConnectedAlready(device, serviceUUID);
+
+        this.tryToConnect(device, description);
     }
 
     @Override
@@ -556,46 +509,52 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
         Log.d(TAG, "onDiscoveryFinished: the discovery process finished");
     }
 
-
     //
     //  ----------  connecting ----------
     //
 
-    private void connectIfServiceAvailableAndNoConnectedAlready(WifiP2pDevice device, UUID serviceUuid)
+
+    /**
+     * Checks if a connection should be established to the remote device
+     * if that's the case it sends a connection request.
+     * @param device
+     * the remote device
+     * @param description
+     * the description of the devices service
+     */
+    private void tryToConnect(WifiP2pDevice device, ServiceDescription description)
     {
-        if(serviceToLookFor == null){
+
+        if (serviceToLookFor == null)
+        {
             // no discovery started, UUID is null
             // no need to try to connect
             Log.d(TAG, "connectIfServiceAvailableAndNoConnectedAlready: not looking for a service, wont connect");
             return;
         }
 
-        if (serviceToLookFor.equals(serviceUuid) && peer.shouldConnectTo(device.deviceAddress, serviceUuid))
+        if (serviceToLookFor.equals(description) && peer.shouldConnectTo(device.deviceAddress, description))
         {
-            this.tryToConnect(device);
-        }
-    }
 
-    private void tryToConnect(WifiP2pDevice device)
-    {
-        Log.d(TAG, "tryToConnect: trying to connect to  " + Utils.getRemoteDeviceString(device));
-        WifiP2pConfig config = new WifiP2pConfig();
-        config.deviceAddress = device.deviceAddress;
+            Log.d(TAG, "tryToConnect: trying to connect to  " + Utils.getRemoteDeviceString(device));
+            WifiP2pConfig config = new WifiP2pConfig();
+            config.deviceAddress = device.deviceAddress;
 
-        if (ContextCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        {
-            Log.e(TAG, "tryToConnect: no permission, wont connect");
-        }
-        else{
-        this.manager.connect(
-                this.channel,
-                config,
-                new WifiP2pManager.ActionListener()
-                {
-                    @Override
-                    public void onSuccess()
-                    {
-                        Log.d(TAG, "Successfully send connection request to "+ Utils.getRemoteDeviceString(device));
+            if (ContextCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            {
+                Log.e(TAG, "tryToConnect: no permission, wont connect");
+            }
+            else
+            {
+                this.manager.connect(
+                        this.channel,
+                        config,
+                        new WifiP2pManager.ActionListener()
+                        {
+                            @Override
+                            public void onSuccess()
+                            {
+                                Log.d(TAG, "Successfully send connection request to " + Utils.getRemoteDeviceString(device));
                     }
 
                     @Override
@@ -605,6 +564,7 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
                     }
                 }
         );}
+        }
     }
 
     //
@@ -675,6 +635,7 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
 
     protected int getPortNumber()
     {
+        // todo make it better
         return 7777;
     }
 }

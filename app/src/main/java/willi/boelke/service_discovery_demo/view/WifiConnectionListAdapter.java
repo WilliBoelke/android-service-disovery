@@ -10,7 +10,6 @@ import android.widget.TextView;
 import java.util.ArrayList;
 
 import willi.boelke.service_discovery_demo.R;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiConnection;
 
 
@@ -38,7 +37,7 @@ public class WifiConnectionListAdapter extends ArrayAdapter<SdpWifiConnection>
         //Setup the name TextView
         TextView name = convertView.findViewById(R.id.device_name_tv);
 
-        name.setText(connection.getServiceUUID().toString());
+        name.setText(connection.getServiceDescription().toString());
 
         TextView address = convertView.findViewById(R.id.device_address_tv);
         address.setText(connection.getRemoteDeviceAddress());

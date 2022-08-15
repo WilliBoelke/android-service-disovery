@@ -7,12 +7,14 @@ import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpConnectorThreads.BluetoothClientConnector;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 /**
  * Discovers nearby services periodically as long as {@link #isDiscovering}
@@ -52,6 +54,11 @@ public class SdpWifiDiscoveryThread extends Thread
 
     private Thread thread;
 
+    /**
+     * Stores all discovered services, to compare newly discovered
+     * services with and do nothing id already discovered
+     * Todo do we need this ? its already done in the SdpEngine
+     */
     private ArrayList<Map<String, String>> discoveredServices = new ArrayList();
 
     //
@@ -146,16 +153,9 @@ public class SdpWifiDiscoveryThread extends Thread
             //----------------------------------
             // NOTE : Right now i don't see any
             // use in the information give here,
-            // though i will let it here -
-            // for logging and for easy later use
+            // but i am sure it can be useful at some point.
+            // (That's why its there)
             //----------------------------------
-            /*
-            Log.d(TAG, "run: bonjour service available :\n" +
-            "name =" + instanceName +"\n"+
-            "registration type = " + registrationType +"\n" +
-            "resource type = " + resourceType);
-             */
-             
         };
 
         //--- setting the listeners ---//
@@ -163,14 +163,17 @@ public class SdpWifiDiscoveryThread extends Thread
         manager.setDnsSdResponseListeners(channel, servListener, txtListener);
     }
 
-    private boolean checkIfNewService(WifiP2pDevice device, Map<String,String> record)
+    private boolean checkIfNewService(WifiP2pDevice device, Map<String,String> serviceRecord)
     {
-        record.put("addr", device.deviceAddress);
-        if(this.discoveredServices.contains(record))
+        Map<String,String> serviceToRemember = new HashMap<>();
+        //ToDo define some constants for them
+        serviceToRemember.put("addr", device.deviceAddress);
+        serviceToRemember.put("uuid", ServiceDescription.getUuidForServiceRecord(serviceRecord).toString());
+        if(this.discoveredServices.contains(serviceToRemember))
         {
             return true;
         }
-        discoveredServices.add(record);
+        discoveredServices.add(serviceToRemember);
         return false;
     }
 

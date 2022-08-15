@@ -12,7 +12,6 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -212,7 +211,7 @@ public class SdpBluetoothEngine
         IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         IntentFilter actionUUID = new IntentFilter(BluetoothDevice.ACTION_UUID);
         IntentFilter debuggingFilter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-        DebuggingBroadcastReceiver receiver = new DebuggingBroadcastReceiver(this);
+        BluetoothBroadcastReceiver receiver = new BluetoothBroadcastReceiver(this);
         context.registerReceiver(receiver, debuggingFilter);
 
         context.registerReceiver(fetchedUuidReceiver, actionUUID);

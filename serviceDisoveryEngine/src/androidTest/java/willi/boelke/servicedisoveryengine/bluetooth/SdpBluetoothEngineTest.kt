@@ -112,7 +112,7 @@ class SdpBluetoothEngineTest {
     @Test
     fun itShouldStart() {
         //Check
-        verify(exactly = 2) {mockedContext.registerReceiver(any(), any())}
+        verify(exactly = 3) {mockedContext.registerReceiver(any(), any())}
     }
 
     /**
@@ -141,7 +141,6 @@ class SdpBluetoothEngineTest {
         SdpBluetoothEngine.getInstance().onDeviceDiscovered(testDeviceOne)
         SdpBluetoothEngine.getInstance().onDeviceDiscovered(testDeviceTwo)
         // Expiring UUIDs
-        Thread.sleep(SdpBluetoothEngine.DEFAULT_UUID_REFRESH_TIMEOUT)
         // faking third discovery : should fetch
         SdpBluetoothEngine.getInstance().onDeviceDiscovered(testDeviceOne)
         SdpBluetoothEngine.getInstance().onDeviceDiscovered(testDeviceTwo)
@@ -439,7 +438,6 @@ class SdpBluetoothEngineTest {
         verify(exactly = 3) {mockedBtAdapter.startDiscovery()} // Should not restart discovery
 
         // Timeout refresh
-        Thread.sleep(SdpBluetoothEngine.DEFAULT_UUID_REFRESH_TIMEOUT + 1000)
 
         // Discovering new UUIDs
         SdpBluetoothEngine.getInstance().onDeviceDiscovered(testDeviceTwo)

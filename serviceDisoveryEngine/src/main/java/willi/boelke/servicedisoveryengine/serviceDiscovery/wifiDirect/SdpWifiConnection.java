@@ -1,22 +1,21 @@
 package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect;
 
-import android.net.wifi.p2p.WifiP2pDevice;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.UUID;
+
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 public class SdpWifiConnection
 {
     private Socket connectionSocket;
 
-    private UUID serviceUUID;
+    private ServiceDescription serviceDescription;
 
-    public SdpWifiConnection ( Socket socket, UUID serviceUUID){
+    public SdpWifiConnection ( Socket socket, ServiceDescription description){
         this.connectionSocket = socket;
-        this.serviceUUID = serviceUUID;
+        this.serviceDescription = description;
     }
 
     public String getRemoteDeviceAddress()
@@ -29,8 +28,8 @@ public class SdpWifiConnection
         return connectionSocket;
     }
 
-    public UUID getServiceUUID(){
-        return this.serviceUUID;
+    public ServiceDescription getServiceDescription(){
+        return this.serviceDescription;
     }
 
     public InputStream getInputStream() throws IOException
@@ -52,7 +51,7 @@ public class SdpWifiConnection
     {
         return "SdpWifiConnection{" +
                 "connectedPeerAddress=" + connectionSocket.getRemoteSocketAddress().toString() +
-                ", serviceUUID=" + serviceUUID +
+                ", serviceUUID=" + serviceDescription +
                 '}';
     }
 

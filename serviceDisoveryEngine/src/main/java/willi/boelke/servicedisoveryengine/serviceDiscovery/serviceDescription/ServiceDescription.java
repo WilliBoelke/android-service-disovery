@@ -1,0 +1,236 @@
+package willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription;
+
+import android.util.Log;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * Describes a service.
+ *
+ * A service can be described through a number of attributes.
+ * Attributes are in a key-value format.
+ *
+ * A simplified and shorter version to distinct service from
+ * each other is through the USe of unique IDs in the for of
+ * UUIDs
+ *
+ * This class combines both methods, attributes can be added
+ * from the attributes either a map (serving as a record of the
+ * service attributes) or a UUID can be generated.
+ *
+ * To extend the support for other applications or services, especially
+ * in the realm of android Bluetooth a custom UUID can be used to describe
+ * the service.
+ *
+ * ----
+ * Equality:
+ * For service descriptions to be equal the service UUID needs to be the same 
+ * This is the only attribute that will be compared in {@link #equals(Object)}
+ *
+ * @author WilliBoelke
+ */
+public class ServiceDescription
+{
+    public static String SERVICE_NAME_KEY = "service-name";
+
+
+    //
+    //  ----------  instance variables ----------
+    //
+
+    /**
+     * Classname for logging
+     */
+    private final String TAG = this.getClass().getSimpleName();
+
+    /**
+     * The Service attributes
+     */
+    private Map<String, String> attributes = new HashMap<>();
+
+    /**
+     * A custom uuid, which - when set- will be used
+     * instead of a generated one
+     */
+    private UUID serviceUuid;
+
+
+    //
+    //  ---------- constructor and initialization ----------
+    //
+
+    /**
+     * Public constructor
+     * @param serviceName
+     * The name of the service, this needs to be set always
+     */
+    public  ServiceDescription (String serviceName)
+    {
+        this.attributes.put(SERVICE_NAME_KEY, serviceName);
+    }
+
+    public  ServiceDescription (Map<String, String> serviceRecord)
+    {
+        this.attributes = serviceRecord;
+    }
+
+    /**
+     * Adds and attribute to the service record.
+     * --
+     * Please note that this wont affect the services
+     * UUID anymore after {@link #getServiceUuid()} was
+     * called the first time (of no custom UUID was set).
+     *
+     * @param key
+     * Key of the attribute
+     * @param value
+     * The attributes value
+     */
+    public void addAttribute(String key, String value){
+        this.attributes.put(key, value);
+    }
+
+    /**
+     * Sets teh service UUID, this will prevent a
+     * uuid being generated from the services attributes
+     * @param uuid
+     */
+    public void setCustomUUuid(UUID uuid){
+        this.serviceUuid = uuid;
+    }
+
+    /**
+     * Returns either the UUID set through {@link #setCustomUUuid(UUID)}
+     * or a UUId generated from the services attributes.
+     *
+     * @return the services UUID
+     * @throws NullPointerException
+     * IF the attributes and the custom UUID are null
+     */
+    public UUID getServiceUuid()
+    {
+        if(this.serviceUuid == null)
+        {
+            //--- generating UUID from attributes ---//
+            this.serviceUuid = getUuidForServiceRecord(this.attributes);
+        }
+
+        return this.serviceUuid;
+    }
+
+    public String getServiceName()
+    {
+        return this.attributes.get(SERVICE_NAME_KEY);
+    }
+
+    /**
+     * Returns the Service records ad a Map object.
+     * The map containing all key value pairs set through
+     * {@link #addAttribute(String, String)}
+     *
+     * @return
+     * The service records Map
+     */
+    public Map<String, String> getServiceRecord()
+    {
+        return this.attributes;
+    }
+
+    /**
+     * Generates a deterministic UUID from a Map (service records)
+     *
+     * @param serviceRecord
+     * A Map containing key value pairs, describing a service
+     * @return
+     * A UUID generated from the map entries
+     * @throws NullPointerException
+     * If the given Map was empty
+     */
+    public static UUID getUuidForServiceRecord(Map<String, String> serviceRecord) throws NullPointerException
+    {
+        if(serviceRecord.size() == 0){
+            throw new NullPointerException("There are no service attributes specified");
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> entry: serviceRecord.entrySet())
+        {
+            sb.append(entry.getKey());
+            sb.append(entry.getValue());
+        }
+       return UUID.nameUUIDFromBytes(sb.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+
+    /**
+     * This method reverses a UUID Bytewise
+     *
+     * This is a workaround for a problem which causes UUIDs
+     * obtained with `fetchUuidsWithSdp()` to be in a little endian format
+     * This problem is apparently not specific to a certain android version
+     * since it only occurred on one of my devices running Android 8.1, the other one
+     * (with the same version) didn't had this problem.
+     *
+     * This will be used on every discovered UUID when enabled in the
+     * SdpBluetoothEngine`s configuration, sine the problem cant be predetermined
+     * by any means i found.
+     *
+     * This Problem is mentioned in the the google Issue tracker
+     * <a href="https://issuetracker.google.com/issues/37075233">...</a>
+     * The code used here to reverse the UUID is stolen from the issues comments and can be found here
+     * <a href="https://gist.github.com/masterjefferson/10922165432ec016a823e46c6eb382e6">...</a>
+     * @return
+     * the bytewise revered uuid
+     */
+    public UUID getBytewiseReverseUuid(){
+        ByteBuffer byteBuffer = ByteBuffer.allocate(16);
+        byteBuffer
+                .putLong(this.serviceUuid.getLeastSignificantBits())
+                .putLong(this.serviceUuid.getMostSignificantBits());
+        byteBuffer.rewind();
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        return new UUID(byteBuffer.getLong(), byteBuffer.getLong());
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        Log.d(TAG, "equals: check if services are equal");
+        if (this == o)
+        {
+            Log.d(TAG, "equals: services are the same object");
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            Log.d(TAG, "equals: different class");
+            return false;
+        }
+        ServiceDescription that = (ServiceDescription) o;
+        boolean equals = Objects.equals(this.getServiceUuid(), that.getServiceUuid());
+        Log.d(TAG, "equals: are UUIDS equal ? " + equals);
+        Log.d(TAG, "equals: This UUID " + this.getServiceUuid());
+        Log.d(TAG, "equals: That UUID " + that.getServiceUuid());
+        return equals;
+    }
+
+    @Override
+    public String toString(){
+        StringBuilder sd = new StringBuilder();
+        sd.append("Service: { " );
+        sd.append("\nName = ");
+        sd.append(this.attributes.get(SERVICE_NAME_KEY));
+        sd.append(",");
+        sd.append("\nUuid = ");
+        sd.append(this.getServiceUuid());
+        sd.append(",");
+        sd.append("\n Attributes =  " + this.attributes.toString());
+
+        return sd.toString();
+    }
+}

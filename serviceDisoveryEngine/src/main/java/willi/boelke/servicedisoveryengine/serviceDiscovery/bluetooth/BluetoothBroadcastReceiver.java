@@ -12,27 +12,55 @@ import javax.security.auth.SubjectDomainCombiner;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 
 /**
- * This Broadcast Receiver can be used in the SdpBluetoothEngine
- * it needs o be registered and also unregistered in
- * {@link SdpBluetoothEngine#registerReceivers()} / {@link SdpBluetoothEngine#unregisterReceivers()}
+ * This BroadcastReceiver is used in the SDPBluetooth engine.
+ * Not all broadcasts which are listened on here are in the
+ * intent filter, since most of them are for logging and debugging.
  *
- * This Broadcast receiver wont add any functionality its only purpose is
- * to log bluetooth events.
+ * The only broadcasts used here is the {@link BluetoothAdapter#ACTION_DISCOVERY_FINISHED}
+ * which will cause {@link SdpBluetoothEngine#onDeviceDiscoveryFinished()}
+ * to be called.
+ *
+ * @see SdpBluetoothEngine#registerReceivers()}
+ * @see SdpBluetoothEngine#unregisterReceivers()
  *
  * @author WilliBoeke
  */
-class DebuggingBroadcastReceiver extends BroadcastReceiver
+class BluetoothBroadcastReceiver extends BroadcastReceiver
 {
+
+    //
+    //  ---------- instance variables ----------
+    //
+
     /**
      * Classname for logging
      */
     private final String TAG = this.getClass().getSimpleName();
+    /*
+    * Reference to the engine
+    * TODO  better define an interface
+    */
     private SdpBluetoothEngine engine;
 
-    public DebuggingBroadcastReceiver(SdpBluetoothEngine engine){
+
+    //
+    //  ----------  constructor and init ----------
+    //
+
+    /**
+     * Public constructor
+     * @param engine
+     * SdpBluetoothEngine, to call methods
+     * when certain intents are received.
+     */
+    public BluetoothBroadcastReceiver(SdpBluetoothEngine engine){
             this.engine = engine;
     }
+    
 
+    //
+    //  ----------  broadcast receiver ----------
+    //
 
     @Override
     public void onReceive(Context context, Intent intent)
