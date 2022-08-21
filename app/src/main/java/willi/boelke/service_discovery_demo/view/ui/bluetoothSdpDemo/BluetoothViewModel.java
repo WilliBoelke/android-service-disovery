@@ -6,14 +6,15 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.UUID;
 
 import willi.boelke.service_discovery_demo.controller.bluetoothDemoController.DemoClientController;
 import willi.boelke.service_discovery_demo.controller.bluetoothDemoController.DemoServerController;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.SdpBluetoothEngine;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 
 public class BluetoothViewModel extends ViewModel
@@ -26,18 +27,28 @@ public class BluetoothViewModel extends ViewModel
 
     public BluetoothViewModel()
     {
-        clientControllerOne = new DemoClientController(UUID.fromString( "4be0643f-1d98-573b-97cd-ca98a65347dd"));
-        clientControllerTwo = new DemoClientController(UUID.fromString( "1be0643f-1d98-573b-97cd-ca98a65347dd"));
-        serverControllerOne = new DemoServerController(UUID.fromString( "4be0643f-1d98-573b-97cd-ca98a65347dd"));
-        serverControllerTwo = new DemoServerController(UUID.fromString( "1be0643f-1d98-573b-97cd-ca98a65347dd"));
+        HashMap<String, String> serviceAttributesOne = new HashMap<>();
+        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
+        serviceAttributesOne.put("service-name", "Counting Service One");
+        serviceAttributesOne.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
+        serviceAttributesTwo.put("service-name", "Counting Service Two");
+        serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
+        ServiceDescription descriptionForServiceOne = new ServiceDescription(serviceAttributesOne);
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription(serviceAttributesTwo);
+
+
+        clientControllerOne = new DemoClientController(descriptionForServiceOne);
+        clientControllerTwo = new DemoClientController(descriptionForServiceTwo);
+        serverControllerOne = new DemoServerController(descriptionForServiceOne);
+        serverControllerTwo = new DemoServerController(descriptionForServiceTwo);
     }
 
     protected void starDiscovery(){
-        SdpBluetoothEngine.getInstance().startDiscovery();
+        SdpBluetoothEngine.getInstance().startDeviceDiscovery();
     }
 
     protected void stopDiscovery(){
-        SdpBluetoothEngine.getInstance().stopDiscovery();
+        SdpBluetoothEngine.getInstance().stopDeviceDiscovery();
     }
 
     protected void enableDiscoverable(){
@@ -120,6 +131,17 @@ public class BluetoothViewModel extends ViewModel
     {
         return clientControllerTwo.getLatestMessage();
     }
+
+    protected LiveData<String> getNotificationOne()
+    {
+        return clientControllerOne.getLatestNotification();
+    }
+
+    protected LiveData<String> getNotificationTwo()
+    {
+        return clientControllerTwo.getLatestNotification();
+    }
+
 
     protected ArrayList<SdpBluetoothConnection> mergeConnectionLists(ArrayList<SdpBluetoothConnection> listOne, ArrayList<SdpBluetoothConnection> listTwo, ArrayList<SdpBluetoothConnection> listThree, ArrayList<SdpBluetoothConnection> listFour)
     {

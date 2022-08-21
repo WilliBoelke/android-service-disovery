@@ -1,4 +1,4 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine;
 
 import java.io.IOException;
 import java.io.InputStream;

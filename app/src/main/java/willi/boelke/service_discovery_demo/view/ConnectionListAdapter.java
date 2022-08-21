@@ -10,7 +10,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 
 import willi.boelke.service_discovery_demo.R;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
 
 
 public class ConnectionListAdapter extends ArrayAdapter<SdpBluetoothConnection>
@@ -34,16 +34,25 @@ public class ConnectionListAdapter extends ArrayAdapter<SdpBluetoothConnection>
 
         SdpBluetoothConnection connection = connections.get(position);
 
+
         //Setup the name TextView
-        TextView name = convertView.findViewById(R.id.device_name_tv);
+        TextView name = convertView.findViewById(R.id.service_name_tv);
+        TextView description = convertView.findViewById(R.id.description_tv);
+        TextView peerName = convertView.findViewById(R.id.name_tv);
+        TextView peerAddress = convertView.findViewById(R.id.address_tv);
+        TextView peerState = convertView.findViewById(R.id.peer_state_tv);
 
-        name.setText(connection.getRemoteDevice().getName() + " / " + connection.getServiceUUID());
-
-        TextView address = convertView.findViewById(R.id.device_address_tv);
-        address.setText(connection.getRemoteDeviceAddress());
-
-        TextView isServer = convertView.findViewById(R.id.is_server_text_view);
-        isServer.setText(Boolean.toString(connection.isServerPeer()));
+        name.setText(connection.getServiceDescription().getServiceRecord().get("service-name"));
+        description.setText(connection.getServiceDescription().getServiceRecord().get("service-info"));
+        peerAddress.setText(connection.getRemoteDeviceAddress());
+        peerName.setText(connection.getRemoteDevice().getName());
+        if(connection.isServerPeer())
+        {
+            peerState.setText("as Client");
+        }
+        else{
+            peerState.setText("as Server");
+        }
 
         return convertView;
     }

@@ -9,11 +9,10 @@ import androidx.lifecycle.MutableLiveData;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.UUID;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiConnection;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiEngine;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiEngine;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClientServerInterfaces.SdpWifiPeer;
 
 /**

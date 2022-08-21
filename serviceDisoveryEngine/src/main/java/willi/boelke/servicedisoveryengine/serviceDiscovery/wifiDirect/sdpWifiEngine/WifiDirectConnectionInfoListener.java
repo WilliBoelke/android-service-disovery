@@ -1,11 +1,11 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine;
 
-import android.net.wifi.p2p.WifiP2pGroup;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.util.Log;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.tcp.TCPChannelMaker;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiEngine;
 
 /**
  *

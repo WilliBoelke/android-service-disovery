@@ -3,15 +3,15 @@ package willi.boelke.service_discovery_demo.controller.bluetoothDemoController;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.UUID;
 
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.SdpBluetoothEngine;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpClientServerInterfaces.SdpBluetoothServiceClient;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothServiceClient;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 /**
@@ -33,32 +33,33 @@ public class DemoClientController implements SdpBluetoothServiceClient
 
     private final String TAG = this.getClass().getSimpleName();
 
-    private final MutableLiveData<ArrayList<SdpBluetoothConnection>> connections;
+    private final MutableLiveData<ArrayList<SdpBluetoothConnection>> connections = new MutableLiveData<>();
 
-    private final MutableLiveData<String> currentMessage;
+    private final MutableLiveData<String> currentMessage = new MutableLiveData<>();
 
-    private final MutableLiveData<ArrayList<BluetoothDevice>> devicesInRange;
+    private final MutableLiveData<String> currentNotification = new MutableLiveData<>();
+
+    private final MutableLiveData<ArrayList<BluetoothDevice>> devicesInRange = new MutableLiveData<>();
 
     private ReadThread reader;
 
-    private final UUID serviceUUID;
+    private final ServiceDescription serviceDescription;
 
-    public DemoClientController(UUID uuid)
+    public DemoClientController(ServiceDescription serviceDescription)
     {
-        this.serviceUUID = uuid;
+        this.serviceDescription = serviceDescription;
         this.reader = new ReadThread();
-        this.connections = new MutableLiveData<>();
-        this.devicesInRange = new MutableLiveData<>();
-        this.currentMessage = new MutableLiveData<>();
         this.connections.setValue(new ArrayList<>());
         this.devicesInRange.setValue(new ArrayList<>());
         this.currentMessage.setValue("");
+        this.currentNotification.setValue("");
     }
 
     @Override
-    public void onServiceDiscovered(String address, UUID serviceUUID)
+    public void onServiceDiscovered(String address, ServiceDescription description)
     {
-        Log.d(TAG, "onServiceDiscovered: a service with the UUID " + serviceUUID + " has been discovered");
+        this.currentNotification.postValue("Discovered service " + description.getServiceUuid());
+        Log.d(TAG, "onServiceDiscovered: a service with the UUID " + description + " has been discovered");
     }
 
     @Override
@@ -67,20 +68,26 @@ public class DemoClientController implements SdpBluetoothServiceClient
         ArrayList<SdpBluetoothConnection> tmp = this.connections.getValue();
         tmp.add(connection);
         this.connections.postValue(tmp);
+        this.currentNotification.postValue("New connection established to " + connection.getRemoteDeviceAddress());
     }
 
     @Override
-    public boolean shouldConnectTo(String address, UUID serviceUUID)
+    public boolean shouldConnectTo(String address, ServiceDescription description)
     {
         return true;
     }
 
     @Override
-    public void onDevicesInRangeChange(ArrayList<BluetoothDevice> devices)
+    public void onPeerDiscovered(BluetoothDevice device)
     {
-        Log.d(TAG, "onDevicesInRangeChange: called with new devices");
-        Log.d(TAG, devices.toString());
-        this.devicesInRange.postValue(devices);
+        Log.d(TAG, "onDevicesInRangeChange: called with new device");
+        if (!this.devicesInRange.getValue().contains(device))
+        {
+            ArrayList<BluetoothDevice> tmp = devicesInRange.getValue();
+            tmp.add(device);
+            this.devicesInRange.postValue(tmp);
+            this.currentNotification.postValue("new peer discovered " + device.getAddress());
+        }
     }
 
     public MutableLiveData<ArrayList<SdpBluetoothConnection>> getConnections()
@@ -100,12 +107,15 @@ public class DemoClientController implements SdpBluetoothServiceClient
 
     public void startClient()
     {
-        SdpBluetoothEngine.getInstance().startSDPDiscoveryForServiceWithUUID(serviceUUID, this);
+        SdpBluetoothEngine.getInstance().startSDPDiscoveryForService(serviceDescription, this);
     }
 
     public void endClient()
     {
-        SdpBluetoothEngine.getInstance().stopSDPDiscoveryForServiceWithUUID(serviceUUID);
+        SdpBluetoothEngine.getInstance().stopSDPDiscoveryForService(serviceDescription);
+        SdpBluetoothEngine.getInstance().disconnectFromServicesWith(serviceDescription);
+        this.currentNotification.setValue("disconnected client");
+        this.currentMessage.setValue("");
     }
 
     public void startReading()
@@ -114,16 +124,19 @@ public class DemoClientController implements SdpBluetoothServiceClient
         reader.start();
     }
 
+    public LiveData<String> getLatestNotification()
+    {
+        return this.currentNotification;
+    }
+
     private class ReadThread extends Thread
     {
 
         private boolean running = true;
-
         private Thread thread;
 
         public void run()
         {
-
             this.thread = Thread.currentThread();
 
             while (running)
@@ -141,7 +154,6 @@ public class DemoClientController implements SdpBluetoothServiceClient
                             bytes = connection.getConnectionSocket().getInputStream().read(buffer);
                             String incomingTransmission = new String(buffer, 0, bytes);
                             currentMessage.postValue(incomingTransmission);
-                            Log.d(TAG, "run: Received " + incomingTransmission);
                         }
                         catch (IOException e)
                         {

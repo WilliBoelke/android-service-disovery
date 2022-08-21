@@ -1,31 +1,12 @@
 package willi.boelke.servicedisoveryengine.serviceDiscovery.sdpBluetoothConnection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
-
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
-
-import org.junit.Before;
-import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.UUID;
-
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SdpBluetoothConnectionTest
 {
+    /*
     private final UUID testUUIDOne = UUID.fromString("12345fff-f49a-11ec-b939-0242ac120002");
     private final UUID testUUIDTwo = UUID.fromString("24245fff-f49a-11ec-b939-0425bc220002");
 
@@ -120,4 +101,5 @@ public class SdpBluetoothConnectionTest
         assertNotEquals(testConnectionOne, testConnectionTwo);
     }
 
+     */
 }

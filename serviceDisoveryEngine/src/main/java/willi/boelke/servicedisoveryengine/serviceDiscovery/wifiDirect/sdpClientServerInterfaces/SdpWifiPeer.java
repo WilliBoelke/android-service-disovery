@@ -1,10 +1,8 @@
 package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClientServerInterfaces;
 
 
-import java.util.UUID;
-
 import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiConnection;
 
 
 public interface SdpWifiPeer

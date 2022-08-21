@@ -35,10 +35,10 @@ public class DeviceListAdapter extends ArrayAdapter<BluetoothDevice>
         BluetoothDevice device = mDevices.get(position);
 
         //Setup the name TextView
-        TextView name = convertView.findViewById(R.id.device_name_tv);
+        TextView name = convertView.findViewById(R.id.service_name_tv);
         name.setText(device.getName());
 
-        TextView address = convertView.findViewById(R.id.device_address_tv);
+        TextView address = convertView.findViewById(R.id.host_tv);
         address.setText(device.getAddress());
 
         TextView bond_state = convertView.findViewById(R.id.bonded_state);

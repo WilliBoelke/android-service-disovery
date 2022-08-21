@@ -1,10 +1,8 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpClientServerInterfaces;
-
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine;
 
 /**
  * Describes a services server implementation as
- * required by {@link willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.SdpBluetoothEngine}.
+ * required by {@link SdpBluetoothEngine}.
  *
  * @author  Willi Boelke
  */

@@ -1,4 +1,4 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -23,6 +23,7 @@ import java.util.UUID;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.tcp.TCPChannelMaker;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiDirectDiscovery.SdpWifiDiscoveryThread;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClientServerInterfaces.SdpWifiPeer;
 
 /**
@@ -408,7 +409,7 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
     private void startSDPService(ServiceDescription description)
     {
         Log.d(TAG, "startSDPService: starting service : " + description);
-        WifiP2pServiceInfo serviceRecords = WifiP2pDnsSdServiceInfo.newInstance(description.getServiceName(), "_presence._tcp", description.getServiceRecord());
+        WifiP2pServiceInfo serviceRecords = WifiP2pDnsSdServiceInfo.newInstance(description.getServiceUuid().toString(), "_presence._tcp", description.getServiceRecord());
         manager.addLocalService(channel, serviceRecords, new WifiP2pManager.ActionListener()
         {
             @Override

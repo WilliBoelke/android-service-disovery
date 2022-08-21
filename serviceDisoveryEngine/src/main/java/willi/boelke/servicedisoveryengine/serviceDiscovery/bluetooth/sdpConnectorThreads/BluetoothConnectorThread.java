@@ -1,7 +1,8 @@
 package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpConnectorThreads;
 import java.util.UUID;
 
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 
 public abstract class BluetoothConnectorThread extends Thread
@@ -14,13 +15,13 @@ public abstract class BluetoothConnectorThread extends Thread
     /**
      * A generated UUID needed for the BluetoothAdapter
      */
-    protected UUID serviceUUID;
+    protected ServiceDescription description;
 
 
     public interface ConnectionEventListener
     {
-        void onConnectionFailed(UUID uuid, BluetoothClientConnector failedClientConnector);
+        void onConnectionFailed(UUID uuid, BluetoothConnectorThread failedConnector);
 
-        void inConnectionSuccess(SdpBluetoothConnection connection);
+        void inConnectionSuccess(BluetoothConnectorThread connector, SdpBluetoothConnection connection);
     }
 }

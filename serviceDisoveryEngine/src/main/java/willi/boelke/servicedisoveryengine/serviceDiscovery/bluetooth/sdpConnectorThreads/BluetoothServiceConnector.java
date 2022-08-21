@@ -6,10 +6,10 @@ import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
 import java.io.IOException;
-import java.util.UUID;
 
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpClientServerInterfaces.SdpBluetoothServiceServer;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothServiceServer;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 
 /**
@@ -23,11 +23,6 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
      * Log Tag
      */
     private final String TAG = this.getClass().getSimpleName();
-
-    /**
-     * Name of he Service
-     */
-    private final String serviceName;
 
     /**
      * The BluetoothAdapter
@@ -63,11 +58,10 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
      * @param connectionEvenListener
      *         Implementation of the {@link ConnectionEventListener} interface
      */
-    public BluetoothServiceConnector(BluetoothAdapter bluetoothAdapter, String serviceName, UUID serviceUUID, ConnectionEventListener connectionEvenListener)
+    public BluetoothServiceConnector(BluetoothAdapter bluetoothAdapter, ServiceDescription description, ConnectionEventListener connectionEvenListener)
     {
         this.mBluetoothAdapter = bluetoothAdapter;
-        this.serviceName = serviceName;
-        this.serviceUUID = serviceUUID;
+        this.description = description;
         this.connectionEvenListener = connectionEvenListener;
         this.running = true;
     }
@@ -86,10 +80,10 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
 
     private void openServerSocket() throws IOException
     {
-        Log.d(TAG, "openServerSocket: opening server socket with UUID : " + serviceUUID.toString() + " and name " + serviceName);
-        this.serverSocket = mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(serviceName, serviceUUID);
-    }
+            Log.d(TAG, "openServerSocket: opening server socket with UUID : " + description.getServiceUuid());
+            this.serverSocket = mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(description.getServiceUuid().toString(), description.getServiceUuid());
 
+    }
 
     //
     //  ----------  run ----------
@@ -116,11 +110,11 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
             Log.d(TAG, "run:  Thread started");
             BluetoothSocket socket = null;
             //Blocking Call : Accept thread waits here till another device connects (or canceled)
-            Log.d(TAG, "run: RFCOM server socket started, waiting for connections ...");
+            Log.d(TAG, "run: RFCOMM server socket started, waiting for connections ...");
             try
             {
                 socket = this.serverSocket.accept();
-                Log.d(TAG, "run: RFCOM server socked accepted client connection");
+                Log.d(TAG, "run: RFCOMM server socked accepted client connection");
             }
             catch (IOException e)
             {
@@ -159,7 +153,7 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
                 return;
             }
             Log.d(TAG, "run:  service accepted client connection, opening streams");
-            this.connectionEvenListener.inConnectionSuccess(new SdpBluetoothConnection(this.serviceUUID, socket, true));
+            this.connectionEvenListener.inConnectionSuccess(this , new SdpBluetoothConnection(this.description, socket, true));
     }
 
 
@@ -179,13 +173,15 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
         try
         {
             this.serverSocket.close();
-            Log.d(TAG, "closeConnection: closed AcceptThread");
+            Log.d(TAG, "cancel: closed AcceptThread");
         }
         catch (NullPointerException | IOException e)
         {
-            Log.e(TAG, "closeService: socket was null", e);
+            Log.e(TAG, "cancel: socket was null", e);
         }
     }
+
+
 
 
     //
@@ -196,9 +192,9 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
      * Returns he UUID of this service
      * @return
      */
-    public UUID getServiceUUID()
+    public ServiceDescription getService()
     {
-        return this.serviceUUID;
+        return this.description;
     }
 
 }

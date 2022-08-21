@@ -7,11 +7,11 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
 
 import java.util.ArrayList;
-import java.util.UUID;
+import java.util.HashMap;
 
 import willi.boelke.service_discovery_demo.controller.wifiDemoController.WifiDemoController;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiConnection;
 
 public class WifiDirectViewModel extends ViewModel
 {
@@ -26,13 +26,17 @@ public class WifiDirectViewModel extends ViewModel
 
     public WifiDirectViewModel()
     {
-        ServiceDescription descriptionForServiceOne = new ServiceDescription("Service Counting One");
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Service Counting Two");
-        descriptionForServiceOne.addAttribute("info", "this service counts upwards and sends it to all clients");
-        descriptionForServiceTwo.addAttribute("info", "this service als counts upwards and sends it to all clients");
+        HashMap<String, String> serviceAttributesOne = new HashMap<>();
+        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
+        serviceAttributesOne.put("service-name", "Counting Service One");
+        serviceAttributesOne.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
+        serviceAttributesTwo.put("service-name", "Counting Service Two");
+        serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
+        ServiceDescription descriptionForServiceOne = new ServiceDescription(serviceAttributesOne);
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription(serviceAttributesTwo);
 
         this.wifiDemoControllerOne = new WifiDemoController(descriptionForServiceOne);
-        this.wifiDemoControllerTwo = new WifiDemoController(descriptionForServiceOne);
+        this.wifiDemoControllerTwo = new WifiDemoController(descriptionForServiceTwo);
     }
 
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)

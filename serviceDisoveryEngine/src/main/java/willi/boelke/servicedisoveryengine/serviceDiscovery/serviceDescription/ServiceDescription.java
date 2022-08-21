@@ -37,9 +37,6 @@ import java.util.UUID;
  */
 public class ServiceDescription
 {
-    public static String SERVICE_NAME_KEY = "service-name";
-
-
     //
     //  ----------  instance variables ----------
     //
@@ -67,38 +64,18 @@ public class ServiceDescription
 
     /**
      * Public constructor
-     * @param serviceName
-     * The name of the service, this needs to be set always
+     * @param serviceRecord
+     * The service record, this needs to contain at least one
+     * key - value
      */
-    public  ServiceDescription (String serviceName)
-    {
-        this.attributes.put(SERVICE_NAME_KEY, serviceName);
-    }
-
     public  ServiceDescription (Map<String, String> serviceRecord)
     {
         this.attributes = serviceRecord;
     }
 
     /**
-     * Adds and attribute to the service record.
-     * --
-     * Please note that this wont affect the services
-     * UUID anymore after {@link #getServiceUuid()} was
-     * called the first time (of no custom UUID was set).
-     *
-     * @param key
-     * Key of the attribute
-     * @param value
-     * The attributes value
-     */
-    public void addAttribute(String key, String value){
-        this.attributes.put(key, value);
-    }
-
-    /**
-     * Sets teh service UUID, this will prevent a
-     * uuid being generated from the services attributes
+     * A UUID set using this overrides the UUID generated from teh service records,
+     * making it and the service records independent from each other
      * @param uuid
      */
     public void setCustomUUuid(UUID uuid){
@@ -124,15 +101,9 @@ public class ServiceDescription
         return this.serviceUuid;
     }
 
-    public String getServiceName()
-    {
-        return this.attributes.get(SERVICE_NAME_KEY);
-    }
-
     /**
      * Returns the Service records ad a Map object.
      * The map containing all key value pairs set through
-     * {@link #addAttribute(String, String)}
      *
      * @return
      * The service records Map
@@ -223,8 +194,6 @@ public class ServiceDescription
     public String toString(){
         StringBuilder sd = new StringBuilder();
         sd.append("Service: { " );
-        sd.append("\nName = ");
-        sd.append(this.attributes.get(SERVICE_NAME_KEY));
         sd.append(",");
         sd.append("\nUuid = ");
         sd.append(this.getServiceUuid());

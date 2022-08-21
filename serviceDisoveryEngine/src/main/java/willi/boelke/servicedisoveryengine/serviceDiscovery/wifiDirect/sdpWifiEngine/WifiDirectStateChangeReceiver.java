@@ -1,17 +1,13 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine;
 
-import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.NetworkInfo;
 import android.net.wifi.p2p.WifiP2pGroup;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.util.Log;
-
-import androidx.core.app.ActivityCompat;
 
 /**
  * This BroadcastReceiver listens on changes in the Wifi Direct State

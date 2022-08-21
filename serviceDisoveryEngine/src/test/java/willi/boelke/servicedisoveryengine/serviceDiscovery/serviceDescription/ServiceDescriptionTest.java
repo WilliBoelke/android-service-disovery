@@ -1,14 +1,5 @@
 package willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription;
 
-import static org.junit.Assert.*;
-
-import org.junit.After;
-import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 /**
  * Unit tests for {@link ServiceDescription}
  *
@@ -16,7 +7,6 @@ import java.util.UUID;
  */
 public class ServiceDescriptionTest
 {
-
 
     @Test
     public void itShouldSaveTheName()
@@ -106,7 +96,5 @@ public class ServiceDescriptionTest
         description.setCustomUUuid(UUID.fromString(uuid));
         assertEquals("9e9da39f-2155-f280-ae31-200cd4ccabd7", description.getBytewiseReverseUuid().toString());
     }
-
-
 
 }

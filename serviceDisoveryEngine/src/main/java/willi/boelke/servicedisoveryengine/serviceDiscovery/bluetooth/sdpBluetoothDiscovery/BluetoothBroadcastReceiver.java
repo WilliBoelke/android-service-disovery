@@ -1,4 +1,4 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -7,21 +7,20 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-import javax.security.auth.SubjectDomainCombiner;
-
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 
 /**
- * This BroadcastReceiver is used in the SDPBluetooth engine.
- * Not all broadcasts which are listened on here are in the
- * intent filter, since most of them are for logging and debugging.
+ * This BroadcastReceiver listens on Broadcasts regarding the state of the
+ * bluetooth api.
  *
  * The only broadcasts used here is the {@link BluetoothAdapter#ACTION_DISCOVERY_FINISHED}
- * which will cause {@link SdpBluetoothEngine#onDeviceDiscoveryFinished()}
- * to be called.
+ * which will cause {@link SdpBluetoothDiscoveryEngine#onDeviceDiscoveryFinished()}
+ * to be called, this will start the UUID fetching process.
  *
- * @see SdpBluetoothEngine#registerReceivers()}
- * @see SdpBluetoothEngine#unregisterReceivers()
+ * -------
+ * Not all broadcasts which are listened on here are in the
+ * intent filter, since most of them are for logging and debugging.
+ * -------
  *
  * @author WilliBoeke
  */
@@ -36,11 +35,11 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
      * Classname for logging
      */
     private final String TAG = this.getClass().getSimpleName();
+
     /*
     * Reference to the engine
-    * TODO  better define an interface
     */
-    private SdpBluetoothEngine engine;
+    private final SdpBluetoothDiscoveryEngine discoveryEngine;
 
 
     //
@@ -50,11 +49,11 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
     /**
      * Public constructor
      * @param engine
-     * SdpBluetoothEngine, to call methods
+     * SdpBluetoothDiscoveryEngine, to be notified
      * when certain intents are received.
      */
-    public BluetoothBroadcastReceiver(SdpBluetoothEngine engine){
-            this.engine = engine;
+    public BluetoothBroadcastReceiver(SdpBluetoothDiscoveryEngine engine){
+            this.discoveryEngine = engine;
     }
     
 
@@ -66,7 +65,6 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
     public void onReceive(Context context, Intent intent)
     {
         String action = intent.getAction();
-
         if (action.equals(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED))
         {
             int mode = intent.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.ERROR);
@@ -124,7 +122,7 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
         }
         if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
         {
-            engine.onDeviceDiscoveryFinished();
+            discoveryEngine.onDeviceDiscoveryFinished();
             Log.e(TAG, "ACTION_DISCOVERY_STARTED: Finished Discovery");
         }
     }

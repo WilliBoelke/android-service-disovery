@@ -1,4 +1,4 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
@@ -11,7 +11,7 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 
 /**
  * Listens on {@link BluetoothDevice#ACTION_UUID}, notifies the
- * engine by calling {@link SdpBluetoothEngine#onUuidsFetched(BluetoothDevice, Parcelable[])}
+ * engine by calling {@link SdpBluetoothDiscoveryEngine#onUuidsFetched(BluetoothDevice, Parcelable[])}
  * when UUIDs where fetched.
  */
 class UUIDFetchedReceiver extends BroadcastReceiver
@@ -27,18 +27,23 @@ class UUIDFetchedReceiver extends BroadcastReceiver
     private final String TAG = this.getClass().getSimpleName();
 
     /**
-     *
+     * The SdpBluetoothDiscoveryEngine to be notified
      */
-    private final SdpBluetoothEngine engine;
+    private final SdpBluetoothDiscoveryEngine discoveryEngine;
 
 
     //
     //  ----------  constructor and initialisation ----------
     //
 
-      public UUIDFetchedReceiver(SdpBluetoothEngine engine)
+    /**
+     * Public constructor
+     * @param discoveryEngine
+     * The SdpBluetoothDiscoveryEngine to be notified
+     */
+    public UUIDFetchedReceiver(SdpBluetoothDiscoveryEngine discoveryEngine)
     {
-        this.engine = engine;
+        this.discoveryEngine = discoveryEngine;
     }
 
 
@@ -49,13 +54,14 @@ class UUIDFetchedReceiver extends BroadcastReceiver
     @Override
     public void onReceive(Context context, Intent intent)
     {
+
         final String action = intent.getAction();
         if (action.equals(BluetoothDevice.ACTION_UUID))
         {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             Parcelable[] uuidExtra = intent.getParcelableArrayExtra(BluetoothDevice.EXTRA_UUID);
             Log.d(TAG, "onReceive: received UUIDs for " + Utils.getRemoteDeviceString(device));
-            this.engine.onUuidsFetched(device, uuidExtra);
+            this.discoveryEngine.onUuidsFetched(device, uuidExtra);
         }
     }
 }

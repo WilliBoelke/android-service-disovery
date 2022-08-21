@@ -6,11 +6,11 @@ import androidx.lifecycle.MutableLiveData;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.UUID;
 
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.SdpBluetoothEngine;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpClientServerInterfaces.SdpBluetoothServiceServer;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothServiceServer;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 /**
  * This is a demo implementation of a bluetooth sdp "server"
@@ -50,7 +50,7 @@ public class DemoServerController implements SdpBluetoothServiceServer
     /**
      * The UUID of the advertised service
      */
-    private final UUID serviceUUID;
+    private final ServiceDescription serviceDescription;
 
 
     //
@@ -63,9 +63,9 @@ public class DemoServerController implements SdpBluetoothServiceServer
      * @param uuid
      *         the UUID of the advertised service
      */
-    public DemoServerController(UUID uuid)
+    public DemoServerController(ServiceDescription serviceDescription)
     {
-        this.serviceUUID = uuid;
+        this.serviceDescription = serviceDescription;
         this.writer = new WriteThread();
         this.connections = new MutableLiveData<>();
         this.connections.setValue(new ArrayList<>());
@@ -122,7 +122,7 @@ public class DemoServerController implements SdpBluetoothServiceServer
      */
     public void startService()
     {
-        SdpBluetoothEngine.getInstance().startSDPService("Counting Service", serviceUUID, this);
+        SdpBluetoothEngine.getInstance().startSDPService(this.serviceDescription, this);
     }
 
     /**
@@ -130,7 +130,8 @@ public class DemoServerController implements SdpBluetoothServiceServer
      */
     public void stopService()
     {
-        SdpBluetoothEngine.getInstance().stopSDPService(this.serviceUUID);
+        SdpBluetoothEngine.getInstance().disconnectFromClientsWithUUID(this.serviceDescription);
+        SdpBluetoothEngine.getInstance().stopSDPService(this.serviceDescription);
     }
 
 
@@ -187,9 +188,8 @@ public class DemoServerController implements SdpBluetoothServiceServer
                     {
                         try
                         {
-                            String msg = "Test message number " + counter + " from service: " + serviceUUID;
+                            String msg = "Test message number " + counter + " from : " + serviceDescription.getServiceRecord().get("service-name");
                             connection.getConnectionSocket().getOutputStream().write(msg.getBytes());
-                            Log.d(TAG, "run: writing" + counter );
                         }
                         catch (IOException e)
                         {

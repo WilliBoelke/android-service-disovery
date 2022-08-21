@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.FragmentWifiDirectBinding;
 import willi.boelke.service_discovery_demo.view.WifiConnectionListAdapter;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiConnection;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.SdpWifiEngine;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiEngine;
 
 
 public class WifiDirectFragment extends Fragment
@@ -198,7 +198,7 @@ public class WifiDirectFragment extends Fragment
           {
 
               ListView openConnectionsListView = binding.connectionsListView;
-              WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.recycler_card_connection, connections);
+              WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
               openConnectionsListView.setAdapter(connectionListAdapter);
           }
       });
@@ -210,7 +210,7 @@ public class WifiDirectFragment extends Fragment
           {
 
               ListView openConnectionsListView = binding.connectionsListView;
-              WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.recycler_card_connection, connections);
+              WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
               openConnectionsListView.setAdapter(connectionListAdapter);
           }
       });

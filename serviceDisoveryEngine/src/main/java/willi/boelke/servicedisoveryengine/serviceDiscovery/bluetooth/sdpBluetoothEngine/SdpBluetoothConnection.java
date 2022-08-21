@@ -1,4 +1,5 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine;
+
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -6,7 +7,8 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.UUID;
+
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 /**
  * A SdpBluetoothConnection is a Point-o-Point o point connection between two service records
@@ -31,15 +33,15 @@ public class SdpBluetoothConnection
      */
     private Boolean serverPeer;
     private BluetoothSocket connectionSocket;
-    private UUID serviceUUID;
+    private ServiceDescription description;
 
 
     //
     //  ----------  constructor and init ----------
     //
 
-    public SdpBluetoothConnection(UUID serviceUUID, BluetoothSocket socket, boolean serverPeer){
-        this.serviceUUID = serviceUUID;
+    public SdpBluetoothConnection(ServiceDescription description, BluetoothSocket socket, boolean serverPeer){
+        this.description = description;
         this.connectionSocket = socket;
         this.serverPeer = serverPeer;
     }
@@ -97,7 +99,7 @@ public class SdpBluetoothConnection
         }
         SdpBluetoothConnection that = (SdpBluetoothConnection) o;
         // A SDP Connection is equal o another, when it goes to the same service (UUID) on the same device (Address)
-        return Objects.equals(connectionSocket.getRemoteDevice().getAddress(), that.connectionSocket.getRemoteDevice().getAddress()) && Objects.equals(serviceUUID, that.serviceUUID);
+        return Objects.equals(connectionSocket.getRemoteDevice().getAddress(), that.connectionSocket.getRemoteDevice().getAddress()) && this.description.equals(that.description);
     }
 
     //
@@ -118,9 +120,9 @@ public class SdpBluetoothConnection
         return connectionSocket;
     }
 
-    public UUID getServiceUUID()
+    public ServiceDescription getServiceDescription()
     {
-        return serviceUUID;
+        return description;
     }
 
     public boolean isServerPeer(){
@@ -129,7 +131,7 @@ public class SdpBluetoothConnection
 
     @Override
     public String toString(){
-        return String.format("{|%-20s|%-20s|%-5s|}", this.connectionSocket.getRemoteDevice().getName(), this.serviceUUID, this.isServerPeer());
+        return String.format("{|%-20s|%-20s|%-5s|}", this.connectionSocket.getRemoteDevice().getName(),  this.isServerPeer(), this.description.getServiceUuid());
     }
 
 }

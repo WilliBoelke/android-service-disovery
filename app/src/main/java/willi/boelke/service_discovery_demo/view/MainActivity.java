@@ -58,11 +58,7 @@ public class MainActivity extends AppCompatActivity
             permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
             message += "\nStorage access to store map Files.";
         }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-        {
-            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            message += "\nLocation to show user location.";
-        }
+
         if (!permissions.isEmpty())
         {
             Toast.makeText(this, message, Toast.LENGTH_LONG).show();

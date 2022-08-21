@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -22,8 +23,8 @@ import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.FragmentBluetoothBinding;
 import willi.boelke.service_discovery_demo.view.ConnectionListAdapter;
 import willi.boelke.service_discovery_demo.view.DeviceListAdapter;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.SdpBluetoothEngine;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine;
 
 
 public class BluetoothFragment extends Fragment
@@ -98,111 +99,35 @@ public class BluetoothFragment extends Fragment
 
         messageTextView = binding.msgTextView;
 
-        startSdpOneBtn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                bluetoothViewModel.startClientOne();
-            }
-        });
+        startSdpOneBtn.setOnClickListener(v -> bluetoothViewModel.startClientOne());
 
-        startSdpTwoBtn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                bluetoothViewModel.startClientTwo();
-            }
-        });
+        startSdpTwoBtn.setOnClickListener(v -> bluetoothViewModel.startClientTwo());
 
 
-        startServiceOneBtn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                bluetoothViewModel.startServiceOne();
-            }
-        });
+        startServiceOneBtn.setOnClickListener(v -> bluetoothViewModel.startServiceOne());
 
-        startServiceTwoBtn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                bluetoothViewModel.startServiceTwo();
-            }
-        });
+        startServiceTwoBtn.setOnClickListener(v -> bluetoothViewModel.startServiceTwo());
 
-        endServiceOneBtn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                bluetoothViewModel.stopServiceOne();
-            }
-        });
+        endServiceOneBtn.setOnClickListener(v -> bluetoothViewModel.stopServiceOne());
 
-        endServiceTwoBtn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                bluetoothViewModel.stopServiceTwo();
-            }
-        });
+        endServiceTwoBtn.setOnClickListener(v -> bluetoothViewModel.stopServiceTwo());
 
 
-        endSdpOneBtn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                bluetoothViewModel.endClientOne();
-            }
-        });
+        endSdpOneBtn.setOnClickListener(v -> bluetoothViewModel.endClientOne());
 
-        endSdpTwoBtn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                bluetoothViewModel.endClientTwo();
-            }
-        });
+        endSdpTwoBtn.setOnClickListener(v -> bluetoothViewModel.endClientTwo());
 
-        discoverableBtn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                bluetoothViewModel.enableDiscoverable();
-            }
-        });
+        discoverableBtn.setOnClickListener(v -> bluetoothViewModel.enableDiscoverable());
 
-        discoveryBtn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                bluetoothViewModel.starDiscovery();
-            }
-        });
+        discoveryBtn.setOnClickListener(v -> bluetoothViewModel.starDiscovery());
 
-        refreshBtn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                bluetoothViewModel.refreshServices();
-            }
-        });
+        refreshBtn.setOnClickListener(v -> bluetoothViewModel.refreshServices());
 
         //Setup observers
         this.messageOneObserver();
         this.messageTwoObserver();
         this.connectionsObserver();
+        this.notificationObserver();
         this.devicesInRangeObserver();
         return root;
     }
@@ -245,6 +170,27 @@ public class BluetoothFragment extends Fragment
     }
 
 
+    private void notificationObserver()
+    {
+        bluetoothViewModel.getNotificationOne().observe(this.getViewLifecycleOwner(), new Observer<String>()
+        {
+            @Override
+            public void onChanged(String message)
+            {
+                Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+            }
+        });
+
+        bluetoothViewModel.getNotificationTwo().observe(this.getViewLifecycleOwner(), new Observer<String>()
+        {
+            @Override
+            public void onChanged(String message)
+            {
+                Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
 
     private void connectionsObserver()
     {
@@ -257,7 +203,7 @@ public class BluetoothFragment extends Fragment
                 connections = bluetoothViewModel.mergeConnectionLists(newClientConnections, serverConnectionsTwo, serverConnectionsOne, clientConnectionsTwo);
 
                 ListView openConnectionsListView = binding.connectionListView;
-                connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_connection, connections);
+                connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
                 openConnectionsListView.setAdapter(connectionListAdapter);
             }
         });
@@ -270,7 +216,7 @@ public class BluetoothFragment extends Fragment
                 clientConnectionsTwo = newClientConnections;
                 connections = bluetoothViewModel.mergeConnectionLists( newClientConnections, serverConnectionsTwo, serverConnectionsOne, clientConnectionsOne);
                 ListView openConnectionsListView = binding.connectionListView;
-                connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_connection, connections);
+                connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
                 openConnectionsListView.setAdapter(connectionListAdapter);
             }
         });
@@ -284,7 +230,7 @@ public class BluetoothFragment extends Fragment
                 serverConnectionsOne = newServerConnections;
                 connections = bluetoothViewModel.mergeConnectionLists(newServerConnections, serverConnectionsTwo, clientConnectionsOne, clientConnectionsTwo);
                 ListView openConnectionsListView = binding.connectionListView;
-                connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_connection, connections);
+                connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
                 openConnectionsListView.setAdapter(connectionListAdapter);
             }
         });
@@ -297,7 +243,7 @@ public class BluetoothFragment extends Fragment
                 serverConnectionsTwo = newServerConnections;
                 connections = bluetoothViewModel.mergeConnectionLists(newServerConnections, serverConnectionsOne, clientConnectionsOne, clientConnectionsTwo);
                 ListView openConnectionsListView = binding.connectionListView;
-                connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_connection, connections);
+                connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
                 openConnectionsListView.setAdapter(connectionListAdapter);
             }
         });

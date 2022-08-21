@@ -1,4 +1,4 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
@@ -8,10 +8,13 @@ import android.util.Log;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 
+
 /**
  * While a bluetooth device discovery is running, this
  * broadcast receiver will notify the SdpBluetooth engine 
- * about discovered devices using {@link SdpBluetoothEngine#onDeviceDiscovered(BluetoothDevice)}
+ * about discovered devices using {@link SdpBluetoothDiscoveryEngine#onDeviceDiscovered(BluetoothDevice)}
+ *
+ * @author WilliBoelke
  */
 class DeviceFoundReceiver extends BroadcastReceiver
 {
@@ -27,17 +30,21 @@ class DeviceFoundReceiver extends BroadcastReceiver
     /**
      * SdpBluetooth engine to notify
      */
-    private final SdpBluetoothEngine engine;
+    private final SdpBluetoothDiscoveryEngine discoveryEngine;
 
 
     //
     //  ----------  constructor and initialisation ----------
     //
 
-
-    public DeviceFoundReceiver(SdpBluetoothEngine engine){
+    /**
+     * Public constructor
+     * @param discoveryEngine
+     * The discovery engine to be notified about discovered devices
+     */
+    public DeviceFoundReceiver(SdpBluetoothDiscoveryEngine discoveryEngine){
         Log.d(TAG, "DeviceFoundReceiver: initialised receiver");
-        this.engine = engine;
+        this.discoveryEngine = discoveryEngine;
     }
 
     //
@@ -50,10 +57,9 @@ class DeviceFoundReceiver extends BroadcastReceiver
         final String action = intent.getAction();
         if (action.equals(BluetoothDevice.ACTION_FOUND))
         {
-            //Getting new BTDevice from intent
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             Log.d(TAG, "onReceive: discovered new device " + Utils.getRemoteDeviceString(device));
-            this.engine.onDeviceDiscovered(device);
+            this.discoveryEngine.onDeviceDiscovered(device);
         }
     }
 }

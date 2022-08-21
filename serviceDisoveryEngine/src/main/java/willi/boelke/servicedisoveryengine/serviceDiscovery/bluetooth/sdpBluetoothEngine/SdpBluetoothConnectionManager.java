@@ -1,11 +1,10 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine;
 
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.UUID;
 
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 /**
  * Holds a list of {@link SdpBluetoothConnection}
@@ -36,7 +35,7 @@ class SdpBluetoothConnectionManager
     //  ----------  constructor and initialisation ----------
     //
 
-    public SdpBluetoothConnectionManager()
+    protected SdpBluetoothConnectionManager()
     {
         this.openConnections = new ArrayList<>();
     }
@@ -47,12 +46,24 @@ class SdpBluetoothConnectionManager
     //
 
 
-    public void addConnection(SdpBluetoothConnection connection)
+    protected void addConnection(SdpBluetoothConnection connection)
     {
         this.openConnections.add(connection);
     }
 
-    public boolean isAlreadyConnected(String address, UUID serviceUUID)
+    /**
+     * Checks if a connection (defined by device address and service description) already exists
+     * For to be sure all sockets will be checked if they are sill connected , and else closed before
+     * looking the connection up.
+     *
+     * @param address
+     * the MAC address of the remote BluetoothDevice
+     * @param description
+     * the Service description
+     * @return
+     * true when there is an equal connection - else returns false
+     */
+    protected boolean isAlreadyConnected(String address, ServiceDescription description)
     {
         Log.d(TAG, "isAlreadyConnected: looking for a equal connection that already is established");
         this.closeAndRemoveZombieConnections();
@@ -60,7 +71,7 @@ class SdpBluetoothConnectionManager
         for (SdpBluetoothConnection connection : this.openConnections)
         {
             Log.d(TAG, "isAlreadyConnected:  Comparing connection " + connection.toString());
-            if (connection.getServiceUUID().equals(serviceUUID) && connection.getRemoteDeviceAddress().equals(address))
+            if (connection.getServiceDescription().equals(description) && connection.getRemoteDeviceAddress().equals(address))
             {
                 Log.e(TAG, "isAlreadyConnected: found a equal connection, don't connect");
                 return true;
@@ -75,7 +86,7 @@ class SdpBluetoothConnectionManager
      * it should be called when stopping the BluetoothEngine to ensure
      * that all BluetoothSockets are closed.
      */
-    public void closeAllConnections()
+    protected void closeAllConnections()
     {
         for (SdpBluetoothConnection connection : this.openConnections)
         {
@@ -84,22 +95,29 @@ class SdpBluetoothConnectionManager
         this.openConnections = new ArrayList<>();
     }
 
-    public void closeAllClientConnectionsToServiceWihUUID(UUID serviceUUID)
+    /**
+     * Closes all connections (sockets) which are clients to the service defined to
+     * the given service description,
+     * @param description
+     * The description of the service
+     */
+    protected synchronized void closeAllClientConnectionsToService(ServiceDescription description)
     {
-        closeConnectionsWithUUID(serviceUUID, false);
+        closeConnectionsWithUUID(description, false);
     }
 
-    public void closeServiceConnectionsToServiceWithUUID(UUID serviceUUID)
+
+    protected void closeServiceConnectionsToServiceWithUUID(ServiceDescription description)
     {
-        closeConnectionsWithUUID(serviceUUID, true);
+        closeConnectionsWithUUID(description, true);
     }
 
-    private void closeConnectionsWithUUID(UUID serviceUUID, boolean serverOnly)
+    private void closeConnectionsWithUUID(ServiceDescription description, boolean serverOnly)
     {
         ArrayList<SdpBluetoothConnection> connectionsToClose = new ArrayList();
         for (SdpBluetoothConnection connection : this.openConnections)
         {
-            if (connection.getServiceUUID().equals(serviceUUID) && connection.isServerPeer() == serverOnly)
+            if (connection.getServiceDescription().equals(description) && connection.isServerPeer() == serverOnly)
             {
                 connectionsToClose.add(connection);
             }
@@ -109,7 +127,7 @@ class SdpBluetoothConnectionManager
         {
             connectionToClose.close();
             this.openConnections.remove(connectionToClose);
-            Log.d(TAG, "closeServiceConnectionsToServiceWithUUID: closed zombie connections");
+            Log.d(TAG, "closeServiceConnectionsToServiceWithUUID: closed client connections");
         }
     }
 
@@ -127,7 +145,7 @@ class SdpBluetoothConnectionManager
      * This should be executed before checking if a equal connection already exist
      * to prevent blocking a new (rebuild) disconnected by an old, disconnected one.
      *
-     * @see #isAlreadyConnected(String, UUID)
+     * @see #isAlreadyConnected(String, ServiceDescription)
      */
     private void closeAndRemoveZombieConnections()
     {

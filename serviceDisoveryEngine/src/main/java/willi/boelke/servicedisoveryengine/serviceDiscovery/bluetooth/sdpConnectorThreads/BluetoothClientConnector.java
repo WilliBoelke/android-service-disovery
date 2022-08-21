@@ -7,9 +7,9 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.UUID;
 
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothConnection.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 
 /**
@@ -47,14 +47,13 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
     private BluetoothSocket mmSocket;
 
 
-
     //------------Constructors------------
 
-    public BluetoothClientConnector(BluetoothAdapter mBluetoothAdapter, UUID serviceUUID, BluetoothDevice server, ConnectionEventListener connectionStateChangeListener)
+    public BluetoothClientConnector(BluetoothAdapter mBluetoothAdapter, ServiceDescription description, BluetoothDevice server, ConnectionEventListener connectionStateChangeListener)
     {
         this.connectionStateChangeListener = connectionStateChangeListener;
         this.server = server;
-        this.serviceUUID = serviceUUID;
+        this.description = description;
         this.mBluetoothAdapter = mBluetoothAdapter;
     }
 
@@ -68,7 +67,7 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
         try
         {
             Log.d(TAG, "run: trying to create a Rfcomm Socket ");
-            tmp = server.createRfcommSocketToServiceRecord(serviceUUID);
+            tmp = server.createRfcommSocketToServiceRecord(this.description.getServiceUuid());
         }
         catch (IOException e)
         {
@@ -88,7 +87,7 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
             Log.e(TAG, "run: could not make connection, socket closed  " + Arrays.toString(e.getStackTrace()));
             try
             {
-                this.connectionStateChangeListener.onConnectionFailed(this.serviceUUID, this);
+                this.connectionStateChangeListener.onConnectionFailed(this.description.getServiceUuid(), this);
                 mmSocket.close();
                 Log.e(TAG, "run: socked closed ");
                 return;
@@ -100,13 +99,13 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
             }
         }
         Log.d(TAG, "run: connection established ");
-        this.connectionStateChangeListener.inConnectionSuccess(new SdpBluetoothConnection(this.serviceUUID, mmSocket, false));
+        this.connectionStateChangeListener.inConnectionSuccess( this, new SdpBluetoothConnection(this.description, mmSocket, false));
         Log.d(TAG, "run: Thread ended");
     }
 
-    public UUID getServiceUUID()
+    public ServiceDescription getServiceDescription()
     {
-        return this.serviceUUID;
+        return this.description;
     }
 
     public void cancel(){
