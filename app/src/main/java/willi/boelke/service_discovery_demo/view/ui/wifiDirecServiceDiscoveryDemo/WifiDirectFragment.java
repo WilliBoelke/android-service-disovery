@@ -65,7 +65,8 @@ public class WifiDirectFragment extends Fragment
         }
         else
         {
-            this.wifiDirectEngine = SdpWifiEngine.initialize(this.getContext());
+            this.wifiDirectEngine = SdpWifiEngine.initialize(this.getActivity().getApplicationContext());
+            this.wifiDirectEngine.start();
         }
 
         setupViews();

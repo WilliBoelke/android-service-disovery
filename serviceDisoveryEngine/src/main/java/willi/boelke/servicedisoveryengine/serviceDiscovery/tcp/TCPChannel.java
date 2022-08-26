@@ -5,7 +5,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
-abstract class TCPChannel {
+abstract class TCPChannel
+{
     static final long WAIT_LOOP_IN_MILLIS = 1000;
     private Socket socket = null;
 

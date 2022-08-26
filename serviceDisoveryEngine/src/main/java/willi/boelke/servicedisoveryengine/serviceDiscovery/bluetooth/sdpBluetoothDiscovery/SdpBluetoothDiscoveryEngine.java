@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.SdpException;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 /**
@@ -46,9 +48,9 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.Se
  * range or stopped accepting clients.
  * <p>
  * To get notified about discovered services and their host devices a 
- * {@link ServiceDiscoveryListener} needs to be registered using 
- * {@link #registerDiscoverListener(ServiceDiscoveryListener)}.
- * A listener can be unregistered using  {@link #unregisterDiscoveryListener(ServiceDiscoveryListener)}.
+ * {@link BluetoothServiceDiscoveryListener} needs to be registered using
+ * {@link #registerDiscoverListener(BluetoothServiceDiscoveryListener)}.
+ * A listener can be unregistered using  {@link #unregisterDiscoveryListener(BluetoothServiceDiscoveryListener)}.
  *
  * <pre>
  * --------------------------------------------------------------------------------
@@ -196,11 +198,11 @@ public class SdpBluetoothDiscoveryEngine
 
     /**
      * List of all listeners who registered 
-     * using {@link #registerDiscoverListener(ServiceDiscoveryListener)}
+     * using {@link #registerDiscoverListener(BluetoothServiceDiscoveryListener)}
      *
      * @see #unregisterReceivers()
      */
-    private final ArrayList<ServiceDiscoveryListener> discoveryListeners = new ArrayList<>();
+    private final ArrayList<BluetoothServiceDiscoveryListener> discoveryListeners = new ArrayList<>();
 
     //
     //  ----------  initialisation and setup ----------
@@ -263,15 +265,13 @@ public class SdpBluetoothDiscoveryEngine
      */
     public static SdpBluetoothDiscoveryEngine getInstance()
     {
-        if (instance != null)
+        if (instance == null)
         {
-            return instance;
+            Log.e("SdpBluetoothDiscoveryEngine", "getInstance: the engine was not initialized");
         }
-        else
-        {
-            return null;
-        }
+        return instance;
     }
+
 
     /**
      * Private constructor initializing the singleton {@link #instance}
@@ -312,7 +312,7 @@ public class SdpBluetoothDiscoveryEngine
     public void start()
     {
         if (this.bluetoothAdapter == null) {
-            Log.e(TAG, "No BluetoothAdapter given, the probably does not support Bluetooth");
+            Log.e(TAG, "Bluetooth adapter was null, the device probably does not support bluetooth - engine wont start");
             return;
         }
         this.enableBluetooth();
@@ -542,10 +542,10 @@ public class SdpBluetoothDiscoveryEngine
 
     //
     //  ----------  listeners ----------
-    //
+    // TODO define a abstract class for this and the wifi discovery engine, this belongs into there for example
 
     /**
-     * Registers a {@link ServiceDiscoveryListener} to be notified about
+     * Registers a {@link BluetoothServiceDiscoveryListener} to be notified about
      * discovered devices and services
      *
      * @see #unregisterReceivers()
@@ -553,8 +553,8 @@ public class SdpBluetoothDiscoveryEngine
      * @param listener
      *  implementation of then listener interface
      */
-    public void registerDiscoverListener(ServiceDiscoveryListener listener){
-        
+    public void registerDiscoverListener(BluetoothServiceDiscoveryListener listener){
+
         if(discoveryListeners.contains(listener)){
             return;
         }
@@ -562,12 +562,12 @@ public class SdpBluetoothDiscoveryEngine
     }
 
 
-    public void unregisterDiscoveryListener(ServiceDiscoveryListener listener){
+    public void unregisterDiscoveryListener(BluetoothServiceDiscoveryListener listener){
         discoveryListeners.remove(listener);
     }
 
     /**
-     * Calls {@link ServiceDiscoveryListener#onServiceDiscovered(BluetoothDevice, ServiceDescription)}
+     * Calls {@link BluetoothServiceDiscoveryListener#onServiceDiscovered(BluetoothDevice, ServiceDescription)}
      * on all listeners in {@link #discoveryListeners}
      *
      * @param device
@@ -576,21 +576,21 @@ public class SdpBluetoothDiscoveryEngine
      *  the description of the discovered service
      */
     private void notifyOnServiceDiscovered(BluetoothDevice device, ServiceDescription description){
-        for (ServiceDiscoveryListener lister : this.discoveryListeners){
+        for (BluetoothServiceDiscoveryListener lister : this.discoveryListeners){
             //Notify client about discovery
             lister.onServiceDiscovered(device, description);
         }
     }
 
     /**
-     * Calls {@link ServiceDiscoveryListener#onPeerDiscovered(BluetoothDevice)}
+     * Calls {@link BluetoothServiceDiscoveryListener#onPeerDiscovered(BluetoothDevice)}
      * on all listeners in {@link #discoveryListeners}
      *
      * @param device
      *  the discovered device
      */
     private void notifyOnPeerDiscovered(BluetoothDevice device){
-        for (ServiceDiscoveryListener lister : this.discoveryListeners){
+        for (BluetoothServiceDiscoveryListener lister : this.discoveryListeners){
             //Notify client about discovery
             lister.onPeerDiscovered(device);
         }

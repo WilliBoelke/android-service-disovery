@@ -18,6 +18,7 @@ public class WifiDirectStateChangeReceiver extends BroadcastReceiver
     private final WifiP2pManager manager;
     private final WifiP2pManager.Channel channel;
     private final WifiP2pManager.ConnectionInfoListener connectionInfoListener;
+    private boolean establishConnection = false;
 
     public WifiDirectStateChangeReceiver(WifiP2pManager manager
             , WifiP2pManager.Channel channel, WifiDirectConnectionInfoListener connectionInfoListener)
@@ -31,6 +32,7 @@ public class WifiDirectStateChangeReceiver extends BroadcastReceiver
     @Override
     public void onReceive(Context context, Intent intent)
     {
+
         // Stolen from https://developer.android.com/training/connect-devices-wirelessly/wifi-direct
         String action = intent.getAction();
 
@@ -49,16 +51,7 @@ public class WifiDirectStateChangeReceiver extends BroadcastReceiver
         else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action))
         {
             NetworkInfo networkInfo = (NetworkInfo) intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
-            WifiP2pInfo wifiInfo = (WifiP2pInfo) intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_INFO);
-            WifiP2pGroup groupInfo = (WifiP2pGroup) intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_GROUP);
 
-            Log.e(TAG, "--------------- \n" +
-                    networkInfo +
-                    "\n--\n" +
-                    wifiInfo +
-                    "\n--\n" +
-                    groupInfo +
-                    "--------------- \n");
             //----------------------------------
             // NOTE : NetworkInfo is apparently deprecated, official android documentation
             // though only gives this way and does not provide any replacement
@@ -66,6 +59,10 @@ public class WifiDirectStateChangeReceiver extends BroadcastReceiver
             //----------------------------------
             if (networkInfo.isConnected())
             {
+                //----------------------------------
+                // NOTE : this is also true when several devices are connected to one group owner
+                // and one of the leaves. i cant find any way to distinguish the two events
+                //----------------------------------
                 Log.e(TAG, "onReceive: connection changed, connected to peer ");
                 manager.requestConnectionInfo(channel, connectionInfoListener);
             }
@@ -76,4 +73,6 @@ public class WifiDirectStateChangeReceiver extends BroadcastReceiver
             intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE);
         }
     }
+
+
 }

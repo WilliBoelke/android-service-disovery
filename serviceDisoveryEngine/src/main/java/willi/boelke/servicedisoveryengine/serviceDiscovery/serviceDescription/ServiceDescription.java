@@ -75,16 +75,30 @@ public class ServiceDescription
 
     /**
      * A UUID set using this overrides the UUID generated from teh service records,
-     * making it and the service records independent from each other
+     * making it and the service records independent from each other.
+     *
+     * ----------------------------------------------------
+     * Note that this only work for the BluetoothService discovery and wont
+     * work with WifiDirect
+     * This is based on WiFi direct exchanging the service records,
+     * while Bluetooth will exchange the UUID itself.
+     * ----------------------------------------------------
+     *
      * @param uuid
+     * A custom UUId overriding the one generated from the Service records
      */
     public void setCustomUUuid(UUID uuid){
+        // Todo maybe a more elegant solution can be found,
+        //  it should be worth it to make wifi direct exchanging the UUID
+        // when a custom UUID has been set, the custom UUID though should stay, so Bluetooth service
+        // which don't use a UUID based on these service records can be found.
+        // For now - its here in the comment, hope this wil be seen
         this.serviceUuid = uuid;
     }
 
     /**
      * Returns either the UUID set through {@link #setCustomUUuid(UUID)}
-     * or a UUId generated from the services attributes.
+     * or a UUID generated from the services attributes.
      *
      * @return the services UUID
      * @throws NullPointerException
@@ -171,30 +185,28 @@ public class ServiceDescription
     @Override
     public boolean equals(Object o)
     {
-        Log.d(TAG, "equals: check if services are equal");
         if (this == o)
         {
-            Log.d(TAG, "equals: services are the same object");
             return true;
         }
         if (o == null || getClass() != o.getClass())
         {
-            Log.d(TAG, "equals: different class");
             return false;
         }
         ServiceDescription that = (ServiceDescription) o;
-        boolean equals = Objects.equals(this.getServiceUuid(), that.getServiceUuid());
-        Log.d(TAG, "equals: are UUIDS equal ? " + equals);
-        Log.d(TAG, "equals: This UUID " + this.getServiceUuid());
-        Log.d(TAG, "equals: That UUID " + that.getServiceUuid());
-        return equals;
+        return this.getServiceUuid().equals(that.getServiceUuid());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(this.getServiceUuid() );
     }
 
     @Override
     public String toString(){
         StringBuilder sd = new StringBuilder();
         sd.append("Service: { " );
-        sd.append(",");
         sd.append("\nUuid = ");
         sd.append(this.getServiceUuid());
         sd.append(",");

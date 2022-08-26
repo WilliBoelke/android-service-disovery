@@ -1,28 +1,58 @@
 package willi.boelke.servicedisoveryengine.serviceDiscovery.sdpBluetoothConnection;
 
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
+
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
+
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.HashMap;
+
+
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SdpBluetoothConnectionTest
 {
-    /*
-    private final UUID testUUIDOne = UUID.fromString("12345fff-f49a-11ec-b939-0242ac120002");
-    private final UUID testUUIDTwo = UUID.fromString("24245fff-f49a-11ec-b939-0425bc220002");
-
     SdpBluetoothConnection testConnectionOne;
     SdpBluetoothConnection testConnectionTwo;
 
     BluetoothSocket testSocketOne;
     BluetoothSocket testSocketTwo;
+    private ServiceDescription descriptionForServiceOne;
+    private ServiceDescription descriptionForServiceTwo;
+
     @Before
     public void setUp() throws Exception
     {
         testSocketOne = Mockito.mock(BluetoothSocket.class);
         testSocketTwo = Mockito.mock(BluetoothSocket.class);
 
-        testConnectionOne = new SdpBluetoothConnection(testUUIDOne, testSocketOne, false);
-        testConnectionTwo = new SdpBluetoothConnection(testUUIDTwo, testSocketTwo, true);
+        HashMap<String, String> serviceAttributesOne = new HashMap<>();
+        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
+        serviceAttributesOne.put("service-name", "Test Service One");
+        serviceAttributesOne.put("service-info", "This is a test service description");
+        serviceAttributesTwo.put("service-name", "Counting Service Two");
+        serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
+        descriptionForServiceOne = new ServiceDescription(serviceAttributesOne);
+        descriptionForServiceTwo = new ServiceDescription(serviceAttributesTwo);
+
+        testConnectionOne = new SdpBluetoothConnection(descriptionForServiceOne, testSocketOne, false);
+        testConnectionTwo = new SdpBluetoothConnection(descriptionForServiceTwo, testSocketTwo, true);
     }
 
     @Test
@@ -101,5 +131,5 @@ public class SdpBluetoothConnectionTest
         assertNotEquals(testConnectionOne, testConnectionTwo);
     }
 
-     */
+
 }

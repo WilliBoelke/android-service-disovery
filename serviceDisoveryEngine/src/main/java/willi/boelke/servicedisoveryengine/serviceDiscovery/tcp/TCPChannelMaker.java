@@ -80,7 +80,8 @@ public class TCPChannelMaker extends Thread
      * @param port port - local port for server or remote port for client
      * @param multiple - allow multiple connection on server, createSocket can be more than once
      */
-    public static TCPChannelMaker getTCPServerCreator(int port, boolean multiple) {
+    public static TCPChannelMaker getTCPServerCreator(int port, boolean multiple)
+    {
         return new TCPChannelMaker(null, port, true, multiple);
     }
 
@@ -114,21 +115,21 @@ public class TCPChannelMaker extends Thread
         Log.e(TAG, "run: thread started - creating channel");
         try
         {
-            if(this.asServer) {
-                Log.e(TAG, "run: create server");
+            if(this.asServer)
+            {
                 this.channel = new TCPServer(this.port, this.multiple);
-                Log.e(TAG, "run: server created + " + (channel != null));
-            } else {
-                Log.e(TAG, "run: create client");
+            }
+            else
+            {
                 this.channel = new TCPClient(this.hostname, this.port);
             }
 
             // this can take a while
             this.channel.createSocket();
 
-        } catch (IOException ex)
+        }
+        catch (IOException ex)
         {
-            Log.e(TAG, "run: could not establish connection");
             this.fatalError = true;
         }
     }

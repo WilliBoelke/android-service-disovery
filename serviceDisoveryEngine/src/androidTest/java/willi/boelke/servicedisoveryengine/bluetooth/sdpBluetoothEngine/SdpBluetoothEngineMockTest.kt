@@ -7,13 +7,13 @@ import android.bluetooth.BluetoothServerSocket
 import android.content.Context
 import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner
 import io.mockk.*
-import junit.framework.Assert.*
+import junit.framework.TestCase.*
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import willi.boelke.servicedisoveryengine.bluetooth.testUtils.*
+import willi.boelke.servicedisoveryengine.testUtils.*
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.SdpBluetoothDiscoveryEngine
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection
@@ -372,7 +372,7 @@ class SdpBluetoothEngineMockTest {
      * without starting another device / service discovery
      */
     @Test
-    fun itShouldConnectToServiceIfDiscoveryStartedAfterServiceWasDiscovered() {
+    fun itShouldCacheDiscoveredServices() {
         var openedConnection: SdpBluetoothConnection? = null
         SdpBluetoothEngine.getInstance()
 
@@ -522,9 +522,7 @@ class SdpBluetoothEngineMockTest {
         val createdSecond = SdpBluetoothEngine.getInstance().startSDPService(testDescriptionOne) {
         }
 
-
         // This should all stay he same, there is no second service created =
-
         Thread.sleep(3000)
         // In the given time exactly one connection should be accepted
         verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(

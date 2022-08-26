@@ -3,20 +3,37 @@ package willi.boelke.servicedisoveryengine.serviceDiscovery.tcp;
 import android.util.Log;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-class TCPServer extends TCPChannel {
+class TCPServer extends TCPChannel
+{
+    /**
+     * Classname for logging
+     */
+    private final String TAG = this.getClass().getSimpleName();
+
+    private final int WAITING_TRIES = 10;
+
+    /**
+     * The server socket to accept tcp connections
+     *
+     */
     private ServerSocket srvSocket;
+
     private final int port;
+
     private final boolean multiple;
+
     private List<Socket> socketList;
 
     private Thread acceptThread = null;
 
-    TCPServer(int port, boolean multiple) throws IOException {
+    TCPServer(int port, boolean multiple) throws IOException
+    {
         this.port = port;
         this.multiple = multiple;
 
@@ -28,21 +45,19 @@ class TCPServer extends TCPChannel {
     }
 
     /**
-     * That method is called within a thread. If multiple is set true
-     * each client connection is accept and kept in a socketlist.
+     * This method is called within a thread.
+     * If multiple is set true
+     * each client connection is accept and kept in {@link #socketList}.
      *
-     * @return next or only socke4t
-     *
-     * @throws IOException
      */
     void createSocket() throws IOException
     {
-        Log.d("TCPServer:", "createSocket called");
+        Log.d(TAG, "createSocket called");
 
         // called first time
         if (this.acceptThread == null)
         {
-            Log.d("TCPServer:", "accept thread null - going to accept");
+            Log.d(TAG, "accept thread null - going to accept");
             // wait for connection attempt
             Socket newSocket = srvSocket.accept();
 
@@ -53,40 +68,50 @@ class TCPServer extends TCPChannel {
             }
 
             // set first found socket on top of the queue
-            Log.d("TCPServer:", "new socket found");
+            Log.d(TAG, "new socket found");
             this.setSocket(newSocket);
         }
         else
         {
-            Log.d("TCPServer:", "accept thread running");
-            // an accept thread was already called
+           waitForAcceptThread();
+        }
+    }
 
-            // was is successful?
-            boolean found = false;
-            do
+    private void waitForAcceptThread() throws ConnectException
+    {
+        Log.d(TAG, "accept thread running");
+        // an accept thread was already called
+
+        // was is successful?
+        boolean found = false;
+        int remainingTries = WAITING_TRIES;
+        do
+        {
+            if (!this.socketList.isEmpty())
             {
-                if (!this.socketList.isEmpty())
+                Log.d(TAG, "socket list not empty");
+                // make first socket on waiting list to current socket
+                this.setSocket(this.socketList.remove(0));
+                found = true;
+            }
+            else
+            {
+                // wait
+                try
                 {
-                    Log.d("TCPServer:", "socket list not empty");
-                    // make first socket on waiting list to current socket
-                    this.setSocket(this.socketList.remove(0));
-                    found = true;
+                    Log.d(TAG, "createSocket: socket list empty, wait/retry");
+                    Thread.sleep(WAIT_LOOP_IN_MILLIS);
                 }
-                else
+                catch (InterruptedException e)
                 {
-                    // wait
-                    try
-                    {
-                        // TODO: that's polling! replace with thread synchronization
-                        Log.d("TCPServer:", "socket list empty, wait/retry");
-                        Thread.sleep(WAIT_LOOP_IN_MILLIS);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        // ignore
-                    }
+                    // ignore
                 }
-            } while (!found);
+            }
+            remainingTries--;
+        } while (!found && remainingTries > 0);
+
+        if(!found){
+            throw new ConnectException("Could not connect to peer");
         }
     }
 
@@ -110,18 +135,18 @@ class TCPServer extends TCPChannel {
      */
     void nextConnection() throws IOException
     {
-        Log.d("TCPServer:", "nextConnection called");
+        Log.d(TAG, "nextConnection called");
         if(!this.multiple)
         {
             String message = "multiple flag not set - no further connections";
-            Log.d("TCPServer:", message);
+            Log.d(TAG, message);
             throw new IOException(message);
         }
 
         if(this.srvSocket == null)
         {
             String message = "no open server socket, cannot create another connection";
-            Log.d("TCPServer:", message);
+            Log.d(TAG, message);
             throw new IOException(message);
         }
 
@@ -129,21 +154,28 @@ class TCPServer extends TCPChannel {
         this.createSocket();
     }
 
-    private void startAcceptThread(){
-        Log.d("TCPServer:", "out of accept - multiple set");
+    /**
+     * This starts a thread which accepts connections on the
+     * {@link #srvSocket} and adds the accepted sockets to the
+     * {@link #socketList}
+     */
+    private void startAcceptThread()
+    {
+        Log.d(TAG, "startAcceptThread: starting accept thread");
         // create a new thread to collect other sockets
         this.acceptThread = new Thread()
         {
+            @Override
             public void run()
             {
                 try
                 {
-                    Log.d("TCPServer/AcceptThread:", "started");
+                    Log.d(TAG, "AcceptThread: run: started");
                     while (multiple)
                     {
                         // loop will be broken when close called which closes srvSocket
                         socketList.add(srvSocket.accept());
-                        Log.d("AcceptThread:", "new socket");
+                        Log.d(TAG, "AcceptThread: run: accepted new connection");
                     }
                 }
                 catch (IOException e)
@@ -162,10 +194,10 @@ class TCPServer extends TCPChannel {
                     }
                     srvSocket = null; // remember invalid server socket
                 }
-                Log.d("TCPServer/AcceptThread:", "ended");
+                Log.d(TAG, "AcceptThread: run: ended");
             }
         };
-        Log.d("TCPServer:", "start accept thread");
+        Log.d(TAG, "startAcceptThread: staring accept thread");
         this.acceptThread.start();
     }
 }

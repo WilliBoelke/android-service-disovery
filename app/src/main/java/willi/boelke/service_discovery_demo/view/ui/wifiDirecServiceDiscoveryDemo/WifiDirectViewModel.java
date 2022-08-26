@@ -21,7 +21,6 @@ public class WifiDirectViewModel extends ViewModel
     private final String TAG = this.getClass().getSimpleName();
 
     WifiDemoController wifiDemoControllerOne;
-
     WifiDemoController wifiDemoControllerTwo;
 
     public WifiDirectViewModel()

@@ -10,11 +10,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.SdpException;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.SdpBluetoothDiscoveryEngine;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.ServiceDiscoveryListener;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.BluetoothServiceDiscoveryListener;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpConnectorThreads.BluetoothClientConnector;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpConnectorThreads.BluetoothConnectorThread;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpConnectorThreads.BluetoothServiceConnector;
@@ -23,34 +25,35 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.Se
 
 /**
  * Establishes connections between bluetooth devices.
- * Utilizes {@link SdpBluetoothDiscoveryEngine} to discover
- * it grants access to all methods on the {@link SdpBluetoothDiscoveryEngine}
- * to simplify usage.
- *
- * At every given time there is oly one connection between two devices possible.
- *
+ * It serves as a wrapper around the {@link SdpBluetoothDiscoveryEngine}
+ * and grants access to its interface. Though enhances it by
+ * being able to establish and manage connections {@link SdpBluetoothConnection}
+ * to discovered services.
  *
  * -- server side --
  *
- * For using this to advertise a service {@link SdpBluetoothServiceServer} should be
+ * For using this to advertise a service {@link SdpBluetoothServiceServer} needs to be
  * implemented to get notified about new client connections.
  * To start the advertisement of a service refer to {@link #startSDPService(ServiceDescription, SdpBluetoothServiceServer)}
  * which will also take the {@link SdpBluetoothServiceServer} as an listener.
  *
- *
  * -- client side side --
  *
- * To look discover services the interface {@link SdpBluetoothServiceClient} needs to  be
+ * To look discover services the interface {@link SdpBluetoothServiceClient} needs to be
  * implemented, it serves as listener and provides callback functions the discovery
  * process. The discovery can be started using {@link #startSDPDiscoveryForService(ServiceDescription, SdpBluetoothServiceClient)}
  *
  * -- Service Descriptions --
  *
- * To identify services and provide additional information a
+ * To identify services and provide additional information as and instance of {@link ServiceDescription}
+ * in the case of Bluetooth a UUID will be generated from Hashes of the Service attributes and exchanged using SDP.
+ * By comparing it to the local Service descriptions after receiving such a UUID, the service description
+ * can be resolved reliably. But since it is based around Hashes a 100% accuracy can not be guaranteed.
  *
  *
  * @see ServiceDescription
  *
+ * @author WilliBoelke
  */
 public class SdpBluetoothEngine
 {
@@ -59,13 +62,9 @@ public class SdpBluetoothEngine
     //
 
     public static final int DEFAULT_DISCOVERABLE_TIME = 120;
-    public static final int SHORT_DISCOVERABLE_TIME = 60;
     public static final int MIN_DISCOVERABLE_TIME = 10;
-    public static final int LONG_DISCOVERABLE_TIME = 180;
     public static final int MAX_DISCOVERABLE_TIME = 300;
 
-
-    public static final long MANUAL_REFRESH_TIME = 10000;
 
     /**
      * Instance of the class following the singleton pattern
@@ -104,19 +103,7 @@ public class SdpBluetoothEngine
 
     private final SdpBluetoothConnectionManager connectionManager;
 
-
-    /**
-     * Determines whether discovered service UUIDs
-     * should only be evaluated the way the where received
-     * or also in a bytewise revered format
-     * This is to workaround a issue which causes UUIDs
-     * to be received in a little endian format.
-     *
-     * It is true by default, to ensure everything working correctly.
-     * But can be disabled be the user.
-     * @see SdpBluetoothEngine#shouldCheckLittleEndianUuids(boolean)
-     */
-    private boolean checkLittleEndianUuids = true;
+    private boolean engineRunning = false;
 
     //
     //  ----------  initialisation and setup ----------
@@ -129,8 +116,10 @@ public class SdpBluetoothEngine
      *
      * A not default bluetooth adapter can be used by calling {@link SdpBluetoothEngine#initialize(Context, BluetoothAdapter)}.
      *
+     * It is strongly recommended to use the application context for initializing this singleton!
+     *
      * @param context
-     *  the app context
+     *  the application context
      * @return
      *  the created (or already existing) instance of the SdpBluetoothEngine
      */
@@ -165,7 +154,7 @@ public class SdpBluetoothEngine
     }
 
     /**
-     * Returns the singleton instance of the SdpBluetoothEngine.
+     * Can be used to optain the singleton instance.
      * Requires {@link #initialize(Context)} or {@link #initialize(Context, BluetoothAdapter)}
      * to have been called prior.
      *
@@ -178,18 +167,26 @@ public class SdpBluetoothEngine
      */
     public static SdpBluetoothEngine getInstance()
     {
-        if (instance != null)
+        if (instance == null)
         {
-            return instance;
+            Log.e("SdpBluetoothDiscoveryEngine", "getInstance: the engine was not initialized");
         }
-        else
-        {
-            return null;
-        }
+        return instance;
     }
 
+    /**
+     * Private constructor following the singleton pattern
+     * @param context
+     * the app context
+     * @param adapter
+     * a bluetooth adapter
+     */
     private SdpBluetoothEngine(Context context, BluetoothAdapter adapter)
     {
+        if (adapter == null)
+        {
+            Log.e(TAG,"The bluetooth adapter was null, device probably does not support Bluetooth");
+        }
         this.context = context;
         this.bluetoothAdapter = adapter;
         this.connectionManager = new SdpBluetoothConnectionManager();
@@ -197,30 +194,28 @@ public class SdpBluetoothEngine
         SdpBluetoothDiscoveryEngine.initialize(context, adapter);
     }
 
-
-
+    /**
+     * Starts the engine and the service discovery engine
+     * the discovery is ready to be used after this
+     */
     public void start()
     {
-        if (this.bluetoothAdapter == null)
-        {
-            Log.e(TAG, "No BluetoothAdapter given, the probably does not support Bluetooth");
+        //--- if no adapter we can stop right here ---//
+
+        if (this.bluetoothAdapter == null) {
+            Log.e(TAG, "Bluetooth adapter was null, the device probably does not support bluetooth - engine wont start");
             return;
         }
-        setupDiscoveryEngine();
-    }
+        
+        //--- starting the discovery engine ---//
 
-    /**
-     * Starts the Discovery Engine and registers as listener
-     * Sets the listener callbacks
-     */
-    private void setupDiscoveryEngine(){
         SdpBluetoothDiscoveryEngine.getInstance().start();
-        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new ServiceDiscoveryListener()
+        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
             {
-                serviceClients.get(description).onServiceDiscovered(host.getAddress(), description);
+                Objects.requireNonNull(serviceClients.get(description)).onServiceDiscovered(host.getAddress(), description);
                 launchConnectionAttempt(host, description);
             }
 
@@ -234,7 +229,9 @@ public class SdpBluetoothEngine
             }
         });
 
+        this.engineRunning = true;
     }
+
 
     //
     //  ----------  shutdown and teardown ----------
@@ -249,6 +246,8 @@ public class SdpBluetoothEngine
         stopAllServiceConnector();
         stopAllClientConnectors();
         this.connectionManager.closeAllConnections();
+
+        this.engineRunning = false;
     }
 
     /**
@@ -286,9 +285,15 @@ public class SdpBluetoothEngine
 
     /**
      * Makes the device discoverable for other bluetooth devices
+     * The time the device will be visible can be specified by {@link #setDefaultDiscoverableTimeInSeconds(int)}
      */
     public void startDiscoverable()
     {
+        if(engineIsNotRunning()){
+            Log.e(TAG, "startDiscoverable: the engine was not initialized or bluetooth is not available");
+            return;
+        }
+
         Log.d(TAG, "makeDiscoverable: making device discoverable for " + discoverableTimeInSeconds + " ms");
         //Discoverable Intent
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
@@ -302,9 +307,11 @@ public class SdpBluetoothEngine
      */
     public boolean startDeviceDiscovery()
     {
-        //----------------------------------
-        // NOTE : todo: actually it would probably appropriate to make a common abstract superclass here
-        //----------------------------------
+        if(engineIsNotRunning()){
+            Log.e(TAG, "startDiscoverable: the engine was not initialized or bluetooth is not available");
+            return false;
+        }
+       //  todo: actually it would probably appropriate to make a common abstract superclass here
        return  SdpBluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
     }
 
@@ -313,6 +320,10 @@ public class SdpBluetoothEngine
      */
     public void stopDeviceDiscovery()
     {
+        if(engineIsNotRunning()){
+            Log.e(TAG, "startDiscoverable: the engine was not initialized or bluetooth is not available");
+            return;
+        }
        SdpBluetoothDiscoveryEngine.getInstance().stopDeviceDiscovery();
     }
 
@@ -575,7 +586,7 @@ public class SdpBluetoothEngine
             public void inConnectionSuccess(BluetoothConnectorThread bluetoothClientConnector, SdpBluetoothConnection connection)
             {
                 connectionManager.addConnection(connection);
-                serviceClients.get(description).onConnectedToService(connection);
+                Objects.requireNonNull(serviceClients.get(description)).onConnectedToService(connection);
                 runningClientConnectors.remove(bluetoothClientConnector);
             }
         });
@@ -620,8 +631,6 @@ public class SdpBluetoothEngine
         }
     }
 
-
-
     //
     //  ---------- config ----------
     //
@@ -653,8 +662,6 @@ public class SdpBluetoothEngine
      * @see SdpBluetoothEngine#DEFAULT_DISCOVERABLE_TIME
      * @see SdpBluetoothEngine#MAX_DISCOVERABLE_TIME
      * @see SdpBluetoothEngine#MIN_DISCOVERABLE_TIME
-     * @see SdpBluetoothEngine#LONG_DISCOVERABLE_TIME
-     * @see SdpBluetoothEngine#SHORT_DISCOVERABLE_TIME
      *
      * @param seconds
      *  the time the device should be discoverable in seconds
@@ -668,6 +675,10 @@ public class SdpBluetoothEngine
             seconds = MIN_DISCOVERABLE_TIME;
         }
         this.discoverableTimeInSeconds = seconds;
+    }
+
+    private boolean engineIsNotRunning(){
+        return !this.engineRunning;
     }
 }
 

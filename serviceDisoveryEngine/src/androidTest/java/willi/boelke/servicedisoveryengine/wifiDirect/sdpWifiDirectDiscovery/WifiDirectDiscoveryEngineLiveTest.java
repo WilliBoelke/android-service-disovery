@@ -1,4 +1,4 @@
-package willi.boelke.servicedisoveryengine.bluetooth.sdpBluetoothEngine;
+package willi.boelke.servicedisoveryengine.wifiDirect.sdpWifiDirectDiscovery;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -86,7 +86,7 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.Se
  */
 @RunWith(AndroidJUnit4.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class SdpBluetoothEngineLiveTest
+public class WifiDirectDiscoveryEngineLiveTest
 {
 
     /**
@@ -302,22 +302,8 @@ public class SdpBluetoothEngineLiveTest
     {
         SdpBluetoothEngine.getInstance().start();
         ArrayList<SdpBluetoothConnection> acceptedConnections = new ArrayList<>();
-        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, new SdpBluetoothServiceServer()
-        {
-            @Override
-            public void onClientConnected(SdpBluetoothConnection connection)
-            {
-                acceptedConnections.add(connection);
-            }
-        });
-        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceTwo, new SdpBluetoothServiceServer()
-        {
-            @Override
-            public void onClientConnected(SdpBluetoothConnection connection)
-            {
-                acceptedConnections.add(connection);
-            }
-        });
+        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, connection -> acceptedConnections.add(connection));
+        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceTwo, connection -> acceptedConnections.add(connection));
         SdpBluetoothEngine.getInstance().startDiscoverable();
         synchronized (this)
         {

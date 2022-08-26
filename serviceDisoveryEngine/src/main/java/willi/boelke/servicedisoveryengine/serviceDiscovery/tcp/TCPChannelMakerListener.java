@@ -1,8 +1,10 @@
 package willi.boelke.servicedisoveryengine.serviceDiscovery.tcp;
 
-public interface TCPChannelMakerListener {
-    public void onConnectionEstablished(TCPChannel channel);
-
-    public void onConnectionEstablishmentFailed(TCPChannel channel, String reason);
-
+/**
+ * Listener interface to listen on connection events on a {@link TCPChannelMaker}
+ */
+public interface TCPChannelMakerListener
+{
+     void onConnectionEstablished(TCPChannel channel);
+     void onConnectionEstablishmentFailed(TCPChannel channel, String reason);
 }

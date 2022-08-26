@@ -1,4 +1,4 @@
-package willi.boelke.servicedisoveryengine.bluetooth.testUtils
+package willi.boelke.servicedisoveryengine.testUtils
 
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
@@ -20,8 +20,6 @@ import java.util.*
  var testUUIDOne: UUID = UUID.fromString("12345fff-f49a-11ec-b939-0242ac120002")
  var testUUIDTwo: UUID = UUID.fromString("22345fff-f49a-11ec-b939-0242ac120002")
  var testUUIDThree: UUID = UUID.fromString("32345fff-f49a-11ec-b939-0242ac120002")
- var testUUIDFour: UUID = UUID.fromString("42345fff-f49a-11ec-b939-0242ac120002")
- var testUUIDFive: UUID = UUID.fromString("52345fff-f49a-11ec-b939-0242ac120002")
 
  lateinit var testDescriptionOne : ServiceDescription
  lateinit var testDescriptionTwo : ServiceDescription
@@ -50,8 +48,6 @@ import java.util.*
      testDescriptionOne.setCustomUUuid(testUUIDOne)
      testDescriptionTwo.setCustomUUuid(testUUIDTwo)
      testDescriptionThree.setCustomUUuid(testUUIDThree)
-     testDescriptionFour.setCustomUUuid(testUUIDFour)
-     testDescriptionFive.setCustomUUuid(testUUIDFive)
  }
 
 fun getTestDeviceOne(): BluetoothDevice {
@@ -73,8 +69,8 @@ fun getTestDeviceTwo(): BluetoothDevice {
     every { deviceTwo.name } returns  "testDeviceTwoName"
     every { deviceTwo.address } returns  "testDeviceTwoAddress"
     every { deviceTwo.uuids } returns  arrayOf(
-        ParcelUuid(testUUIDFour),
-        ParcelUuid(testUUIDFive)
+        ParcelUuid(testDescriptionFour.serviceUuid),
+        ParcelUuid(testDescriptionFive.serviceUuid)
     )
     return deviceTwo
 }
@@ -86,8 +82,8 @@ fun getTestUuidArrayOne(): Array<Parcelable> {
 }
 
 fun getTestUuidArrayTwo(): Array<Parcelable> {
-    val parcelUuidFour = ParcelUuid(testUUIDFour)
-    val parcelUuidFive = ParcelUuid(testUUIDFive)
+    val parcelUuidFour = ParcelUuid(testDescriptionFour.serviceUuid)
+    val parcelUuidFive = ParcelUuid(testDescriptionFive.serviceUuid)
     return arrayOf(parcelUuidFour, parcelUuidFive)
 }
 

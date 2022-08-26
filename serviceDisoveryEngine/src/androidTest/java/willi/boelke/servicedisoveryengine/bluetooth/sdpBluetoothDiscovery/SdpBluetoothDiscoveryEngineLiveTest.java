@@ -3,39 +3,29 @@ package willi.boelke.servicedisoveryengine.bluetooth.sdpBluetoothDiscovery;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static willi.boelke.servicedisoveryengine.bluetooth.testUtils.UtilsKt.initTestMocks;
-
 import android.Manifest;
 import android.arch.core.executor.testing.CountingTaskExecutorRule;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.Context;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.GrantPermissionRule;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.internal.runners.statements.FailOnTimeout;
-import org.junit.rules.Timeout;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
-import org.junit.runners.model.Statement;
-import org.junit.runners.model.TestTimedOutException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.SdpBluetoothDiscoveryEngine;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.ServiceDiscoveryListener;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.BluetoothServiceDiscoveryListener;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothServiceServer;
@@ -216,7 +206,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
 
         ArrayList<BluetoothDevice> discoveredDevices = new ArrayList<>();
 
-        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new ServiceDiscoveryListener()
+        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
 
             @Override
@@ -299,7 +289,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new ServiceDiscoveryListener()
+        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -385,7 +375,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new ServiceDiscoveryListener()
+        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -485,7 +475,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new ServiceDiscoveryListener()
+        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -590,7 +580,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new ServiceDiscoveryListener()
+        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -671,7 +661,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new ServiceDiscoveryListener()
+        SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)

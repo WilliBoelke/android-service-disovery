@@ -5,8 +5,6 @@ import android.arch.core.executor.testing.CountingTaskExecutorRule
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.content.Context
-import android.os.ParcelUuid
-import android.os.Parcelable
 import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner
 import androidx.test.rule.GrantPermissionRule
 import io.mockk.every
@@ -18,9 +16,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import willi.boelke.servicedisoveryengine.bluetooth.testUtils.*
+import willi.boelke.servicedisoveryengine.testUtils.*
 import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.SdpBluetoothDiscoveryEngine
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.ServiceDiscoveryListener
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.BluetoothServiceDiscoveryListener
 import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription
 import java.util.*
 
@@ -127,7 +125,7 @@ class SdpBluetoothDiscoveryEngineMockTest {
 
         val foundDevices: ArrayList<BluetoothDevice>? = ArrayList();
         SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener( object :
-            ServiceDiscoveryListener {
+            BluetoothServiceDiscoveryListener {
             override fun onServiceDiscovered(host: BluetoothDevice?, description: ServiceDescription?) {
                 // not under test
             }
@@ -159,7 +157,7 @@ class SdpBluetoothDiscoveryEngineMockTest {
         val testDeviceOne = getTestDeviceOne()
         val testDeviceTwo = getTestDeviceTwo()
         SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener( object :
-            ServiceDiscoveryListener {
+            BluetoothServiceDiscoveryListener {
             override fun onServiceDiscovered(host: BluetoothDevice?, description: ServiceDescription?) {
                 // not under test
             }
@@ -190,7 +188,7 @@ class SdpBluetoothDiscoveryEngineMockTest {
         val testDeviceTwo = getTestDeviceTwo()
 
         SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener( object :
-            ServiceDiscoveryListener {
+            BluetoothServiceDiscoveryListener {
             override fun onServiceDiscovered(host: BluetoothDevice?, description: ServiceDescription?) {
                 // not under test
             }
@@ -226,7 +224,7 @@ class SdpBluetoothDiscoveryEngineMockTest {
         var foundDevices: ArrayList<BluetoothDevice> = ArrayList()
         var foundServices: ArrayList<ServiceDescription> = ArrayList()
         SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener( object :
-            ServiceDiscoveryListener {
+            BluetoothServiceDiscoveryListener {
             override fun onServiceDiscovered(host: BluetoothDevice, description: ServiceDescription) {
                 foundDevices.add(host)
                 foundServices.add(description)
@@ -276,7 +274,7 @@ class SdpBluetoothDiscoveryEngineMockTest {
         var foundDevices: ArrayList<BluetoothDevice> = ArrayList()
         var foundServices: ArrayList<ServiceDescription> = ArrayList()
         SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener( object :
-            ServiceDiscoveryListener {
+            BluetoothServiceDiscoveryListener {
             override fun onServiceDiscovered(host: BluetoothDevice, description: ServiceDescription) {
                 foundDevices.add(host)
                 foundServices.add(description)
@@ -325,7 +323,7 @@ class SdpBluetoothDiscoveryEngineMockTest {
         var foundDevices: ArrayList<BluetoothDevice> = ArrayList()
         var foundServices: ArrayList<ServiceDescription> = ArrayList()
         SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener( object :
-            ServiceDiscoveryListener {
+            BluetoothServiceDiscoveryListener {
             override fun onServiceDiscovered(host: BluetoothDevice, description: ServiceDescription) {
                 foundDevices.add(host)
                 foundServices.add(description)
@@ -381,7 +379,7 @@ class SdpBluetoothDiscoveryEngineMockTest {
         var foundDevices: ArrayList<BluetoothDevice> = ArrayList()
         var foundServices: ArrayList<ServiceDescription> = ArrayList()
         SdpBluetoothDiscoveryEngine.getInstance().registerDiscoverListener( object :
-            ServiceDiscoveryListener {
+            BluetoothServiceDiscoveryListener {
             override fun onServiceDiscovered(host: BluetoothDevice, description: ServiceDescription) {
                 foundDevices.add(host)
                 foundServices.add(description)

@@ -20,7 +20,7 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.tcp.TCPChannelMaker;
  * ------
  *
  */
-public class AsyncSdpWifiConnectionCreator extends Thread
+class AsyncSdpWifiConnectionCreator extends Thread
 {
 
     /**
@@ -42,6 +42,7 @@ public class AsyncSdpWifiConnectionCreator extends Thread
     }
 
 
+    @Override
     public void run()
     {
         Log.d(TAG, "run: waiting for channel maker to establish connection");
@@ -108,7 +109,7 @@ public class AsyncSdpWifiConnectionCreator extends Thread
                 Log.e(TAG, "run: race condition happened");
                 try
                 {
-                    this.wait(1000);
+                    this.wait(2000);
                 }
                 catch (InterruptedException ex)
                 {

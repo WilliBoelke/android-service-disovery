@@ -10,10 +10,8 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEng
 /**
  *
  */
-public class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoListener
+class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoListener
 {
-
-
     //
     //  ----------  instance variables ----------
     //
@@ -25,6 +23,7 @@ public class WifiDirectConnectionInfoListener implements WifiP2pManager.Connecti
     private final SdpWifiEngine sdpWifiEngine;
 
     private TCPChannelMaker serverChannelCreator = null;
+    private boolean establishConnection;
 
 
     //
@@ -46,13 +45,22 @@ public class WifiDirectConnectionInfoListener implements WifiP2pManager.Connecti
         //----------------------------------
         // NOTE : apparently this method will also be called
         // when a client leaves a group, with this containing.
-        // the GO will try to establish a connection to the given device,
+        // that because in the w WifiDirectStateChangeReceiver, the condition
+        // `isConnected()` is still true (when several devices connected)
+        //
+        // The GO will try to establish a connection to the given device,
         // and this will end in a infinite loop
         // in the TCPServer...
         //----------------------------------
 
         Log.d(TAG, "onConnectionInfoAvailable: received connection info");
         Log.d(TAG, "onConnectionInfoAvailable: " + info);
+
+        if(!this.establishConnection){
+            Log.e(TAG, "onConnectionInfoAvailable: should not establish connections");
+            return;
+        }
+
         TCPChannelMaker.max_connection_loops = 10;
         TCPChannelMaker channelCreator = null;
         if(info.isGroupOwner)
@@ -61,7 +69,6 @@ public class WifiDirectConnectionInfoListener implements WifiP2pManager.Connecti
 
             if(this.serverChannelCreator == null)
             {
-                sdpWifiEngine.onBecameGroupOwner();
                 Log.d(TAG, "onConnectionInfoAvailable: start server channel");
                 this.serverChannelCreator = TCPChannelMaker.getTCPServerCreator(sdpWifiEngine.getPortNumber(), true);
             }
@@ -70,16 +77,21 @@ public class WifiDirectConnectionInfoListener implements WifiP2pManager.Connecti
                 Log.d(TAG, "onConnectionInfoAvailable: Server channel already exists");
             }
             channelCreator = this.serverChannelCreator;
+            sdpWifiEngine.onBecameGroupOwner();
         }
         else
         {
-            sdpWifiEngine.onBecameClient();
+
             String hostAddress = info.groupOwnerAddress.getHostAddress();
             Log.d(TAG, "onConnectionInfoAvailable: local peer client, group owner = " + hostAddress);
-
             channelCreator = TCPChannelMaker.getTCPClientCreator(hostAddress, sdpWifiEngine.getPortNumber());
+            sdpWifiEngine.onBecameClient();
         }
         Log.e(TAG, "onConnectionInfoAvailable: channel creator is null = " + (channelCreator == null) );
         this.sdpWifiEngine.onSocketConnectionStarted(channelCreator);
+    }
+
+    protected void establishConnections(boolean shouldEstablish){
+        this.establishConnection = shouldEstablish;
     }
 }

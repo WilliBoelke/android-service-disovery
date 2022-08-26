@@ -69,8 +69,8 @@ public class BluetoothFragment extends Fragment
         ActivityCompat.requestPermissions(this.getActivity(),
                 new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
                 MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);
-
-        SdpBluetoothEngine.initialize(this.getContext());
+        // Using application context, since this context is gonna be stored in the singleton
+        SdpBluetoothEngine.initialize(this.getActivity().getApplicationContext());
         SdpBluetoothEngine.getInstance().start();
 
         this.connections = new ArrayList<>();

@@ -58,8 +58,6 @@ class TCPClient extends TCPChannel
                 }
             }
         }
-
-        System.out.println("TCPClient:. give up");
-
+        Log.d(TAG, "createSocket: could not establish connection, run out of tries");
     }
 }

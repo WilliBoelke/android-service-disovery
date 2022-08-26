@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiConnection;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiEngine;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClientServerInterfaces.SdpWifiPeer;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiPeer;
 
 /**
  * Demo implementation of a SdpWifiPeer.
@@ -31,6 +31,7 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClientS
 public class WifiDemoController implements SdpWifiPeer
 {
     private static final String GROUP_OWNER_DEFAULT_MESSAGE = "writing to clients...";
+
 
     /**
      * UUID of the service being advertised / looked for using this controller
@@ -70,19 +71,22 @@ public class WifiDemoController implements SdpWifiPeer
     {
         this.writeThread = new WriteThread();
         this.readThread = new ReadThread();
-        SdpWifiEngine.getInstance().start(this.description, this);
+        SdpWifiEngine.getInstance().registerService(this.description, this);
     }
 
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     public void stopService()
     {
-        SdpWifiEngine.getInstance().stop();
+        SdpWifiEngine.getInstance().unregisterService();
+        for (SdpWifiConnection connection : openConnections.getValue()){
+            connection.close();
+        }
         SdpWifiEngine.getInstance().disconnectFromGroup();
         try{
             this.writeThread.cancel();
         }
         catch (NullPointerException e){
-            Log.d(TAG, "stopService: thread was not initialized");
+            Log.d(TAG, "stopService: -thread was not initialized");
         }
         try{
             this.readThread.cancel();
@@ -94,7 +98,8 @@ public class WifiDemoController implements SdpWifiPeer
         this.writeThread = null;
         this.openConnections.setValue(new ArrayList<>());
         this.currentMessage.setValue("");
-        this.gotRoleAssigned =false;
+        this.gotRoleAssigned = false;
+        this.isGroupOwner.postValue(false);
     }
 
     public LiveData<String> getCurrentMessage()
@@ -116,8 +121,10 @@ public class WifiDemoController implements SdpWifiPeer
     @Override
     public void onBecameGroupOwner()
     {
-        if(! this.gotRoleAssigned) // just the first time
+        Log.d(TAG, "onBecameGroupOwner: became group owner");
+        if(!this.gotRoleAssigned) // just the first time
         {
+            Log.d(TAG, "onBecameGroupOwner: first time - starting write thread");
             // lets notify subscribers
             this.isGroupOwner.postValue(Boolean.TRUE);
             this.currentMessage.setValue(GROUP_OWNER_DEFAULT_MESSAGE);
@@ -130,8 +137,10 @@ public class WifiDemoController implements SdpWifiPeer
     @Override
     public void onBecameGroupClient()
     {
+        Log.d(TAG, "onBecameGroupClient: became group owner");
         if(!this.gotRoleAssigned) // just the first time
         {
+            Log.d(TAG, "onBecameGroupClient: first time - starting read thread");
             // lets notify subscribers
             this.isGroupOwner.postValue(Boolean.FALSE);
             readThread.start();
@@ -143,10 +152,11 @@ public class WifiDemoController implements SdpWifiPeer
     @Override
     public void onConnectionEstablished(SdpWifiConnection connection)
     {
-        Log.e(TAG, "onConnectionEstablished: got new connection");
+        Log.d(TAG, "onConnectionEstablished: got new connection : " + connection );
         ArrayList<SdpWifiConnection> tmp = this.openConnections.getValue();
         tmp.add(connection);
         this.openConnections.postValue(tmp);
+        Log.e(TAG, "onConnectionEstablished: "  +openConnections );
     }
 
     @Override
@@ -196,7 +206,8 @@ public class WifiDemoController implements SdpWifiPeer
                     {
                         try
                         {
-                            String msg = "Test message number " + counter + " from service: " + description;
+                            String msg = "Test message number " + counter + " from service: " + description.getServiceUuid();
+                            Log.d(TAG, "run: message : " + msg);
                             connection.getConnectionSocket().getOutputStream().write(msg.getBytes());
                             connection.getConnectionSocket().getOutputStream().flush();
                         }
@@ -273,10 +284,28 @@ public class WifiDemoController implements SdpWifiPeer
 
             while (running)
             {
-                ArrayList<SdpWifiConnection> disconnecedConnections = new ArrayList<>();
+                ArrayList<SdpWifiConnection> disconnectedConnections = new ArrayList<>();
                 ArrayList<SdpWifiConnection> tmpConnections = (ArrayList<SdpWifiConnection>) openConnections.getValue().clone();
                 for (SdpWifiConnection connection : tmpConnections)
                 {
+                    if(connection == null)
+                    {
+                        //----------------------------------
+                        // NOTE : sometimes a NullPointerException here
+                        // even though the connection coming in through onConnectionEstablished
+                        // is not null, narrowing it down i could notice that this happens
+                        // when a connection arrives at the same time as this next bit of code runs
+                        // ..threads are annoying sometimes.
+                        // soo two options, making the connections list synchronized or
+                        // just skipping one round here.
+                        // i will try the later first and see how it goes
+                        // because this is less performance intensive then having a synchronized list
+                        //----------------------------------
+                        Log.e(TAG, "run: ----------------------------------- \n " +
+                                "A CONNECTION WAS NULL PLEASE OBSERVE IF THIS HELPS \n" +
+                                "-----------------------------------------------");
+                        continue;
+                    }
                     if (connection.isConnected())
                     {
                         try
@@ -290,16 +319,16 @@ public class WifiDemoController implements SdpWifiPeer
                         }
                         catch (IOException | IndexOutOfBoundsException e)
                         {
-                            disconnecedConnections.add(connection);
+                            disconnectedConnections.add(connection);
                         }
                     }
                     else
                     {
-                        disconnecedConnections.add(connection);
+                        disconnectedConnections.add(connection);
                     }
                 }
 
-                for (SdpWifiConnection connection : disconnecedConnections)
+                for (SdpWifiConnection connection : disconnectedConnections)
                 {
                     connection.close();
                     tmpConnections.remove(connection);

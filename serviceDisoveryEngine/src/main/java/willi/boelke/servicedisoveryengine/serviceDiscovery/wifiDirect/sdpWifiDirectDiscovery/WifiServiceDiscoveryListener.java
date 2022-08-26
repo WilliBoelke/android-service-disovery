@@ -1,21 +1,22 @@
-package willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery;
+package willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiDirectDiscovery;
 
-import android.bluetooth.BluetoothDevice;
+import android.net.wifi.p2p.WifiP2pDevice;
 
+import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.SdpBluetoothDiscoveryEngine;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 
 /**
  * Listener interface to get notified when
- * the {@link SdpBluetoothDiscoveryEngine} found a
+ * the {@link SdpWifiDirectDiscoveryEngine} found a
  * new device or service on a device.
  *
  * @author WilliBolke
  */
-public interface ServiceDiscoveryListener
+public interface WifiServiceDiscoveryListener
 {
     /**
      * Called whenever a service was discovered which has been looked for
-     * through {@link SdpBluetoothDiscoveryEngine#startSDPDiscoveryForService(ServiceDescription)}
+     * through {@link SdpWifiDirectDiscoveryEngine#startSdpDiscoveryForService(ServiceDescription)}
      *
      * Provides the remote host device and the service description to identify the service
      *
@@ -25,13 +26,6 @@ public interface ServiceDiscoveryListener
      *  The service description as provided in {@link SdpBluetoothDiscoveryEngine#startSDPDiscoveryForService(ServiceDescription)}
      *  which was resolved through matching UUIDs
      */
-    void onServiceDiscovered(BluetoothDevice host, ServiceDescription description);
+    void onServiceDiscovered(WifiP2pDevice host, ServiceDescription description);
 
-    /**
-     * Called whenever a remote bluetooth device was discovered.
-     * this device does not have to have a desired service available
-     * @param device
-     *   A bluetooth device in range
-     */
-    void onPeerDiscovered(BluetoothDevice device);
 }

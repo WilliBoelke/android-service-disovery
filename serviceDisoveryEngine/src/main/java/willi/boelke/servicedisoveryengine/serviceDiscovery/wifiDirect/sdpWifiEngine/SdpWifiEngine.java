@@ -4,40 +4,55 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
-import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
-import android.net.wifi.p2p.nsd.WifiP2pServiceInfo;
+
 import android.util.Log;
 
 import androidx.annotation.RequiresPermission;
-import androidx.core.content.ContextCompat;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 import willi.boelke.servicedisoveryengine.serviceDiscovery.Utils;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
 import willi.boelke.servicedisoveryengine.serviceDiscovery.tcp.TCPChannelMaker;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiDirectDiscovery.SdpWifiDiscoveryThread;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClientServerInterfaces.SdpWifiPeer;
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiDirectDiscovery.SdpWifiDirectDiscoveryEngine;
+
+import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiDirectDiscovery.WifiServiceDiscoveryListener;
 
 /**
- * Starts service discovery and service advertisement, manages connection
- * establishment between services and clients.
+ * Starts service discovery and service advertisement,
+ * manages connection establishment between services and clients.
  *
  * Sets up a group between peers, the Group owner will be
- * defined by the underlying Android implementation of wifi direct.
- * ------------------------------------------------------------
+ * chosen by the underlying Android implementation of wifi direct.
+ * Establishes TCP connections between group owner and peers.
+ * <p>
+ * # Initialisation<br>
+ * ------------------------------------------------------------<br>
+ * Initialize the engine by calling {@link #initialize(Context)}
+ * To obtain the singleton instance call {@link #getInstance()}.
  *
- * To start an service or a discovery (for a specific service) please refer to
- * {@link #start(ServiceDescription, SdpWifiPeer)}, to start the general service discovery (which is needed to find a service)
- * call {@link #startDiscovery()}
+ * After initialization the engine needs to be started before using
+ * it {@link #start()}. A running engine can be stopped by calling
+ * {@link #stop()} this will cancel the discovery, unregister the
+ * service if it was registered and remove the local device from
+ * the group and close all establish connections.
+ * <p>
+ * Service advertisement and discovery<br>
+ * ------------------------------------------------------------<br>
+ * After the engine was started it can advertise and search
+ * exactly one service at a time. To register a service for
+ * advertisement and search call
+ * {@link #registerService(ServiceDescription, SdpWifiPeer)}.
  *
+ * To start the general discovery (which is needed to find the service)
+ * call {@link #startDiscovery()}. The discovery process will run around 20
+ * seconds. It can be restarted and stopped as long as the engine runs
+ * by calling {@link #startDiscovery()} or {@link #stopDiscovery()}
+ * <p>
+ * Listener<br>
+ * ------------------------------------------------------------<br>
  * To use the engine and get notified about established connections, group
  * info (becoming GO or client) it is needed to implement the {@link SdpWifiPeer}
  * interface and pass it when calling the aforementioned methods.
@@ -47,7 +62,6 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClientS
  * search for one service at a given time.
  * A service / service discovery will only be started when the
  * already running discovery / service has been stopped by calling the methods
- * {@link #stopSDPService()} {@link #stopSDPDiscovery()}
  * ------------------------------------------------------------
  *
  * As specified in by the wifi direct protocol connections between peers
@@ -63,7 +77,7 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpClientS
  *
  */
 @SuppressLint("MissingPermission")
-public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDiscoveryListener
+public class SdpWifiEngine
 {
 
     //
@@ -87,7 +101,7 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
     /**
      * The App Context
      */
-    private Context context;
+    private final Context context;
 
     /**
      * Wifi direct channel
@@ -98,27 +112,6 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
      * The wifi direct manager
      */
     private WifiP2pManager manager;
-
-    private SdpWifiDiscoveryThread serviceDiscovery;
-
-    private HashMap<UUID, ArrayList<WifiP2pDevice>> discoveredServices = new HashMap<>();
-
-    /**
-     * Service registered in {@link #startSDPService(ServiceDescription)}
-     * and unregistered in {@link #stopSDPDiscovery()}
-     */
-    private WifiP2pServiceInfo runningService;
-
-    /**
-     * Reverence to the currently running discovery thread
-     */
-    private SdpWifiDiscoveryThread discoveryThread;
-
-    /**
-     * The UUID of the service to discover
-     * this will be set in {@link #startSDPDiscoveryForService(ServiceDescription)}
-     */
-    private ServiceDescription serviceToLookFor;
 
     /**
      * Implemented SdpWifiPeer interface
@@ -136,11 +129,25 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
      */
     private WifiDirectConnectionInfoListener connectionListener;
 
+    /**
+     * The discovery engine
+     */
+    private SdpWifiDirectDiscoveryEngine discoveryEngine;
+
+    private ServiceDescription currentServiceDescription;
 
     //
     //  ----------  constructor and initialization ----------
     //
 
+    /**
+     * Initialize the engine with the app context
+     * @param context
+     * To prevent memory leaks please use the application context
+     * for initialization
+     * @return
+     * the instance of the engine 
+     */
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     public static SdpWifiEngine initialize(Context context)
     {
@@ -151,6 +158,14 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
         return instance;
     }
 
+    /**
+     * Getter for the singleton instance, this will return null if the engine
+     * was not initialized before
+     * @see #initialize(Context)
+     *
+     * @return
+     * THe instance - or null if not initialized
+     */
     public static SdpWifiEngine getInstance()
     {
         if (instance != null)
@@ -163,21 +178,68 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
         }
     }
 
+    /**
+     * Private constructor following the singleton pattern
+     * @param context
+     *  App context
+     */
     private SdpWifiEngine(Context context)
     {
         this.context = context;
-        this.setup();
     }
 
-    private void setup()
+    public void start()
     {
         Log.d(TAG, "setup: setup wifi engine");
+        if(manager != null)
+        {
+            // already started
+            return;
+        }
+
         // Initialize manager and channel
         this.manager = (WifiP2pManager) this.context.getSystemService(Context.WIFI_P2P_SERVICE);
         this.channel = manager.initialize(this.context, this.context.getMainLooper(), null);
-        // disconnecting from any group the device may currently be connected to
+        this.registerReceiver();
+        
+        //--- setting up discovery engine ---//
+        
+        this.discoveryEngine = SdpWifiDirectDiscoveryEngine.initialize(manager, channel);
+        this.discoveryEngine.registerDiscoverListener(serviceDiscoveryListener);
+
+    }
+
+
+    /**
+     * This stops the engine and disconnects from the group
+     * the singleton instance will be reset to null.
+     * This is mainly used for testing.
+     */
+    protected void teardownEngine()
+    {
+        this.unregisterService();
         this.disconnectFromGroup();
-        this.connectionListener = new WifiDirectConnectionInfoListener(this);
+        instance = null;
+    }
+
+    public void stop()
+    {
+        if(manager == null){
+            return;
+        }
+        this.unregisterReceiver();
+        this.unregisterService();
+        this.discoveryEngine.stop();
+        this.disconnectFromGroup();
+        this.discoveryEngine.unregisterDiscoveryListener(serviceDiscoveryListener);
+        try
+        {
+            this.manager.cancelConnect(this.channel, null);
+        }
+        catch (RuntimeException e) {
+            // nothing to do here
+        }
+
     }
 
     private void registerReceiver()
@@ -189,7 +251,9 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
         // Indicates this device's details have changed.
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
-        mWifiReceiver = new WifiDirectStateChangeReceiver(manager, channel, this.connectionListener);
+
+        this.connectionListener = new WifiDirectConnectionInfoListener(this);
+        this.mWifiReceiver = new WifiDirectStateChangeReceiver(manager, channel, this.connectionListener);
         this.context.registerReceiver(mWifiReceiver, intentFilter);
     }
 
@@ -213,7 +277,7 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
      * This registers the service for discovery, other devices can find this service then.
      * Also the service with the given UUID (serviceUUID) will be looked for.
      * The service discovery however needs to be started and stopped separately, for that please
-     * refer to {@link #startDiscovery()} and {@link #stopDiscovery()} respectivly.
+     * refer to {@link #startDiscovery()} and {@link #stopDiscovery()} respectively.
      *
      * @param description
      *         Service description
@@ -224,96 +288,88 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
      *         is running already
      */
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    public boolean start(ServiceDescription description, SdpWifiPeer serviceClient)
+    public boolean registerService(ServiceDescription description, SdpWifiPeer serviceClient)
     {
-        //--- check if a service discovery is already running ---//
-
-        if (this.serviceToLookFor != null)
+        if(manager == null)
         {
-            Log.d(TAG, "startSDPDiscoveryForServiceWithUUID: Service discovery already running, stop discovery first");
+            Log.e(TAG, "registerService: engine was not started" );
             return false;
         }
-
-        //--- starting discovery ---//
+        if (this.currentServiceDescription != null)
+        {
+            Log.e(TAG, "registerService: a service is already registered" );
+            return false; // already running
+        }
 
         this.peer = serviceClient;
-        this.registerReceiver();
-        this.startSDPService(description);
-        this.startSDPDiscoveryForService(description);
-
+        this.currentServiceDescription = description;
+        // Enable connection establishment (again)
+        this.connectionListener.establishConnections(true);
+        this.discoveryEngine.startSDPService(description);
+        this.discoveryEngine.startSdpDiscoveryForService(description);
         return true;
     }
 
     /**
      * This stops the engine that means other devices cant find the advertised service anymore,
      * the discovery will stop and the discovered service will be unset,
-     * to start the engine again call {@link #start(ServiceDescription, SdpWifiPeer)}.
+     * to start the engine again call {@link #registerService(ServiceDescription, SdpWifiPeer)}.
      *
      * This however wont cancel existing connections,
      * to leave the current group call {@link #disconnectFromGroup()}.
      */
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    public void stop()
+    public void unregisterService()
     {
-        this.unregisterReceiver();
-        this.stopDiscovery();
-        this.stopSDPService();
-        this.stopSDPDiscovery();
-        this.manager.clearLocalServices(channel, new WifiP2pManager.ActionListener()
-        {
-            @Override
-            public void onSuccess()
-            {
-
-            }
-
-            @Override
-            public void onFailure(int reason)
-            {
-
-            }
-        });
+        if(manager == null){
+            return;
+        }
+        this.discoveryEngine.stopSDPDiscovery(currentServiceDescription);
+        this.discoveryEngine.stopSDPService(currentServiceDescription);
+        this.currentServiceDescription = null;
+        this.connectionListener.establishConnections(false);
+        this.peer = null;
     }
 
     /**
-     * removes the local peer from the current Wi-Fi direct
+     * Removes the local peer from the current Wi-Fi direct
      * group, this will also close all current connections
      * And if the local peer is the group owner, completely
      * end the group and disconnect all clients.
+     *
+     *
      */
-    public void disconnectFromGroup(){
-        manager.removeGroup(channel, new WifiP2pManager.ActionListener()
-        {
-            @Override
-            public void onSuccess()
-            {
-                Log.d(TAG, "onSuccess: remove group");
-            }
-
-            @Override
-            public void onFailure(int reason)
-            {
-                Log.e(TAG, "onFailure: could not removed group");
-            }
-        });
-    }
-
-    /**
-     * This stops the engine and disconnects from the group
-     * the singleton instance will be reset to null.
-     * This is mainly used for testing.
-     */
-    protected void teardownEngine()
+    public void disconnectFromGroup()
     {
-        this.stop();
-        this.disconnectFromGroup();
-        instance = null;
+        // Partially taken from, replacing my own method
+        // https://stackoverflow.com/questions/18679481/wifi-direct-end-connection-to-peer-on-android
+
+        if (this.manager != null && this.channel != null)
+        {
+            this.manager.requestGroupInfo(this.channel, group ->
+            {
+                if (group != null && manager != null && channel != null)
+                {
+                    manager.removeGroup(channel, new WifiP2pManager.ActionListener() {
+
+                        @Override
+                        public void onSuccess() {
+                            Log.d(TAG, "disconnectFromGroup: disconnected succesfully");
+                        }
+
+                        @Override
+                        public void onFailure(int reason)
+                        {
+                            Utils.logReason("disconnectFromGroup: failed to disconnect " , reason);
+                        }
+                    });
+                }
+            });
+        }
+
+        //--- accepting connections again ---//
+        this.connectionListener.establishConnections(true);
     }
-
-
-    ////
-    ////------------  service discovery specific methods ---------------
-    ////
 
 
     //
@@ -323,14 +379,15 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
     /**
      * This starts the discovery process, which will discover all nearby services
      * a connection will only be established if a service was specified with in
-     * {@link #start(ServiceDescription, SdpWifiPeer)}
+     * {@link #registerService(ServiceDescription, SdpWifiPeer)}
      */
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     public void startDiscovery()
     {
-        this.stopDiscovery();
-        this.discoveryThread = new SdpWifiDiscoveryThread(manager, channel, this);
-        discoveryThread.start();
+        if(manager == null){
+            return;
+        }
+        this.discoveryEngine.startDiscovery();
     }
 
     /**
@@ -339,123 +396,10 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     public void stopDiscovery()
     {
-        //--- if the discovery thread is running -> cancel it ---//
-        if(discoveryThread != null && discoveryThread.isDiscovering()){
-            discoveryThread.cancel();
-        }
-
-        this.discoveryThread = null;
-    }
-
-
-    //
-    //  ----------  "client" side ----------
-    //
-
-
-    /**
-     * Starts looking for the service specified with the `serviceUUID` parameter.
-     *
-     * @param description
-     *         The Service description
-     */
-    private void startSDPDiscoveryForService(ServiceDescription description)
-    {
-        Log.d(TAG, "Starting service discovery");
-        // Are we already looking for he service?
-
-        //----------------------------------
-        // NOTE : here the sequence actually matters, the service client needs to be se before
-        // trying to find already discovered services. Else this wil lead to a null pointer
-        // when trying to connect to a service.
-        //----------------------------------
-
-        // Trying to find service on devices hat where discovered earlier in the engine run
-        this.tryToConnectToServiceAlreadyInRange(description);
-        // Adding the service to  be found in the future
-        this.serviceToLookFor = description;
-    }
-
-    /**
-     * This stops the discovery for the service given previously
-     * trough calling {@link #startSDPDiscoveryForService(ServiceDescription)} (UUID, SdpWifiPeer)}.
-     *
-     * This however does not end any existing connections and does not cancel the overall service discovery
-     * refer to {@link #stopDiscovery()}
-     */
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    private void stopSDPDiscovery()
-    {
-        Log.d(TAG, "End service discovery for service with " + serviceToLookFor);
-
-        this.serviceToLookFor = null;
-        this.peer = null;
-        this.stopDiscovery();
-    }
-
-    private void tryToConnectToServiceAlreadyInRange(ServiceDescription description)
-    {
-        // TODO
-    }
-
-    //
-    //  ----------  "server" side ----------
-    //
-
-    /**
-     *
-     */
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    private void startSDPService(ServiceDescription description)
-    {
-        Log.d(TAG, "startSDPService: starting service : " + description);
-        WifiP2pServiceInfo serviceRecords = WifiP2pDnsSdServiceInfo.newInstance(description.getServiceUuid().toString(), "_presence._tcp", description.getServiceRecord());
-        manager.addLocalService(channel, serviceRecords, new WifiP2pManager.ActionListener()
-        {
-            @Override
-            public void onSuccess()
-            {
-                Log.d(TAG, "startSDPService: service successfully added : " + description);
-                runningService = serviceRecords;
-            }
-
-            @Override
-            public void onFailure(int arg0)
-            {
-                Utils.logReason("startSDPService: service could not be added : " + description , arg0);
-            }
-        });
-
-    }
-
-    /**
-     * This stops the advertisement of the service,
-     * other peers who are running a service discovery wont
-     *
-     *
-     */
-    private void stopSDPService()
-    {
-        if (this.runningService == null)
-        {
+        if(manager == null){
             return;
         }
-
-        manager.removeLocalService(channel, this.runningService, new WifiP2pManager.ActionListener()
-        {
-            @Override
-            public void onSuccess()
-            {
-                runningService = null;
-                Log.d(TAG, "stopSDPService: service removed successfully ");
-            }
-
-            @Override
-            public void onFailure(int reason)
-            {
-                Utils.logReason("stopSDPService: could not remove service ", reason);
-            }
-        });
+        this.discoveryEngine.stopDiscovery();
     }
 
 
@@ -464,56 +408,19 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
     //
 
 
-    /**
-     * Called by the {@link SdpWifiDiscoveryThread} as described
-     * in the interface {@link SdpWifiDiscoveryThread.WifiSdpServiceDiscoveryListener}
-     *
-     * @param device
-     *         The device which hosts the service
-     * @param serviceRecord
-     *         The services TXT Records
-     * @param fullDomain
-     *         The services domain
-     */
-    @Override
-    public void onServiceDiscovered(WifiP2pDevice device, Map<String, String> serviceRecord, String fullDomain)
-    {
-        Log.d(TAG, "onServiceDiscovered: discovered a new Service on " + Utils.getRemoteDeviceString(device));
-
-        ServiceDescription description = new ServiceDescription(serviceRecord);
-        Log.d(TAG, "onServiceDiscovered: received " + description);
-
-        if (this.peer != null)
-        {
-            peer.onServiceDiscovered(device.deviceAddress, description);
-        }
-
-        //--- adding to list of remembered services ---//
-
-        ArrayList<WifiP2pDevice> serviceDevices = this.discoveredServices.get(description.getServiceUuid());
-        if (serviceDevices == null)
-        {
-            serviceDevices = new ArrayList<>();
-        }
-
-        serviceDevices.add(device);
-        this.discoveredServices.put(description.getServiceUuid(), serviceDevices);
-
-        //--- trying to connect ---//
-
-        this.tryToConnect(device, description);
-    }
-
-    @Override
-    public void onDiscoveryFinished()
-    {
-        Log.d(TAG, "onDiscoveryFinished: the discovery process finished");
-    }
 
     //
     //  ----------  connecting ----------
     //
 
+    private WifiServiceDiscoveryListener serviceDiscoveryListener = new WifiServiceDiscoveryListener()
+    {
+        @Override
+        public void onServiceDiscovered(WifiP2pDevice host, ServiceDescription description)
+        {
+            tryToConnect(host, description);
+        }
+    };
 
     /**
      * Checks if a connection should be established to the remote device
@@ -525,46 +432,38 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
      */
     private void tryToConnect(WifiP2pDevice device, ServiceDescription description)
     {
-
-        if (serviceToLookFor == null)
-        {
-            // no discovery started, UUID is null
-            // no need to try to connect
-            Log.d(TAG, "connectIfServiceAvailableAndNoConnectedAlready: not looking for a service, wont connect");
+        Log.d(TAG, "tryToConnect: received a service - trying to connect");
+        Log.e(TAG, "tryToConnect: " + peer );
+        if(peer == null){
+            Log.e(TAG, "tryToConnect: peer was null, stop");
             return;
         }
 
-        if (serviceToLookFor.equals(description) && peer.shouldConnectTo(device.deviceAddress, description))
-        {
 
+        if (peer.shouldConnectTo(device.deviceAddress, description))
+        {
             Log.d(TAG, "tryToConnect: trying to connect to  " + Utils.getRemoteDeviceString(device));
             WifiP2pConfig config = new WifiP2pConfig();
             config.deviceAddress = device.deviceAddress;
 
-            if (ContextCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            this.manager.connect(this.channel, config, new WifiP2pManager.ActionListener()
             {
-                Log.e(TAG, "tryToConnect: no permission, wont connect");
-            }
-            else
-            {
-                this.manager.connect(
-                        this.channel,
-                        config,
-                        new WifiP2pManager.ActionListener()
-                        {
-                            @Override
-                            public void onSuccess()
-                            {
-                                Log.d(TAG, "Successfully send connection request to " + Utils.getRemoteDeviceString(device));
-                    }
+                @Override
+                public void onSuccess()
+                {
+                    Log.d(TAG, "Successfully send connection request to " + Utils.getRemoteDeviceString(device));
+                 }
 
-                    @Override
-                    public void onFailure(int reason)
-                    {
-                        Utils.logReason("Failed sending connection request to " + Utils.getRemoteDeviceString(device), reason);
-                    }
+                @Override
+                public void onFailure(int reason)
+                {
+                    Utils.logReason("Failed sending connection request to " + Utils.getRemoteDeviceString(device), reason);
                 }
-        );}
+            });
+        }
+        else
+        {
+            Log.d(TAG, "tryToConnect: peer decided not to connect");
         }
     }
 
@@ -579,8 +478,9 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
      */
     protected void onBecameGroupOwner(){
         Log.d(TAG, "onBecameGroupOwner: became group owner, doing group owner stuff");
-        this.peer.onBecameGroupOwner();
-
+        if(peer!= null){
+            this.peer.onBecameGroupOwner();
+        }
         // As a group owner we cant connect to other devices
         // so we also can stop discovery :
         this.stopDiscovery();
@@ -593,9 +493,12 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
      * group
      */
     protected void onBecameClient(){
-        this.peer.onBecameGroupClient();
+        if(peer!= null){
+            this.peer.onBecameGroupClient();
+        }
         Log.d(TAG, "onBecameClient: became client to a GO, doing client stuff");
-
+        this.discoveryEngine.stopSDPService(currentServiceDescription);
+        this.connectionListener.establishConnections(false);
         //----------------------------------
         // NOTE : as a client, the local device does
         // not need to discover further devices, since
@@ -609,12 +512,11 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
         // the existing group.
         //----------------------------------
         this.stopDiscovery();
-        this.stopSDPService();
     }
 
     protected void onSocketConnected(SdpWifiConnection connection)
     {
-        Log.d(TAG, "onSocketConnected: Connection established");
+        Log.d(TAG, "onSocketConnected: Connection established " + connection);
         if(peer != null){
             peer.onConnectionEstablished(connection);
         }
@@ -623,12 +525,16 @@ public class SdpWifiEngine implements SdpWifiDiscoveryThread.WifiSdpServiceDisco
         }
     }
 
+    /**
+     * Starts a thread to wait for socket connection beeing established
+     * and then calls {@link #onSocketConnected(SdpWifiConnection)}
+     * @param channelCreator
+     */
     protected void onSocketConnectionStarted(TCPChannelMaker channelCreator)
     {
-        AsyncSdpWifiConnectionCreator awaitThread = new AsyncSdpWifiConnectionCreator(channelCreator, this, this.serviceToLookFor);
+        AsyncSdpWifiConnectionCreator awaitThread = new AsyncSdpWifiConnectionCreator(channelCreator, this, this.currentServiceDescription);
         awaitThread.start();
     }
-
 
     //
     //  ----------  misc ----------

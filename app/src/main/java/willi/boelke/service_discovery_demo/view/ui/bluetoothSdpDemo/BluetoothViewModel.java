@@ -44,7 +44,7 @@ public class BluetoothViewModel extends ViewModel
     }
 
     protected void starDiscovery(){
-        SdpBluetoothEngine.getInstance().startDeviceDiscovery();
+
     }
 
     protected void stopDiscovery(){
