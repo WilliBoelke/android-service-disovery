@@ -44,12 +44,11 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
 
     //------------Constructors------------
 
-    public BluetoothClientConnector(BluetoothAdapter mBluetoothAdapter, ServiceDescription description, BluetoothDevice server, ConnectionEventListener connectionStateChangeListener)
+    public BluetoothClientConnector( ServiceDescription description, BluetoothDevice server, ConnectionEventListener connectionStateChangeListener)
     {
         this.connectionStateChangeListener = connectionStateChangeListener;
         this.server = server;
         this.description = description;
-        this.mBluetoothAdapter = mBluetoothAdapter;
     }
 
     //------------Network Connection Methods ------------

@@ -589,7 +589,7 @@ public class SdpBluetoothEngine
     private void startClientThread(BluetoothDevice device, ServiceDescription description)
     {
         Log.d(TAG, "Staring Client");
-        BluetoothClientConnector bluetoothClientConnector = new BluetoothClientConnector(bluetoothAdapter, description, device, new BluetoothClientConnector.ConnectionEventListener()
+        BluetoothClientConnector bluetoothClientConnector = new BluetoothClientConnector(description, device, new BluetoothClientConnector.ConnectionEventListener()
         {
             @Override
             public void onConnectionFailed(UUID uuid, BluetoothConnectorThread failedConnector)
