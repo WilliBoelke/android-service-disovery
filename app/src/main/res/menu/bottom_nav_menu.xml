@@ -2,12 +2,22 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/navigation_home"
+        android:id="@+id/nav_wifi_connect"
         android:icon="@drawable/ic_baseline_wifi_tethering_24"
         android:title="@string/title_wifip2p"/>
 
     <item
-        android:id="@+id/navigation_dashboard"
+        android:id="@+id/nav_bluetooth_connect"
         android:icon="@drawable/ic_baseline_bluetooth_24"
         android:title="@string/title_bt"/>
+
+    <item
+        android:id="@+id/nav_wifi_discovery"
+        android:icon="@drawable/ic_baseline_wifi_tethering_24"
+        android:title="@string/wifi_discover"/>
+
+    <item
+        android:id="@+id/nav_bluetooth_discovery"
+        android:icon="@drawable/ic_baseline_bluetooth_24"
+        android:title="@string/bt_discover"/>
 </menu>

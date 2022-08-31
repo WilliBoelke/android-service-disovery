@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_bluetooth_discovery">
+
+    <fragment
+        android:id="@+id/nav_bluetooth_discovery"
+        android:name="willi.boelke.service_discovery_demo.view.demoFragments.BluetoothDiscoveryFragment"
+        android:label="@string/title_wifip2p"
+        tools:layout="@layout/fragment_wifi_direct_connect" />
+
+    <fragment
+        android:id="@+id/nav_wifi_discovery"
+        android:name="willi.boelke.service_discovery_demo.view.demoFragments.WifiDirectConnectionFragment"
+        android:label="@string/title_bt"
+        tools:layout="@layout/fragment_bluetooth_connect" />
+
+    <fragment
+        android:id="@+id/nav_wifi_connect"
+        android:name="willi.boelke.service_discovery_demo.view.demoFragments.WifiDirectConnectionFragment"
+        android:label="@string/title_wifip2p"
+        tools:layout="@layout/fragment_wifi_direct_connect" />
+
+    <fragment
+        android:id="@+id/nav_bluetooth_connect"
+        android:name="willi.boelke.service_discovery_demo.view.demoFragments.BluetoothConnectionFragment"
+        android:label="@string/title_bt"
+        tools:layout="@layout/fragment_bluetooth_connect" />
+
+</navigation>

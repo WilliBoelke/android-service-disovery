@@ -15,17 +15,19 @@
 
     <string name="refresh">Refresh</string>
     <string name="title_activity_main">MainActivity</string>
-    <string name="title_home">Home</string>
-    <string name="title_bt">Bluetooth</string>
-    <string name="title_wifip2p">Wifi Direct</string>
-
+    <string name="title_bt">Bluetooth Connect</string>
+    <string name="title_wifip2p">Wifi Direct Connect</string>
+    <string name="wifi_discover">Wifi Direct Discovery</string>
+    <string name="bt_discover">Bluetooth Discover</string>
     <string name="end_disc">End Disc</string>
     <string name="discover">Discover</string>
-
-
 
     <string name="discoverabe">Discoverabe</string>
     <string name="discovery">Discovery</string>
     <string name="refresh_btn_label">r</string>
     <string name="end_discovery">E Discovery</string>
+
+
+    <string name="discover_all">discover all</string>
+    <string name="refresh_services">refresh services</string>
 </resources>

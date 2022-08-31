@@ -10,10 +10,10 @@ import androidx.lifecycle.MutableLiveData;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiConnection;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiEngine;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiPeer;
+import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
+import willi.boelke.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiConnection;
+import willi.boelke.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiEngine;
+import willi.boelke.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiPeer;
 
 /**
  * Demo implementation of a SdpWifiPeer.
@@ -31,7 +31,6 @@ import willi.boelke.servicedisoveryengine.serviceDiscovery.wifiDirect.sdpWifiEng
 public class WifiDemoController implements SdpWifiPeer
 {
     private static final String GROUP_OWNER_DEFAULT_MESSAGE = "writing to clients...";
-
 
     /**
      * UUID of the service being advertised / looked for using this controller
@@ -66,7 +65,6 @@ public class WifiDemoController implements SdpWifiPeer
         this.description = description;
     }
 
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     public void startService()
     {
         this.writeThread = new WriteThread();
@@ -74,7 +72,6 @@ public class WifiDemoController implements SdpWifiPeer
         SdpWifiEngine.getInstance().registerService(this.description, this);
     }
 
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     public void stopService()
     {
         SdpWifiEngine.getInstance().unregisterService();

@@ -9,10 +9,10 @@ import androidx.lifecycle.MutableLiveData;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothServiceClient;
-import willi.boelke.servicedisoveryengine.serviceDiscovery.serviceDescription.ServiceDescription;
+import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
+import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine;
+import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothServiceClient;
+import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
 
 /**
  * This is a demo implementation for a a bluetooth sdp "client"
@@ -135,6 +135,7 @@ public class DemoClientController implements SdpBluetoothServiceClient
         private boolean running = true;
         private Thread thread;
 
+        @Override
         public void run()
         {
             this.thread = Thread.currentThread();
