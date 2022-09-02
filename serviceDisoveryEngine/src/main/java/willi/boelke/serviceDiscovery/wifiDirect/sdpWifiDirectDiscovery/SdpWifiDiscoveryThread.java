@@ -8,6 +8,7 @@ import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import willi.boelke.serviceDiscovery.Utils;
@@ -37,7 +38,7 @@ import willi.boelke.serviceDiscovery.Utils;
  * SdpWifiDiscoveryEngine<br>
  * ------------------------------------------------------------<br>
  * Every discovered service will be passed to
- * {@link SdpWifiDirectDiscoveryEngine#onServiceDiscovered(WifiP2pDevice, Map, String)}
+ * {@link SdpWifiDirectDiscoveryEngine#onServiceDiscovered(WifiP2pDevice, Map, String, String)}
  * only there the service records will be evaluated.
  *
  * @author WilliBoelke
@@ -68,6 +69,7 @@ class SdpWifiDiscoveryThread extends Thread
 
     private Thread thread;
 
+    private final HashMap<String, Map<String, String>> tmpRecordCache = new HashMap<>();
     //
     //  ---------- constructor and initialisation ----------
     //
@@ -171,8 +173,25 @@ class SdpWifiDiscoveryThread extends Thread
      */
     private void setupDiscoveryCallbacks()
     {
-
+        tmpRecordCache.clear();
         Log.d(TAG, "setupDiscoveryCallbacks: setting up callbacks");
+
+        //----------------------------------
+        // NOTE : Well its a little bit weird i think
+        // that the TXT record and the DnsService response
+        // come in separate callbacks.
+        // It seems so that the always come in teh same order
+        // To i can match both using the device address.
+        // https://developer.android.com/training/connect-devices-wirelessly/nsd-wifi-direct
+        // does it similar, though in their example
+        // there just is one single service.
+        // I am sure there is some reason for it.. which i
+        // cant quite understand. I think both should come in teh same callback
+        // because i am sure google could make a more reliable matching between the two
+        // then i can do here.
+        //
+        // Lets test it out
+        //----------------------------------
 
         //--- TXT Record listener ---//
 
@@ -180,19 +199,16 @@ class SdpWifiDiscoveryThread extends Thread
         {
             Log.d(TAG, "run: found service record: on  " + Utils.getRemoteDeviceString(device) + " record: " + txtRecord);
 
-            engine.onServiceDiscovered(device, txtRecord, fullDomain);
+            tmpRecordCache.put(device.deviceAddress, txtRecord);
         };
 
         //--- Service response listener - gives additional service info ---//
 
-        WifiP2pManager.DnsSdServiceResponseListener servListener = (instanceName, registrationType, resourceType) ->
+        WifiP2pManager.DnsSdServiceResponseListener servListener = (instanceName, registrationType, device) ->
         {
-            //----------------------------------
-            // NOTE : Right now i don't see any
-            // use in the information give here,
-            // but i am sure it can be useful at some point.
-            // (That's why its there)
-            //----------------------------------
+            Map<String, String> record = tmpRecordCache.get(device.deviceAddress);
+            engine.onServiceDiscovered(device, record, registrationType, instanceName);
+
         };
 
         //--- setting the listeners ---//

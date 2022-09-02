@@ -16,9 +16,6 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
-import java.util.HashMap;
-
-import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
 import willi.boelke.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiEngine;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.controller.wifiDemoController.WifiDemoController;
@@ -113,7 +110,7 @@ public class WifiDirectConnectionFragment extends Fragment
         }
         else if (binding.endDiscoveryOneBtn.equals(view))
         {
-            this.wifiDemoControllerOne.stopService();
+            this.wifiDemoControllerOne.stop();
         }
         else if (binding.startDiscoveryTwoBtn.equals(view))
         {
@@ -121,7 +118,7 @@ public class WifiDirectConnectionFragment extends Fragment
         }
         else if (binding.endDiscoveryTwoBtn.equals(view))
         {
-            this.wifiDemoControllerTwo.stopService();
+            this.wifiDemoControllerTwo.stop();
         }
         else if (binding.endDiscoveryButton.equals(view))
         {
@@ -135,6 +132,8 @@ public class WifiDirectConnectionFragment extends Fragment
     {
         super.onDestroyView();
         if(engine.isRunning()){
+            this.wifiDemoControllerOne.stop();
+            this.wifiDemoControllerTwo.stop();
             this.engine.stop();
         }
         binding = null;

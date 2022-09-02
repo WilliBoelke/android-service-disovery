@@ -141,6 +141,7 @@ class WifiDirectDiscoveryEngineTest {
 
         Thread.sleep(1000) //give it a moment to register everything
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
         Thread.sleep(2000)
         assertEquals(testDescriptionFour, receivedDescription)
         assertEquals(getTestDeviceOne_Wifi().deviceName, receivedDevice?.deviceName)
@@ -160,11 +161,15 @@ class WifiDirectDiscoveryEngineTest {
         Thread.sleep(1000) // give the discovery thread a moment to init everything
 
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
+
         assertEquals(testDescriptionFour, receivedDescription)
         assertEquals(getTestDeviceOne_Wifi().deviceName, receivedDevice?.deviceName)
         assertEquals(getTestDeviceOne_Wifi().deviceAddress, receivedDevice?.deviceAddress)
 
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceTwo_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceTwo_Wifi())
+
         assertEquals(testDescriptionFour, receivedDescription)
         assertEquals(getTestDeviceTwo_Wifi().deviceName, receivedDevice?.deviceName)
         assertEquals(getTestDeviceTwo_Wifi().deviceAddress, receivedDevice?.deviceAddress)
@@ -182,6 +187,7 @@ class WifiDirectDiscoveryEngineTest {
 
         Thread.sleep(1000) //give it a moment to register everything
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFive.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFive.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
 
         assertFalse(wasNotified)
     }
@@ -198,7 +204,10 @@ class WifiDirectDiscoveryEngineTest {
         Thread.sleep(1000) // give the discovery thread a moment to init everything
 
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
+
 
         assertEquals(1, notifiedCounter)
     }
@@ -215,17 +224,18 @@ class WifiDirectDiscoveryEngineTest {
         Thread.sleep(1000) // give the discovery thread a moment to init everything
 
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
         SdpWifiDirectDiscoveryEngine.getInstance().stopDiscovery()
         SdpWifiDirectDiscoveryEngine.getInstance().startDiscovery()
         Thread.sleep(1000) // give the discovery thread a moment to init everything
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceOne_Wifi())
-
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
         assertEquals(2, notifiedCounter)
     }
 
 
     @Test
-    fun itShouldSearchForANumberOfServices()
+    fun itShouldSearchForSeveralServices()
     {
         var receivedDevice: WifiP2pDevice? = null
         var receivedDescription: ServiceDescription? = null
@@ -239,16 +249,18 @@ class WifiDirectDiscoveryEngineTest {
         Thread.sleep(1000) // give the discovery thread a moment to init everything
 
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFive.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFive.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
+
         assertEquals(testDescriptionFive, receivedDescription)
         assertEquals(getTestDeviceOne_Wifi().deviceName, receivedDevice?.deviceName)
         assertEquals(getTestDeviceOne_Wifi().deviceAddress, receivedDevice?.deviceAddress)
 
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
         assertEquals(testDescriptionFour, receivedDescription)
         assertEquals(getTestDeviceOne_Wifi().deviceName, receivedDevice?.deviceName)
         assertEquals(getTestDeviceOne_Wifi().deviceAddress, receivedDevice?.deviceAddress)
     }
-
 
     @Test
     fun itShouldStopNotifyingAfterSdpHasBeenStopped()
@@ -262,14 +274,16 @@ class WifiDirectDiscoveryEngineTest {
         Thread.sleep(1000) // give the discovery thread a moment to init everything
 
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
+        testDescriptionFour
         assertEquals(1, notifiedCounter)
 
 
-        SdpWifiDirectDiscoveryEngine.getInstance().stopSDPDiscovery(testDescriptionFour)
+        SdpWifiDirectDiscoveryEngine.getInstance().stopSdpDiscovery(testDescriptionFour)
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceTwo_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceTwo_Wifi())
         assertEquals(1, notifiedCounter)
     }
-
 
     @Test
     fun itShouldOnlyStopTheCorrectServiceDiscovery(){
@@ -283,14 +297,21 @@ class WifiDirectDiscoveryEngineTest {
         Thread.sleep(1000) // give the discovery thread a moment to init everything
 
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
+
         assertEquals(1, notifiedCounter)
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFive.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFive.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
+
 
         assertEquals(2, notifiedCounter)
 
-        SdpWifiDirectDiscoveryEngine.getInstance().stopSDPDiscovery(testDescriptionFour)
+        SdpWifiDirectDiscoveryEngine.getInstance().stopSdpDiscovery(testDescriptionFour)
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceTwo_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceTwo_Wifi())
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFive.serviceRecord, getTestDeviceTwo_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFive.serviceName, "_presence._tcp.local." , getTestDeviceTwo_Wifi())
+
         assertEquals(3, notifiedCounter)
     }
 
@@ -323,7 +344,7 @@ class WifiDirectDiscoveryEngineTest {
         Thread.sleep(1000) // give the discovery thread a moment to init everything
 
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFive.serviceRecord, getTestDeviceOne_Wifi())
-
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFive.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
         assertEquals(getTestDeviceOne_Wifi(), receivedDeviceListenerOne)
         assertEquals(getTestDeviceOne_Wifi(), receivedDeviceListenerTwo)
         assertEquals(getTestDeviceOne_Wifi(), receivedDeviceListenerThree)
@@ -359,6 +380,7 @@ class WifiDirectDiscoveryEngineTest {
         Thread.sleep(1000) // give the discovery thread a moment to init everything
 
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFive.serviceRecord, getTestDeviceOne_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFive.serviceName, "_presence._tcp.local." , getTestDeviceOne_Wifi())
 
         assertEquals(getTestDeviceOne_Wifi(), receivedDeviceListenerOne)
         assertEquals(getTestDeviceOne_Wifi(), receivedDeviceListenerTwo)
@@ -368,6 +390,7 @@ class WifiDirectDiscoveryEngineTest {
 
         SdpWifiDirectDiscoveryEngine.getInstance().unregisterDiscoveryListener(listener)
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable("", testDescriptionFour.serviceRecord, getTestDeviceTwo_Wifi())
+        servListenerCapture.captured.onDnsSdServiceAvailable(testDescriptionFour.serviceName, "_presence._tcp.local." , getTestDeviceTwo_Wifi())
 
         assertEquals(getTestDeviceTwo_Wifi(), receivedDeviceListenerOne)
         assertEquals(testDescriptionFour, receivedDescriptionListenerOne)

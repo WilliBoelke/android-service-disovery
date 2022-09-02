@@ -45,8 +45,8 @@ public class SdpBluetoothConnectionTest
         serviceAttributesOne.put("service-info", "This is a test service description");
         serviceAttributesTwo.put("service-name", "Counting Service Two");
         serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription(serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription(serviceAttributesTwo);
+        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service One", serviceAttributesTwo);
 
         testConnectionOne = new SdpBluetoothConnection(descriptionForServiceOne, testSocketOne, false);
         testConnectionTwo = new SdpBluetoothConnection(descriptionForServiceTwo, testSocketTwo, true);

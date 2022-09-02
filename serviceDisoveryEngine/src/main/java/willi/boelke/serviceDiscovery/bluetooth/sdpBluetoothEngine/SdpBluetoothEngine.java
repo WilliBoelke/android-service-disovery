@@ -360,7 +360,7 @@ public class SdpBluetoothEngine
     {
         // Adding the service client ot the list
         this.serviceClients.put(serviceDescription, serviceClient);
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(serviceDescription);
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(serviceDescription);
     }
 
     /**
@@ -386,7 +386,7 @@ public class SdpBluetoothEngine
             Log.e(TAG, "stopSDPDiscoveryForService: the engine is not running, wont stop");
         }
         Log.d(TAG, "End service discovery for " + description);
-        SdpBluetoothDiscoveryEngine.getInstance().stopSDPDiscoveryForService(description);
+        SdpBluetoothDiscoveryEngine.getInstance().stopSdpDiscoveryForService(description);
 
         // stopping all client connectors which may sill run and try to connect to this service
         ArrayList<BluetoothClientConnector> connectorsToClose = new ArrayList<>();

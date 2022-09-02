@@ -56,6 +56,8 @@ public class ServiceDescription
      */
     private final Map<String, String> attributes;
 
+    private final String serviceName;
+
     /**
      * A custom uuid, which - when set- will be used
      * instead of a generated one
@@ -73,8 +75,9 @@ public class ServiceDescription
      * The service record, this needs to contain at least one
      * key - value
      */
-    public  ServiceDescription (Map<String, String> serviceRecord)
+    public  ServiceDescription (String serviceName, Map<String, String> serviceRecord)
     {
+        this.serviceName = serviceName;
         this.attributes = serviceRecord;
     }
 
@@ -115,7 +118,7 @@ public class ServiceDescription
         if(this.serviceUuid == null)
         {
             //--- generating UUID from attributes ---//
-            this.serviceUuid = getUuidForServiceRecord(this.attributes);
+            this.serviceUuid = getUuidForService(this.serviceName, this.attributes);
         }
 
         return this.serviceUuid;
@@ -143,12 +146,13 @@ public class ServiceDescription
      * @throws NullPointerException
      * If the given Map was empty
      */
-    public static UUID getUuidForServiceRecord(Map<String, String> serviceRecord) throws NullPointerException
+    public static UUID getUuidForService(String serviceName, Map<String, String> serviceRecord) throws NullPointerException
     {
         if(serviceRecord.size() == 0){
             throw new NullPointerException("There are no service attributes specified");
         }
         StringBuilder sb = new StringBuilder();
+        sb.append(serviceName);
         for (Map.Entry<String, String> entry: serviceRecord.entrySet())
         {
             sb.append(entry.getKey());
@@ -221,5 +225,10 @@ public class ServiceDescription
         sd.append(",");
         sd.append("\n Attributes =  " + this.attributes.toString());
         return sd.toString();
+    }
+
+    public String getServiceName()
+    {
+        return this.serviceName;
     }
 }

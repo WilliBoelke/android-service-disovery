@@ -15,6 +15,7 @@ import android.Manifest;
 import android.arch.core.executor.testing.CountingTaskExecutorRule;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -94,6 +95,10 @@ import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SdpBluetoothDiscoveryEngineLiveTest {
 
+    /**
+     * Classname for logging
+     */
+    private final String TAG = this.getClass().getSimpleName();
 
     ServiceDescription descriptionForServiceOne;
     ServiceDescription descriptionForServiceTwo;
@@ -117,9 +122,9 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
         serviceAttributesOne.put("service-name", "Test Service One");
         serviceAttributesOne.put("service-info", "This is a test service description");
         serviceAttributesTwo.put("service-name", "Counting Service Two");
-        serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        descriptionForServiceOne = new ServiceDescription(serviceAttributesOne);
-        descriptionForServiceTwo = new ServiceDescription(serviceAttributesTwo);
+        serviceAttributesTwo.put("service-info", "This is another test service description");
+        descriptionForServiceOne = new ServiceDescription("test service one", serviceAttributesOne);
+        descriptionForServiceTwo = new ServiceDescription("test service two", serviceAttributesTwo);
         SdpBluetoothEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
         SdpBluetoothDiscoveryEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
     }
@@ -151,7 +156,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
             case DEVICE_C:
                 itShouldFindNearbyDevice_discoverable();
             default:
-                System.out.println("device not specified " + getCurrentDeviceName());
+              Log.e(TAG, "device not specified " + getCurrentDeviceName());
         }
     }
 
@@ -225,7 +230,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
                 }
                 assertTrue(true); // test shouldn't fail on this device
             default:
-                System.out.println("device not specified " + getCurrentDeviceName());
+              Log.e(TAG, "device not specified " + getCurrentDeviceName());
         }
 
     }
@@ -273,7 +278,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
             }
         });
 
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceOne);
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(descriptionForServiceOne);
         SdpBluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
 
         synchronized (this){
@@ -304,7 +309,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
                 itShouldFindTwoNearbyAvailableService_serviceAdvertisement();
                 break;
             default:
-                System.out.println("device not specified " + getCurrentDeviceName());
+              Log.e(TAG, "device not specified " + getCurrentDeviceName());
         }
 
     }
@@ -350,8 +355,8 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
             }
         });
 
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceOne);
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceTwo);
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(descriptionForServiceOne);
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(descriptionForServiceTwo);
         SdpBluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
 
         synchronized (this)
@@ -382,14 +387,14 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
             case DEVICE_B:
                 synchronized (this)
                 {
-                    this.wait(30000); // wait for test to finish
+                    this.wait(31000); // wait for test to finish
                 }
                 break;
             case DEVICE_C:
                 itShouldFindTwoDifferentServices_serviceAdvertisement();
                 break;
             default:
-                System.out.println("device not specified " + getCurrentDeviceName());
+              Log.e(TAG, "device not specified " + getCurrentDeviceName());
 
         }
 
@@ -411,7 +416,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
         SdpBluetoothEngine.getInstance().startDiscoverable();
         synchronized (this)
         {
-            this.wait(30000); // wait for test to finish
+            this.wait(31000); // wait for test to finish
         }
         assertTrue(true); // test shouldn't fail on this device
 
@@ -441,8 +446,8 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
             }
         });
 
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceOne);
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceTwo);
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(descriptionForServiceOne);
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(descriptionForServiceTwo);
         SdpBluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
 
         synchronized (this){
@@ -452,7 +457,6 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
         assertTrue(serviceHosts.contains(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(MAC_C_BT)));
         assertTrue(services.contains(descriptionForServiceOne));
         assertTrue(services.contains(descriptionForServiceTwo));
-
     }
 
 
@@ -476,7 +480,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
                 itShouldFindTwoDifferentServicesOnSeparateDevice_serviceAdvertisement_B();
                 break;
             default:
-                System.out.println("device not specified " + getCurrentDeviceName());
+              Log.e(TAG, "device not specified " + getCurrentDeviceName());
 
         }
 
@@ -535,8 +539,8 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
             }
         });
 
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceOne);
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceTwo);
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(descriptionForServiceOne);
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(descriptionForServiceTwo);
         SdpBluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
 
         synchronized (this)
@@ -549,8 +553,6 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
         assertTrue(services.contains(descriptionForServiceOne));
         assertTrue(services.contains(descriptionForServiceTwo));
     }
-
-
 
 
     @Test
@@ -566,7 +568,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
                 itShouldNotifiedAboutMatchingServicesAlreadyDiscovered_serviceAdvertisement();
                 break;
             default:
-                System.out.println("device not specified " + getCurrentDeviceName());
+              Log.e(TAG, "device not specified " + getCurrentDeviceName());
         }
 
     }
@@ -617,7 +619,7 @@ public class SdpBluetoothDiscoveryEngineLiveTest {
 
         assertEquals(0, serviceHosts.size());
 
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceOne);
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(descriptionForServiceOne);
         synchronized (this)
         {
             this.wait(5000); // this is the maximum time i give it to find the service

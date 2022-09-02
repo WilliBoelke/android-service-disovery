@@ -51,10 +51,8 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
      *
      * @param bluetoothAdapter
      *         The BluetoothAdapter tto use (usually the defaultAdapter)
-     * @param serviceName
-     *         The name of he service to be registered to the service records
-     * @param serviceUUID
-     *         The UUID of the service to be registered in the service records
+     * @param description
+     *         The description of the service, providing a UUId and a service name
      * @param connectionEvenListener
      *         Implementation of the {@link ConnectionEventListener} interface
      */
@@ -81,7 +79,7 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
     private void openServerSocket() throws IOException
     {
             Log.d(TAG, "openServerSocket: opening server socket with UUID : " + description.getServiceUuid());
-            this.serverSocket = mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(description.getServiceUuid().toString(), description.getServiceUuid());
+            this.serverSocket = mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(description.getServiceName().toString(), description.getServiceUuid());
 
     }
 

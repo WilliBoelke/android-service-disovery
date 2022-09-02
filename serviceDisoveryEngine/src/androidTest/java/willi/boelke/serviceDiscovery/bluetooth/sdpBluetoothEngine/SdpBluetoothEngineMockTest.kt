@@ -32,8 +32,9 @@ import java.io.IOException
  *  which is required to mock the android bt api and the context.
  *  Mockk is a Kotlin library thus Kotlin will be used for the test.
  *
- *  Also Mockk requires at least android P, so to run the tests an emulator or device
- *  with android p is recommended.
+ *  Also Mockk REQUIRES AT LEAST ANDROID P for some features,
+ *  so to run the tests an emulator or device with android p is recommended.
+ *  else some tests may fail
  *  <p>---------------------------------------------<p>
  *  Sine the complete bluetooth api is mocked, and the
  *  BroadcastReceivers are not actually functioning, test could be run
@@ -409,9 +410,6 @@ class SdpBluetoothEngineMockTest {
         SdpBluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
         SdpBluetoothDiscoveryEngine.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
 
-        // checking the result and verifying some method calls
-        verify (exactly = 1){ testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) }
-        verify (exactly = 1){ mockedSocket.connect() }
         assertEquals(getTestDeviceTwo().name, openedConnection?.remoteDevice?.name) // the remote device (testDeviceTwo)
         assert(openedConnection?.isServerPeer == false) // connected as client
     }
@@ -487,13 +485,13 @@ class SdpBluetoothEngineMockTest {
         Thread.sleep(3000)
         // In the given time exactly one connection should be accepted
         verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
-            testDescriptionOne.serviceUuid.toString(), testDescriptionOne.serviceUuid)}
+            testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
         // Accept will be called twice, once will go trough, then the tread loops and watt for the next connection
         verify(exactly = 2) { mockedServerSocket.accept()}
         Thread.sleep(2000)
         // Still only one Server socket should be opened
         verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
-            testDescriptionOne.serviceUuid.toString(), testDescriptionOne.serviceUuid)}
+            testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
         // his should accept he second connection and start waiting for the next
         verify(exactly = 3) { mockedServerSocket.accept()}
     }
@@ -522,13 +520,13 @@ class SdpBluetoothEngineMockTest {
         Thread.sleep(3000)
         // In the given time exactly one connection should be accepted
         verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
-            testDescriptionOne.serviceUuid.toString(), testDescriptionOne.serviceUuid)}
+            testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
         // Accept will be called twice, once will go trough, then the tread loops and watt for the next connection
         verify(exactly = 2) { mockedServerSocket.accept()}
         Thread.sleep(2000)
         // Still only one Server socket should be opened
         verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
-            testDescriptionOne.serviceUuid.toString(), testDescriptionOne.serviceUuid)}
+            testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
         // his should accept he second connection and start waiting for the next
         verify(exactly = 3) { mockedServerSocket.accept()}
 
@@ -586,8 +584,8 @@ class SdpBluetoothEngineMockTest {
         justRun { mockedServerSocketTwo.close() }
 
         // setting up the adapter to return mocked ServerSockets
-        every { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(testDescriptionOne.serviceUuid.toString(), any()) } returns mockedServerSocketOne
-        every { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(testDescriptionTwo.serviceUuid.toString(), any()) } returns mockedServerSocketTwo
+        every { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(testDescriptionOne.serviceName, any()) } returns mockedServerSocketOne
+        every { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(testDescriptionTwo.serviceName, any()) } returns mockedServerSocketTwo
 
         var openedConnectionOne: SdpBluetoothConnection? = null
         var openedConnectionTwo: SdpBluetoothConnection? = null
@@ -602,17 +600,17 @@ class SdpBluetoothEngineMockTest {
         Thread.sleep(3000)
         // In the given time exactly one connection should be accepted
          verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
-            testDescriptionOne.serviceUuid.toString(), testDescriptionOne.serviceUuid)}
+            testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
         verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
-            testDescriptionTwo.serviceUuid.toString(), testDescriptionTwo.serviceUuid)}
+            testDescriptionTwo.serviceName, testDescriptionTwo.serviceUuid)}
         verify(exactly = 2) { mockedServerSocketOne.accept()}
         verify(exactly = 1) { mockedServerSocketTwo.accept()}
         Thread.sleep(2000)
         // Still only one Server socket should be opened
         verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
-            testDescriptionOne.serviceUuid.toString(), testDescriptionOne.serviceUuid)}
+            testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
         verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
-            testDescriptionTwo.serviceUuid.toString(), testDescriptionTwo.serviceUuid)}
+            testDescriptionTwo.serviceName, testDescriptionTwo.serviceUuid)}
         // his should accept he second connection and start waiting for the next
         verify(exactly = 3) { mockedServerSocketOne.accept()}
         verify(exactly = 2) { mockedServerSocketTwo.accept()}

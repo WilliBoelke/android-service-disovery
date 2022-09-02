@@ -20,7 +20,13 @@ import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
 
 /**
  * Discover nearby Wifi Direct / Bonjour Services.
- *
+ * <p>
+ * Searching for services<br>
+ * ------------------------------------------------------------<br>
+ * Services are advertised as "_presence._tcp", so it is expected to use TCP as transport.
+ * The Service discovery currently doesn't support other protocols
+ * to connect to other kinds of services like network printers.
+ * This may be added in a future release.
  * <p>
  * Searching for services<br>
  * ------------------------------------------------------------<br>
@@ -30,12 +36,12 @@ import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
  * Several serves can be searched simultaneously by calling there methods with different
  * ServiceDescription`s. {@link #startSdpDiscoveryForService(ServiceDescription)}
  * wont return any services immediately.
- * To stop the search for a service call {@link #stopSDPDiscovery(ServiceDescription)}
+ * To stop the search for a service call {@link #stopSdpDiscovery(ServiceDescription)}
  * <p>
  * Service advertisement<br>
  * ------------------------------------------------------------<br>
- * Services can be advertised using {@link #startSDPService(ServiceDescription)}
- * the service will stay advertised until {@link #stopSDPService(ServiceDescription)}
+ * Services can be advertised using {@link #startSdpService(ServiceDescription)}
+ * the service will stay advertised until {@link #stopSdpService(ServiceDescription)}
  * or {@link #stop()} is called.
  * For a service to be Discoverable the device also needs to run the discovery.
  * (TODO this is weird behavior look into that more...could not find much in documenatation)
@@ -59,7 +65,7 @@ import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
  * if the engine should notify about every service discovered 
  * {@link #notifyAboutEveryService(boolean)} can be called with `true`
  * from that moment on until it was called with `false` the engine will notify about
- * every discovered service even if it was not registered through {@link #startSDPService(ServiceDescription)}
+ * every discovered service even if it was not registered through {@link #startSdpService(ServiceDescription)}
  *<p>
  * Stop the engine<br>
  * ------------------------------------------------------------<br>
@@ -87,6 +93,8 @@ public class SdpWifiDirectDiscoveryEngine
      * Classname for logging
      */
     private final String TAG = this.getClass().getSimpleName();
+
+    private final String SERVICE_TYPE = "_presence._tcp";
 
     /**
      * Wifi direct channel
@@ -126,8 +134,8 @@ public class SdpWifiDirectDiscoveryEngine
      * when they where started. 
      * This is to remove them again at a later point.
      *
-     * @see #startSDPService(ServiceDescription) 
-     * @see #stopSDPService(ServiceDescription)
+     * @see #startSdpService(ServiceDescription)
+     * @see #stopSdpService(ServiceDescription)
      */
     private final HashMap<ServiceDescription, WifiP2pServiceInfo> runningServices = new HashMap<>();
 
@@ -169,6 +177,7 @@ public class SdpWifiDirectDiscoveryEngine
         }
         return instance;
     }
+
 
     /**
      * Private singleton constructor
@@ -293,7 +302,7 @@ public class SdpWifiDirectDiscoveryEngine
     //
 
     /**
-     * Starts looking for the service specified with the `serviceUUID` parameter.
+     * Starts looking for a bonjour the service described through the service description.
      *
      * @param description
      *         The Service description
@@ -316,7 +325,7 @@ public class SdpWifiDirectDiscoveryEngine
      * This however does not end any existing connections and does not cancel the overall service discovery
      * refer to {@link #stopDiscovery()}
      */
-    public void stopSDPDiscovery(ServiceDescription description)
+    public void stopSdpDiscovery(ServiceDescription description)
     {
         if(engineIsNotRunning()){
             Log.e(TAG, "stopSDPDiscovery: engine not running - wont stop discovery");
@@ -379,27 +388,27 @@ public class SdpWifiDirectDiscoveryEngine
      *  This registers a new service, making it visible to other devices running a service discovery
      * // TODO maybe it would be useful to add make the service type changable ?
      */
-    public void startSDPService(ServiceDescription description)
+    public void startSdpService(ServiceDescription description)
     {
         if(engineIsNotRunning()){
-            Log.e(TAG, "startSDPService: engine not running - wont start service");
+            Log.e(TAG, "startSdpService: engine not running - wont start service");
             return;
         }
-        Log.d(TAG, "startSDPService: starting service : " + description);
-        WifiP2pServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(description.getServiceUuid().toString(), "_presence._tcp", description.getServiceRecord());
+        Log.d(TAG, "startSdpService: starting service : " + description);
+        WifiP2pServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(description.getServiceName(), SERVICE_TYPE, description.getServiceRecord());
         manager.addLocalService(channel, serviceInfo, new WifiP2pManager.ActionListener()
         {
             @Override
             public void onSuccess()
             {
-                Log.d(TAG, "startSDPService: service successfully added : " + description);
+                Log.d(TAG, "startSdpService: service successfully added : " + description);
                 runningServices.put(description, serviceInfo);
             }
 
             @Override
             public void onFailure(int arg0)
             {
-                Utils.logReason("startSDPService: service could not be added : " + description , arg0);
+                Utils.logReason("startSdpService: service could not be added : " + description , arg0);
             }
         });
 
@@ -411,7 +420,7 @@ public class SdpWifiDirectDiscoveryEngine
      *
      *
      */
-    public void stopSDPService(ServiceDescription description)
+    public void stopSdpService(ServiceDescription description)
     {
         if(engineIsNotRunning()){
             Log.e(TAG, "startSDPService: engine not running - wont stop service");
@@ -449,7 +458,7 @@ public class SdpWifiDirectDiscoveryEngine
     {
         // both don't seem to work reliable
         for(ServiceDescription description : runningServices.keySet()){
-            stopSDPService(description);
+            stopSdpService(description);
         }
 
         this.manager.clearLocalServices(channel, new WifiP2pManager.ActionListener()
@@ -534,20 +543,29 @@ public class SdpWifiDirectDiscoveryEngine
 
     /**
      * Called by the {@link SdpWifiDiscoveryThread}
+     * Since the {@link SdpWifiDiscoveryThread} may discover services 2 or more times
+     * this method checks the incoming services through a cache kept in {@link #discoveredServices}
+     * which will be kept until a new discovery is started.
+     * If the Pair {service, device} is not yet cached
+     * {@link #onNewServiceDiscovered(WifiP2pDevice, ServiceDescription)} be called.
      *
      * @param device
      *         The device which hosts the service
      * @param serviceRecord
      *         The services TXT Records
-     * @param fullDomain
-     *         The services domain
+     * @param registrationType
+     *         The services type
+     * @param instanceName
+     *          The name of the service
      */
-    protected void onServiceDiscovered(WifiP2pDevice device, Map<String, String> serviceRecord, String fullDomain)
+    protected void onServiceDiscovered(WifiP2pDevice device, Map<String, String> serviceRecord, String registrationType, String instanceName)
     {
-        Log.d(TAG, "onServiceDiscovered: discovered a new Service on " + Utils.getRemoteDeviceString(device));
-        ServiceDescription description = new ServiceDescription(serviceRecord);
-        Log.d(TAG, "onServiceDiscovered: received " + description);
-
+        Log.d(TAG, "onServiceDiscovered: ----discovered a new Service on " + Utils.getRemoteDeviceString(device) + "----");
+        if(!registrationType.equals(SERVICE_TYPE+".local.")){
+            Log.e(TAG, "onServiceDiscovered: not a " + SERVICE_TYPE + " service - stop");
+            return;
+        }
+        ServiceDescription description = new ServiceDescription(instanceName, serviceRecord);
         //--- updating discovered services list ---//
 
         boolean newService = false;
@@ -570,19 +588,18 @@ public class SdpWifiDirectDiscoveryEngine
         else
         {
             //--- device new ---//
-            Log.e(TAG, "onServiceDiscovered: knew the service, but this is a new host");
+            Log.d(TAG, "onServiceDiscovered: knew the service, but this is a new host");
             discoveredServices.get(description).add(device);
             newService = true;
         }
-
-        if(newService || shouldNotifyAboutAll)
+        if(newService)
         {
             onNewServiceDiscovered(device, description);
         }
     }
 
     /**
-     * Called by {@link #onServiceDiscovered(WifiP2pDevice, Map, String)}
+     * Called by {@link #onServiceDiscovered(WifiP2pDevice, Map, String, String)}
      * When the service was not already in {@link #discoveredServices}
      * @param device
      * the remote device hosting the service
@@ -592,7 +609,7 @@ public class SdpWifiDirectDiscoveryEngine
     private void onNewServiceDiscovered(WifiP2pDevice device, ServiceDescription description)
     {
         Log.d(TAG, "onNewServiceDiscovered: got service, checking if looked for");
-        if(servicesToLookFor.contains(description)){
+        if(servicesToLookFor.contains(description) || shouldNotifyAboutAll ){
             Log.d(TAG, "onNewServiceDiscovered: service is registered for search notify listeners");
             notifyOnServiceDiscovered(device, description);
         }

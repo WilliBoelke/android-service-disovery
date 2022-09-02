@@ -15,14 +15,14 @@ public interface BluetoothServiceDiscoveryListener
 {
     /**
      * Called whenever a service was discovered which has been looked for
-     * through {@link SdpBluetoothDiscoveryEngine#startSDPDiscoveryForService(ServiceDescription)}
+     * through {@link SdpBluetoothDiscoveryEngine#startSdpDiscoveryForService(ServiceDescription)}
      *
      * Provides the remote host device and the service description to identify the service
      *
      * @param host
      *  The BluetoothDevice hosting / advertising the service
      * @param description
-     *  The service description as provided in {@link SdpBluetoothDiscoveryEngine#startSDPDiscoveryForService(ServiceDescription)}
+     *  The service description as provided in {@link SdpBluetoothDiscoveryEngine#startSdpDiscoveryForService(ServiceDescription)}
      *  which was resolved through matching UUIDs
      */
     void onServiceDiscovered(BluetoothDevice host, ServiceDescription description);

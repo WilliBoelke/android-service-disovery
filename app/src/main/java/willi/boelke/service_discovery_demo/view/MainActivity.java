@@ -65,12 +65,10 @@ public class MainActivity extends AppCompatActivity
 
         HashMap<String, String> serviceAttributesOne = new HashMap<>();
         HashMap<String, String> serviceAttributesTwo = new HashMap<>();
-        serviceAttributesOne.put("service-name", "Counting Service One");
         serviceAttributesOne.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        serviceAttributesTwo.put("service-name", "Counting Service Two");
         serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        descriptionForServiceOne = new ServiceDescription(serviceAttributesOne);
-        descriptionForServiceTwo = new ServiceDescription(serviceAttributesTwo);
+        descriptionForServiceOne = new ServiceDescription("Counting Service One", serviceAttributesOne);
+        descriptionForServiceTwo = new ServiceDescription("Counting Service Two", serviceAttributesTwo);
     }
 
 

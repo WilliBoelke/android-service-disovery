@@ -42,7 +42,7 @@ public class ConnectionListAdapter extends ArrayAdapter<SdpBluetoothConnection>
         TextView peerAddress = convertView.findViewById(R.id.address_tv);
         TextView peerState = convertView.findViewById(R.id.peer_state_tv);
 
-        name.setText(connection.getServiceDescription().getServiceRecord().get("service-name"));
+        name.setText(connection.getServiceDescription().getServiceName());
         description.setText(connection.getServiceDescription().getServiceRecord().get("service-info"));
         peerAddress.setText(connection.getRemoteDeviceAddress());
         peerName.setText(connection.getRemoteDevice().getName());

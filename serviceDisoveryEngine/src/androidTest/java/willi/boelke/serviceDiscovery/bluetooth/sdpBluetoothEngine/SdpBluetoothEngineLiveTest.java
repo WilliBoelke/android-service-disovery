@@ -121,9 +121,9 @@ public class SdpBluetoothEngineLiveTest
         serviceAttributesOne.put("service-name", "Test Service One");
         serviceAttributesOne.put("service-info", "This is a test service description");
         serviceAttributesTwo.put("service-name", "Counting Service Two");
-        serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        descriptionForServiceOne = new ServiceDescription(serviceAttributesOne);
-        descriptionForServiceTwo = new ServiceDescription(serviceAttributesTwo);
+        serviceAttributesTwo.put("service-info", "This is another test service description");
+        descriptionForServiceOne = new ServiceDescription("test service one", serviceAttributesOne);
+        descriptionForServiceTwo = new ServiceDescription("test service two", serviceAttributesTwo);
         SdpBluetoothEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
     }
 
@@ -131,7 +131,9 @@ public class SdpBluetoothEngineLiveTest
     public void teardown() throws NullPointerException, InvocationTargetException, IllegalAccessException, NoSuchMethodException
     {
         SdpBluetoothEngine.getInstance().teardownEngine();
+        // tearing down discovery engine with reflections
         Method teardown = SdpBluetoothDiscoveryEngine.getInstance().getClass().getDeclaredMethod("teardownEngine");
+        teardown.setAccessible(true);
         teardown.invoke(SdpBluetoothDiscoveryEngine.getInstance());
     }
 
@@ -167,14 +169,7 @@ public class SdpBluetoothEngineLiveTest
     public void itShouldConnectToOneNearbyService_advertiseServiceAndAccept() throws InterruptedException
     {
         ArrayList<SdpBluetoothConnection> acceptedConnections = new ArrayList<>();
-        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, new SdpBluetoothServiceServer()
-        {
-            @Override
-            public void onClientConnected(SdpBluetoothConnection connection)
-            {
-                acceptedConnections.add(connection);
-            }
-        });
+        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, acceptedConnections::add);
         SdpBluetoothEngine.getInstance().startDiscoverable();
         synchronized (this)
         {
@@ -256,22 +251,8 @@ public class SdpBluetoothEngineLiveTest
     {
 
         ArrayList<SdpBluetoothConnection> acceptedConnections = new ArrayList<>();
-        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, new SdpBluetoothServiceServer()
-        {
-            @Override
-            public void onClientConnected(SdpBluetoothConnection connection)
-            {
-                acceptedConnections.add(connection);
-            }
-        });
-        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceTwo, new SdpBluetoothServiceServer()
-        {
-            @Override
-            public void onClientConnected(SdpBluetoothConnection connection)
-            {
-                acceptedConnections.add(connection);
-            }
-        });
+        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, acceptedConnections::add);
+        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceTwo, acceptedConnections::add);
         SdpBluetoothEngine.getInstance().startDiscoverable();
         synchronized (this)
         {
@@ -350,7 +331,7 @@ public class SdpBluetoothEngineLiveTest
             this.wait(40000); // device discovery takes about 12s
         }
 
-        assertTrue(connectedServices.size() == 2);
+        assertEquals(2, connectedServices.size());
         assertTrue(connectedServices.contains(descriptionForServiceTwo));
         assertTrue(connectedServices.contains(descriptionForServiceOne));
     }
@@ -388,14 +369,7 @@ public class SdpBluetoothEngineLiveTest
 
         //--- advertising service ---//
 
-        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, new SdpBluetoothServiceServer()
-        {
-            @Override
-            public void onClientConnected(SdpBluetoothConnection connection)
-            {
-                establishedConnections.add(connection.getServiceDescription());
-            }
-        });
+        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, connection -> establishedConnections.add(connection.getServiceDescription()));
 
         SdpBluetoothEngine.getInstance().startDiscoverable();
         SdpBluetoothEngine.getInstance().startDeviceDiscovery();
@@ -470,14 +444,10 @@ public class SdpBluetoothEngineLiveTest
 
         ArrayList<ServiceDescription> connectedServices = new ArrayList<>();
         ArrayList<String> connectedClients = new ArrayList<>();
-        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, new SdpBluetoothServiceServer()
+        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, connection ->
         {
-            @Override
-            public void onClientConnected(SdpBluetoothConnection connection)
-            {
-                connectedServices.add(connection.getServiceDescription());
-                connectedClients.add(connection.getRemoteDeviceAddress());
-            }
+            connectedServices.add(connection.getServiceDescription());
+            connectedClients.add(connection.getRemoteDeviceAddress());
         });
         SdpBluetoothEngine.getInstance().startDiscoverable();
         synchronized (this)
@@ -493,7 +463,6 @@ public class SdpBluetoothEngineLiveTest
 
     public void itShouldAcceptConnectionsFromSeveralClients_discoverAndConnect() throws InterruptedException
     {
-
 
         ArrayList<ServiceDescription> connectedServices = new ArrayList<>();
 
@@ -531,14 +500,6 @@ public class SdpBluetoothEngineLiveTest
         }
         assertTrue(true);
     }
-
-
-
-
-
-
-
-
 
 
     ////
@@ -663,13 +624,9 @@ public class SdpBluetoothEngineLiveTest
     private void itShouldFindOneNearbyAvailableService_serviceAdvertisement() throws InterruptedException
     {
 
-        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, new SdpBluetoothServiceServer()
+        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, connection ->
         {
-            @Override
-            public void onClientConnected(SdpBluetoothConnection connection)
-            {
-                // do nothing here, we wont connect ..just advertisement
-            }
+            // do nothing here, we wont connect ..just advertisement
         });
         SdpBluetoothEngine.getInstance().startDiscoverable();
         synchronized (this)
@@ -722,8 +679,6 @@ public class SdpBluetoothEngineLiveTest
         {
             this.wait(30000); // this is the maximum time i give it to find the service (device discovery + fetching uuids)
         }
-
-        System.out.println(serviceHosts);
         assertTrue(serviceHosts.contains(MAC_B_BT));
         assertTrue(services.contains(descriptionForServiceOne));
     }
@@ -759,13 +714,9 @@ public class SdpBluetoothEngineLiveTest
     private void itShouldFindTwoNearbyAvailableServices_serviceAdvertisement() throws InterruptedException
     {
 
-        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, new SdpBluetoothServiceServer()
+        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, connection ->
         {
-            @Override
-            public void onClientConnected(SdpBluetoothConnection connection)
-            {
-                // do nothing here, we wont connect ..just advertisement
-            }
+            // do nothing here, we wont connect ..just advertisement
         });
         SdpBluetoothEngine.getInstance().startDiscoverable();
         synchronized (this)
@@ -853,13 +804,9 @@ public class SdpBluetoothEngineLiveTest
     private void itShouldFindTwoDifferentServicesOnSeparateDevice_serviceAdvertisement_B() throws InterruptedException
     {
 
-        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, new SdpBluetoothServiceServer()
+        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceOne, connection ->
         {
-            @Override
-            public void onClientConnected(SdpBluetoothConnection connection)
-            {
-                // do nothing here, we wont connect ..just advertisement
-            }
+            // do nothing here, we wont connect ..just advertisement
         });
         SdpBluetoothEngine.getInstance().startDiscoverable();
         synchronized (this)
@@ -872,13 +819,9 @@ public class SdpBluetoothEngineLiveTest
     private void itShouldFindTwoDifferentServicesOnSeparateDevice_serviceAdvertisement_A() throws InterruptedException
     {
 
-        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceTwo, new SdpBluetoothServiceServer()
+        SdpBluetoothEngine.getInstance().startSDPService(descriptionForServiceTwo, connection ->
         {
-            @Override
-            public void onClientConnected(SdpBluetoothConnection connection)
-            {
-                // do nothing here, we wont connect ..just advertisement
-            }
+            // do nothing here, we wont connect ..just advertisement
         });
         SdpBluetoothEngine.getInstance().startDiscoverable();
         synchronized (this)

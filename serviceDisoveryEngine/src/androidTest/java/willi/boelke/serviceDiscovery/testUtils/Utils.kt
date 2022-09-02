@@ -39,11 +39,11 @@ import java.util.*
      serviceAttributesFour["service-name"] = "Test Service Four"
      serviceAttributesFive["service-name"] = "Test Service Five"
 
-     testDescriptionOne = ServiceDescription(serviceAttributesOne)
-     testDescriptionTwo = ServiceDescription(serviceAttributesTwo)
-     testDescriptionThree = ServiceDescription(serviceAttributesTree)
-     testDescriptionFour = ServiceDescription(serviceAttributesFour)
-     testDescriptionFive = ServiceDescription(serviceAttributesFive)
+     testDescriptionOne = ServiceDescription  ("test service one",serviceAttributesOne)
+     testDescriptionTwo = ServiceDescription  ("test service two",serviceAttributesTwo)
+     testDescriptionThree = ServiceDescription("test service three",serviceAttributesTree)
+     testDescriptionFour = ServiceDescription ("test service four",serviceAttributesFour)
+     testDescriptionFive = ServiceDescription ("test service five",serviceAttributesFive)
 
      testDescriptionOne.overrideUuidForBluetooth(testUUIDOne)
      testDescriptionTwo.overrideUuidForBluetooth(testUUIDTwo)

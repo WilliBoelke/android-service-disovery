@@ -24,7 +24,7 @@ public class ServiceDescriptionTest
         HashMap<String, String> serviceAttributesOne = new HashMap<>();
         serviceAttributesOne.put("service-name", "Test Service One");
         serviceAttributesOne.put("service-info", "This is a test service description");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription(serviceAttributesOne);
+        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
     }
 
     @Test
@@ -36,8 +36,8 @@ public class ServiceDescriptionTest
         serviceAttributesOne.put("service-info", "This is a test service description");
         serviceAttributesTwo.put("service-name", "Counting Service Two");
         serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription(serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription(serviceAttributesTwo);
+        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service Two", serviceAttributesOne);
         assertNotEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
     }
 
@@ -50,8 +50,21 @@ public class ServiceDescriptionTest
         serviceAttributesOne.put("service-info", "This is a test service description");
         serviceAttributesTwo.put("serviceName", "Counting Service One");
         serviceAttributesTwo.put("service-information", "This is a test service description");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription(serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription(serviceAttributesTwo);
+        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service Two", serviceAttributesOne);
+        assertNotEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
+    }
+
+
+    @Test
+    public void itShouldIncludeTheServiceNameInTheUuidGeneration()
+    {
+        HashMap<String, String> serviceAttributesOne = new HashMap<>();
+        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
+        serviceAttributesOne.put("service-info", "This is a test service description");
+        serviceAttributesTwo.put("service-info", "This is a test service description");
+        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service Two", serviceAttributesOne);
         assertNotEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
     }
 
@@ -65,8 +78,8 @@ public class ServiceDescriptionTest
         serviceAttributesOne.put("service-info", "This is a test service description");
         serviceAttributesTwo.put("service-name", "Test Service One");
         serviceAttributesTwo.put("service-info", "This is a test service description");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription(serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription(serviceAttributesTwo);
+        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service One", serviceAttributesOne);
         assertEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
     }
 }

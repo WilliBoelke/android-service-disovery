@@ -17,13 +17,11 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.BluetoothServiceDiscoveryListener;
 import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.SdpBluetoothDiscoveryEngine;
 import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
 import willi.boelke.service_discovery_demo.R;
-import willi.boelke.service_discovery_demo.controller.wifiDemoController.WifiDemoController;
 import willi.boelke.service_discovery_demo.view.MainActivity;
 import willi.boelke.service_discovery_demo.view.listAdapters.ServiceListAdapter;
 
@@ -92,8 +90,8 @@ public class BluetoothDiscoveryFragment extends Fragment implements BluetoothSer
         {
             engine.unregisterDiscoveryListener(this);
             engine.stopDeviceDiscovery();
-            engine.stopSDPDiscoveryForService(mainActivity.getDescriptionForServiceOne());
-            engine.stopSDPDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
+            engine.stopSdpDiscoveryForService(mainActivity.getDescriptionForServiceOne());
+            engine.stopSdpDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
             engine.notifyAboutAllServices(false);
         }
         binding = null;
@@ -123,9 +121,8 @@ public class BluetoothDiscoveryFragment extends Fragment implements BluetoothSer
 
     private void setupListView()
     {
-
         discoveredServicesListView = binding.connectionListView;
-        connectionListAdapter = new ServiceListAdapter(getContext(), R.layout.recycler_card_service_connection, discoveredServices);
+        connectionListAdapter = new ServiceListAdapter(getContext(), R.layout.recycler_card_service, discoveredServices);
         discoveredServicesListView.setAdapter(connectionListAdapter);
     }
 
@@ -149,24 +146,22 @@ public class BluetoothDiscoveryFragment extends Fragment implements BluetoothSer
             engine.startDeviceDiscovery();
             discoveredServices.clear();
             connectionListAdapter.notifyDataSetChanged();
-            discoveredServicesListView.setAdapter(connectionListAdapter);
-
         }
         else if (startSdpOneBtn.equals(view))
         {
-            engine.startSDPDiscoveryForService(mainActivity.getDescriptionForServiceOne());
+            engine.startSdpDiscoveryForService(mainActivity.getDescriptionForServiceOne());
         }
         else if (endSdpOneBtn.equals(view))
         {
-            engine.stopSDPDiscoveryForService(mainActivity.getDescriptionForServiceOne());
+            engine.stopSdpDiscoveryForService(mainActivity.getDescriptionForServiceOne());
         }
         else if (startSdpTwoBtn.equals(view))
         {
-            engine.startSDPDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
+            engine.startSdpDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
         }
         else if (endSdpTwoBtn.equals(view))
         {
-            engine.stopSDPDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
+            engine.stopSdpDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
         }
         else if (refreshBtn.equals(view))
         {
@@ -195,7 +190,6 @@ public class BluetoothDiscoveryFragment extends Fragment implements BluetoothSer
 
         discoveredServices.add(description);
         connectionListAdapter.notifyDataSetChanged();
-        discoveredServicesListView.setAdapter(connectionListAdapter);
     }
 
     @Override

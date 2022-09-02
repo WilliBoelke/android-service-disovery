@@ -1,6 +1,5 @@
 package willi.boelke.serviceDiscovery.wifiDirect.sdpWifiEngine;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.IntentFilter;
@@ -9,8 +8,6 @@ import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
 
 import android.util.Log;
-
-import androidx.annotation.RequiresPermission;
 
 
 import willi.boelke.serviceDiscovery.Utils;
@@ -288,7 +285,7 @@ public class SdpWifiEngine
         this.currentServiceDescription = description;
         // Enable connection establishment (again)
         this.connectionListener.establishConnections(true);
-        this.discoveryEngine.startSDPService(description);
+        this.discoveryEngine.startSdpService(description);
         this.discoveryEngine.startSdpDiscoveryForService(description);
         return true;
     }
@@ -307,8 +304,8 @@ public class SdpWifiEngine
             Log.e(TAG, "unregisterService: engine not started - wont unregister");
             return;
         }
-        this.discoveryEngine.stopSDPDiscovery(currentServiceDescription);
-        this.discoveryEngine.stopSDPService(currentServiceDescription);
+        this.discoveryEngine.stopSdpDiscovery(currentServiceDescription);
+        this.discoveryEngine.stopSdpService(currentServiceDescription);
         this.currentServiceDescription = null;
         this.connectionListener.establishConnections(false);
         this.peer = null;
@@ -477,7 +474,7 @@ public class SdpWifiEngine
             this.peer.onBecameGroupClient();
         }
         Log.d(TAG, "onBecameClient: became client to a GO, doing client stuff");
-        this.discoveryEngine.stopSDPService(currentServiceDescription);
+        this.discoveryEngine.stopSdpService(currentServiceDescription);
         this.connectionListener.establishConnections(false);
         //----------------------------------
         // NOTE : as a client, the local device does
@@ -506,9 +503,10 @@ public class SdpWifiEngine
     }
 
     /**
-     * Starts a thread to wait for socket connection beeing established
+     * Starts a thread to wait for socket connection being established
      * and then calls {@link #onSocketConnected(SdpWifiConnection)}
      * @param channelCreator
+     *
      */
     protected void onSocketConnectionStarted(TCPChannelMaker channelCreator)
     {

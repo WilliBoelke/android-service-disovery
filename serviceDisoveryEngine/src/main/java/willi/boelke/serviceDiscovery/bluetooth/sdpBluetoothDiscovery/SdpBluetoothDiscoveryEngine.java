@@ -7,13 +7,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 
-import android.content.MutableContextWrapper;
 import android.os.ParcelUuid;
 import android.os.Parcelable;
 import android.util.Log;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.UUID;
 
 import willi.boelke.serviceDiscovery.Utils;
@@ -33,7 +33,7 @@ import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
  * <p>
  * Discover Services<br>
  * ------------------------------------------------------------<br>
- * Services can be discovered using {@link #startSDPDiscoveryForService(ServiceDescription)}
+ * Services can be discovered using {@link #startSdpDiscoveryForService(ServiceDescription)}
  * For a service to be found it is mandatory to run a device discovery using 
  * {@link #startDeviceDiscovery()}.
  * <p>
@@ -42,7 +42,7 @@ import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
  * <p>
  * The device discovery can be started before or after a service discovery was started.
  * as long as a service discovery runs and was not ended via
- * {@link #stopSDPDiscoveryForService(ServiceDescription)}} services will be discovered 
+ * {@link #stopSdpDiscoveryForService(ServiceDescription)}} services will be discovered
  * on all subsequently and previously discovered devices.
  * <p>
  * Note<br>
@@ -188,6 +188,8 @@ public class SdpBluetoothDiscoveryEngine
      *
      * @see SdpBluetoothDiscoveryEngine#shouldCheckLittleEndianUuids(boolean)
      * @see ServiceDescription#getBytewiseReverseUuid()
+     * @see SdpBluetoothDiscoveryEngine#notifyListenersIfServiceIsAvailable(BluetoothDevice, Parcelable[]) 
+     * @see SdpBluetoothDiscoveryEngine#notifyListenersAboutServices(BluetoothDevice, Parcelable[])
      */
     private boolean checkLittleEndianUuids = true;
 
@@ -301,7 +303,13 @@ public class SdpBluetoothDiscoveryEngine
         if(engineIsNotRunning()){
             Log.e(TAG, "stop: engine is not running - wont stop");
         }
-        unregisterReceivers();
+        try
+        {
+            unregisterReceivers();
+        }
+        catch (NullPointerException e){
+            // already closed (happens in tests)
+        }
         stopDeviceDiscovery();
         this.servicesToLookFor = new ArrayList<>();
         this.engineRunning = false;
@@ -371,7 +379,7 @@ public class SdpBluetoothDiscoveryEngine
     /**
      * Starts discovering other devices
      * NOTE : devices not services, use
-     * {@link #startSDPDiscoveryForService(ServiceDescription)}
+     * {@link #startSdpDiscoveryForService(ServiceDescription)}
      * to start a service discovery.
      *
      * A device discovery has to run before services will be discovered.
@@ -429,14 +437,14 @@ public class SdpBluetoothDiscoveryEngine
      * Devices tha will be discovered from now on (given that the bluetooth discovery is enabled)
      * <p>
      * The service discovery will run till
-     * {@link SdpBluetoothDiscoveryEngine#stopSDPDiscoveryForService(ServiceDescription)
+     * {@link SdpBluetoothDiscoveryEngine#stopSdpDiscoveryForService(ServiceDescription)
      * with the same UUID is called,  no matter hwo many devies will be disovered ill then.
      * (Or to make i short, this wont stop afer the first connecion was made)
      *
      * @param serviceUUID
      *         The UUID of the service to connect o
      */
-    public void startSDPDiscoveryForService(ServiceDescription description)
+    public void startSdpDiscoveryForService(ServiceDescription description)
     {
         if(engineIsNotRunning()){
             Log.e(TAG, "startSDPDiscoveryForService: engine is not running - wont start");
@@ -469,7 +477,7 @@ public class SdpBluetoothDiscoveryEngine
      * @param description
      *  The service description
      */
-    public void stopSDPDiscoveryForService(ServiceDescription description)
+    public void stopSdpDiscoveryForService(ServiceDescription description)
     {
         if(engineIsNotRunning()){
             Log.e(TAG, "stopSDPDiscoveryForService: engine is not running - wont start");
@@ -629,10 +637,53 @@ public class SdpBluetoothDiscoveryEngine
         Log.d(TAG, "onUuidsFetched: received UUIDS fot " + Utils.getRemoteDeviceString(device));
 
         if(uuidExtra != null){
-            notifyListenersIfServiceIsAvailable(device, uuidExtra);
+            if(this.notifyAboutAllServices){
+                notifyListenersAboutServices(device, uuidExtra);
+            }
+            else{
+                notifyListenersIfServiceIsAvailable(device, uuidExtra);
+            }
+
         }
     }
 
+    /**
+     * Notifies listeners about every discovered service
+     * @param device
+     * the device
+     * @param uuidExtra
+     * the discovered service UUIDs
+     */
+    private void notifyListenersAboutServices(BluetoothDevice device, Parcelable[] uuidExtra)
+    {
+        for (Parcelable pUuid : uuidExtra)
+        {
+            UUID uuid = ((ParcelUuid) pUuid).getUuid();
+            ServiceDescription description = new ServiceDescription("", new HashMap<>()); // empty description
+            description.overrideUuidForBluetooth(uuid);
+
+            // overriding with registered service description
+            if(this.servicesToLookFor.contains(description)){
+                description = servicesToLookFor.get(servicesToLookFor.indexOf(description));
+            }
+            else if(checkLittleEndianUuids){
+                description.overrideUuidForBluetooth(description.getBytewiseReverseUuid());
+                if(this.servicesToLookFor.contains(description)){
+                    description = servicesToLookFor.get(servicesToLookFor.indexOf(description));
+                }
+            }
+            description.overrideUuidForBluetooth(description.getBytewiseReverseUuid());
+            this.notifyOnServiceDiscovered(device, description);
+        }
+    }
+
+    /**
+     * Notifies all listeners only if a service is available that is searched for
+     * @param device
+     * the host device
+     * @param uuidExtra
+     * the service uuids on the given device 
+     */
     private void notifyListenersIfServiceIsAvailable(BluetoothDevice device, Parcelable[] uuidExtra)
     {
         for (Parcelable pUuid : uuidExtra)
@@ -641,8 +692,7 @@ public class SdpBluetoothDiscoveryEngine
             for (ServiceDescription serviceToLookFor : this.servicesToLookFor)
             {
                 // this maybe should go into a separate method to make the if more readable
-                if (notifyAboutAllServices ||
-                        (uuid.equals(serviceToLookFor.getServiceUuid())) ||
+                if ((uuid.equals(serviceToLookFor.getServiceUuid())) ||
                         (this.checkLittleEndianUuids && uuid.equals(serviceToLookFor.getBytewiseReverseUuid())))
                 {
                     Log.d(TAG, "notifyListenersIfServiceIsAvailable: ---- Service found on " + Utils.getRemoteDeviceString(device) +"----");
@@ -704,7 +754,22 @@ public class SdpBluetoothDiscoveryEngine
         this.checkLittleEndianUuids = checkLittleEndianUuids;
     }
 
+    /**
+     * Setting this to true will notify all receivers about all
+     * discovered services and not just the ones which where
+     * looked for.
+     * Services for which no service description is present
+     * will just contain the UUID and empty service attributes
+     *
+     * for the services which are registered though
+     * service attributes can be resolved and will be available
+     *
+     * @param all
+     * boolean - true to notify about all services, false to just notify about the ones
+     * given through {@link #startSdpDiscoveryForService(ServiceDescription)}
+     */
     public void notifyAboutAllServices(boolean all){
+        Log.d(TAG, "notifyAboutAllServices: notifying about all service = " + all);
         this.notifyAboutAllServices = all;
     }
 
@@ -721,6 +786,10 @@ public class SdpBluetoothDiscoveryEngine
         return this.engineRunning;
     }
 
+    /**
+     * @return
+     * Returns true if the engine is not running
+     */
     private boolean engineIsNotRunning(){
         return !this.engineRunning;
     }

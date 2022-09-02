@@ -72,9 +72,10 @@ public class WifiDemoController implements SdpWifiPeer
         SdpWifiEngine.getInstance().registerService(this.description, this);
     }
 
-    public void stopService()
+    public void stop()
     {
         SdpWifiEngine.getInstance().unregisterService();
+        SdpWifiEngine.getInstance().stopDiscovery();
         for (SdpWifiConnection connection : openConnections.getValue()){
             connection.close();
         }

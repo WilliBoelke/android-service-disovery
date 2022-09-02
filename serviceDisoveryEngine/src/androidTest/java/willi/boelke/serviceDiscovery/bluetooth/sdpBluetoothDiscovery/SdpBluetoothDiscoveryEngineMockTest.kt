@@ -22,20 +22,23 @@ import willi.boelke.serviceDiscovery.testUtils.*
 
 /**
  *
- *  These are integration tests for the SdpBluetoothEngine and other subsequently used systems
- *  like the ConnectionManager, ServiceDescription and the SdpBluetoothDiscoveryEngine.
+ *  These are integration tests for the SdpBluetoothEngine and
+ *  other subsequently used systems like the
+ *  ServiceDescription and the SdpBluetoothDiscoveryEngine.
  *  <p>---------------------------------------------<p>
  *  For the tests the android bluetooth api is mocked.
- *  This makes it possible for the tests to run faster and test some more cases
- *  then letting them run on the actual api.
+ *  This makes it possible for the tests to run faster and
+ *  test some more cases then letting them run on the actual api.
  *  <p>
- *  For Mocking the android api the mocking framework `Mockk` turned out to be a very good
- *  alternative to mockito, which has problems with mocking final and static classes and methods
+ *  For Mocking the android api the mocking framework `Mockk`
+ *  turned out to be a very good alternative to mockito, which
+ *  has problems with mocking final and static classes and methods
  *  which is required to mock the android bt api and the context.
  *  Mockk is a Kotlin library thus Kotlin will be used for the test.
  *
- *  Also Mockk requires at least android P, so to run the tests an emulator or device
- *  with android p is recommended.
+ *  Also Mockk REQUIRES AT LEAST ANDROID P for some features,
+ *  so to run the tests an emulator or device with android p is recommended.
+ *  else some tests may fail
  *  <p>---------------------------------------------<p>
  *  Sine the complete bluetooth api is mocked, and the
  *  BroadcastReceivers are not actually functioning, test could be run
@@ -249,7 +252,7 @@ class SdpBluetoothDiscoveryEngineMockTest {
 
         // testDescription one has the testUuidTwo
         // which is part of testDeviceOne
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(testDescriptionTwo)
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(testDescriptionTwo)
         SdpBluetoothDiscoveryEngine.getInstance().startDeviceDiscovery()
         SdpBluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
         SdpBluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceTwo)
@@ -301,8 +304,8 @@ class SdpBluetoothDiscoveryEngineMockTest {
             }
 
         })
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(testDescriptionFive)
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(testDescriptionTwo)
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(testDescriptionFive)
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(testDescriptionTwo)
         SdpBluetoothDiscoveryEngine.getInstance().startDeviceDiscovery()
 
         // discovered device
@@ -369,8 +372,8 @@ class SdpBluetoothDiscoveryEngineMockTest {
         SdpBluetoothDiscoveryEngine.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
 
         // looking for the services at a later point
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(testDescriptionFive)
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(testDescriptionTwo)
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(testDescriptionFive)
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(testDescriptionTwo)
 
         assertTrue(foundDevices.size == 2)
         assertTrue(foundDevices.contains(testDeviceOne) && foundDevices.contains(testDeviceTwo))
@@ -413,7 +416,7 @@ class SdpBluetoothDiscoveryEngineMockTest {
 
         })
 
-        SdpBluetoothDiscoveryEngine.getInstance().startSDPDiscoveryForService(testDescriptionTwo)
+        SdpBluetoothDiscoveryEngine.getInstance().startSdpDiscoveryForService(testDescriptionTwo)
         SdpBluetoothDiscoveryEngine.getInstance().startDeviceDiscovery()
         SdpBluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
         SdpBluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")

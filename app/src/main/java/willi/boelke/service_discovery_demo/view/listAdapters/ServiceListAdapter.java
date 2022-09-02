@@ -34,12 +34,12 @@ public class ServiceListAdapter extends ArrayAdapter<ServiceDescription>
 
         ServiceDescription service = services.get(position);
 
-
         //Setup the name TextView
         TextView name = convertView.findViewById(R.id.service_name_tv);
         TextView description = convertView.findViewById(R.id.description_tv);
+        String nameString = service.getServiceName() +" / "+service.getServiceUuid().toString();
+        name.setText(nameString);
 
-        name.setText(service.getServiceUuid().toString());
         if(service.getServiceRecord().size() > 0)
         {
             description.setText(service.getServiceRecord().toString());
@@ -50,6 +50,4 @@ public class ServiceListAdapter extends ArrayAdapter<ServiceDescription>
 
         return convertView;
     }
-
-
 }
