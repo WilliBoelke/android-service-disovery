@@ -9,14 +9,14 @@ import androidx.lifecycle.MutableLiveData;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
-import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine;
-import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothServiceClient;
-import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceClient;
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
+import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
  * This is a demo implementation for a a bluetooth sdp "client"
- * as defined in the interface {@link SdpBluetoothServiceClient}
+ * as defined in the interface {@link BluetoothServiceClient}
  * <p>
  * This works as a client for the {@link DemoServerController}.
  * <p>
@@ -28,12 +28,12 @@ import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
  *
  * @author Willi Boelke
  */
-public class DemoClientController implements SdpBluetoothServiceClient
+public class DemoClientController implements BluetoothServiceClient
 {
 
     private final String TAG = this.getClass().getSimpleName();
 
-    private final MutableLiveData<ArrayList<SdpBluetoothConnection>> connections = new MutableLiveData<>();
+    private final MutableLiveData<ArrayList<BluetoothConnection>> connections = new MutableLiveData<>();
 
     private final MutableLiveData<String> currentMessage = new MutableLiveData<>();
 
@@ -63,9 +63,9 @@ public class DemoClientController implements SdpBluetoothServiceClient
     }
 
     @Override
-    public void onConnectedToService(SdpBluetoothConnection connection)
+    public void onConnectedToService(BluetoothConnection connection)
     {
-        ArrayList<SdpBluetoothConnection> tmp = this.connections.getValue();
+        ArrayList<BluetoothConnection> tmp = this.connections.getValue();
         tmp.add(connection);
         this.connections.postValue(tmp);
         this.currentNotification.postValue("New connection established to " + connection.getRemoteDeviceAddress());
@@ -90,7 +90,7 @@ public class DemoClientController implements SdpBluetoothServiceClient
         }
     }
 
-    public MutableLiveData<ArrayList<SdpBluetoothConnection>> getConnections()
+    public MutableLiveData<ArrayList<BluetoothConnection>> getConnections()
     {
         return this.connections;
     }
@@ -107,13 +107,13 @@ public class DemoClientController implements SdpBluetoothServiceClient
 
     public void startClient()
     {
-        SdpBluetoothEngine.getInstance().startSDPDiscoveryForService(serviceDescription, this);
+        BluetoothServiceConnectionEngine.getInstance().startSDPDiscoveryForService(serviceDescription, this);
     }
 
     public void endClient()
     {
-        SdpBluetoothEngine.getInstance().stopSDPDiscoveryForService(serviceDescription);
-        SdpBluetoothEngine.getInstance().disconnectFromServicesWith(serviceDescription);
+        BluetoothServiceConnectionEngine.getInstance().stopSDPDiscoveryForService(serviceDescription);
+        BluetoothServiceConnectionEngine.getInstance().disconnectFromServicesWith(serviceDescription);
         this.currentNotification.setValue("disconnected client");
         this.currentMessage.setValue("");
     }
@@ -142,9 +142,9 @@ public class DemoClientController implements SdpBluetoothServiceClient
 
             while (running)
             {
-                ArrayList<SdpBluetoothConnection> disconnecedConnections = new ArrayList<>();
-                ArrayList<SdpBluetoothConnection> tmpConnections = (ArrayList<SdpBluetoothConnection>) connections.getValue().clone();
-                for (SdpBluetoothConnection connection : tmpConnections)
+                ArrayList<BluetoothConnection> disconnecedConnections = new ArrayList<>();
+                ArrayList<BluetoothConnection> tmpConnections = (ArrayList<BluetoothConnection>) connections.getValue().clone();
+                for (BluetoothConnection connection : tmpConnections)
                 {
                     if (connection.isConnected())
                     {
@@ -167,7 +167,7 @@ public class DemoClientController implements SdpBluetoothServiceClient
                     }
                 }
 
-                for (SdpBluetoothConnection connection : disconnecedConnections)
+                for (BluetoothConnection connection : disconnecedConnections)
                 {
                     connection.close();
                     tmpConnections.remove(connection);

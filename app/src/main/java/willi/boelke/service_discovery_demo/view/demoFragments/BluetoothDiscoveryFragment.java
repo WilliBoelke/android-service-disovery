@@ -18,9 +18,9 @@ import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
 
-import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.BluetoothServiceDiscoveryListener;
-import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothDiscovery.SdpBluetoothDiscoveryEngine;
-import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.view.MainActivity;
 import willi.boelke.service_discovery_demo.view.listAdapters.ServiceListAdapter;
@@ -38,7 +38,7 @@ public class BluetoothDiscoveryFragment extends Fragment implements BluetoothSer
 
     private willi.boelke.service_discovery_demo.databinding.FragmentBluetoothDiscoverBinding binding;
 
-    private SdpBluetoothDiscoveryEngine engine;
+    private BluetoothDiscoveryEngine engine;
 
     private boolean notifyAboutAll = false;
 
@@ -60,7 +60,7 @@ public class BluetoothDiscoveryFragment extends Fragment implements BluetoothSer
         binding = willi.boelke.service_discovery_demo.databinding.FragmentBluetoothDiscoverBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        engine = SdpBluetoothDiscoveryEngine.getInstance();
+        engine = BluetoothDiscoveryEngine.getInstance();
 
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
         {
@@ -90,8 +90,9 @@ public class BluetoothDiscoveryFragment extends Fragment implements BluetoothSer
         {
             engine.unregisterDiscoveryListener(this);
             engine.stopDeviceDiscovery();
-            engine.stopSdpDiscoveryForService(mainActivity.getDescriptionForServiceOne());
-            engine.stopSdpDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
+            engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceOne());
+            engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
+            engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
             engine.notifyAboutAllServices(false);
         }
         binding = null;
@@ -149,19 +150,19 @@ public class BluetoothDiscoveryFragment extends Fragment implements BluetoothSer
         }
         else if (startSdpOneBtn.equals(view))
         {
-            engine.startSdpDiscoveryForService(mainActivity.getDescriptionForServiceOne());
+            engine.startDiscoveryForService(mainActivity.getDescriptionForServiceOne());
         }
         else if (endSdpOneBtn.equals(view))
         {
-            engine.stopSdpDiscoveryForService(mainActivity.getDescriptionForServiceOne());
+            engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceOne());
         }
         else if (startSdpTwoBtn.equals(view))
         {
-            engine.startSdpDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
+            engine.startDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
         }
         else if (endSdpTwoBtn.equals(view))
         {
-            engine.stopSdpDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
+            engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
         }
         else if (refreshBtn.equals(view))
         {
@@ -182,7 +183,7 @@ public class BluetoothDiscoveryFragment extends Fragment implements BluetoothSer
     @Override
     public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
     {
-        Toast.makeText(getContext(),
+        Toast.makeText(getActivity(),
                 "Service on { " +
                         host.getName() + ", " +
                         host.getAddress() + " }",
@@ -195,7 +196,7 @@ public class BluetoothDiscoveryFragment extends Fragment implements BluetoothSer
     @Override
     public void onPeerDiscovered(BluetoothDevice device)
     {
-        Toast.makeText(getContext(),
+        Toast.makeText(getActivity(),
                 "Discovered Peer { " +
                         device.getName() + ", " +
                         device.getAddress() + " }",

@@ -9,7 +9,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
-import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
+import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.service_discovery_demo.R;
 
 

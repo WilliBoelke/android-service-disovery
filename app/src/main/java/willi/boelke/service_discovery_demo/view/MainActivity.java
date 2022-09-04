@@ -4,11 +4,9 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -19,7 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
+import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.ActivityMainBinding;
 

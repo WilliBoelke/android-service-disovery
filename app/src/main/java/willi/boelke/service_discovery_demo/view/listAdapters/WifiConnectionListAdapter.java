@@ -10,7 +10,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 
 import willi.boelke.service_discovery_demo.R;
-import willi.boelke.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiConnection;
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiConnection;
 
 
 public class WifiConnectionListAdapter extends ArrayAdapter<SdpWifiConnection>

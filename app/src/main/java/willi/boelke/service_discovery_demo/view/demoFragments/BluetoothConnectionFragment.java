@@ -16,11 +16,9 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.controller.bluetoothDemoController.DemoClientController;
 import willi.boelke.service_discovery_demo.controller.bluetoothDemoController.DemoServerController;
@@ -28,11 +26,12 @@ import willi.boelke.service_discovery_demo.databinding.FragmentBluetoothConnectB
 import willi.boelke.service_discovery_demo.view.MainActivity;
 import willi.boelke.service_discovery_demo.view.listAdapters.ConnectionListAdapter;
 import willi.boelke.service_discovery_demo.view.listAdapters.DeviceListAdapter;
-import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
-import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine;
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
+
 
 /**
- * This fragment uses the {@link SdpBluetoothEngine}
+ * This fragment uses the {@link BluetoothServiceConnectionEngine}
  * to connect to remote devices / services on those devices
  *
  */
@@ -48,11 +47,11 @@ public class BluetoothConnectionFragment extends Fragment
     private FragmentBluetoothConnectBinding binding;
     private DeviceListAdapter deviceLisAdapter;
     private ConnectionListAdapter connectionListAdapter;
-    private ArrayList<SdpBluetoothConnection> connections = new ArrayList<>();
-    private ArrayList<SdpBluetoothConnection> clientConnectionsOne = new ArrayList<>();
-    private ArrayList<SdpBluetoothConnection> serverConnectionsOne = new ArrayList<>();
-    private ArrayList<SdpBluetoothConnection> serverConnectionsTwo = new ArrayList<>();
-    private ArrayList<SdpBluetoothConnection> clientConnectionsTwo = new ArrayList<>();
+    private ArrayList<BluetoothConnection> connections = new ArrayList<>();
+    private ArrayList<BluetoothConnection> clientConnectionsOne = new ArrayList<>();
+    private ArrayList<BluetoothConnection> serverConnectionsOne = new ArrayList<>();
+    private ArrayList<BluetoothConnection> serverConnectionsTwo = new ArrayList<>();
+    private ArrayList<BluetoothConnection> clientConnectionsTwo = new ArrayList<>();
 
     private DemoClientController clientControllerOne;
     private DemoServerController serverControllerOne;
@@ -60,7 +59,7 @@ public class BluetoothConnectionFragment extends Fragment
     private DemoServerController serverControllerTwo;
 
     private TextView messageTextView;
-    private SdpBluetoothEngine engine;
+    private BluetoothServiceConnectionEngine engine;
     private MainActivity mainActivity;
 
 
@@ -77,7 +76,7 @@ public class BluetoothConnectionFragment extends Fragment
 
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
         {
-            engine = SdpBluetoothEngine.getInstance();
+            engine = BluetoothServiceConnectionEngine.getInstance();
             engine.start(this.getActivity().getApplicationContext());
         }
 
@@ -271,9 +270,9 @@ public class BluetoothConnectionFragment extends Fragment
         });
     }
 
-    private  ArrayList<SdpBluetoothConnection> mergeConnectionLists(ArrayList<SdpBluetoothConnection> listOne, ArrayList<SdpBluetoothConnection> listTwo, ArrayList<SdpBluetoothConnection> listThree, ArrayList<SdpBluetoothConnection> listFour)
+    private  ArrayList<BluetoothConnection> mergeConnectionLists(ArrayList<BluetoothConnection> listOne, ArrayList<BluetoothConnection> listTwo, ArrayList<BluetoothConnection> listThree, ArrayList<BluetoothConnection> listFour)
     {
-        Set<SdpBluetoothConnection> fooSet = new LinkedHashSet<>(listOne);
+        Set<BluetoothConnection> fooSet = new LinkedHashSet<>(listOne);
         fooSet.addAll(listTwo);
         fooSet.addAll(listThree);
         fooSet.addAll(listFour);

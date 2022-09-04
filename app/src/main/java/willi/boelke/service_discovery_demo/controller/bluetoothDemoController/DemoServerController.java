@@ -7,14 +7,14 @@ import androidx.lifecycle.MutableLiveData;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
-import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothEngine;
-import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothServiceServer;
-import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceServer;
+import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
  * This is a demo implementation of a bluetooth sdp "server"
- * as described in the {@link SdpBluetoothServiceServer}.
+ * as described in the {@link BluetoothServiceServer}.
  * <p>
  * It will report opened client connections to the view using LiveData objets.
  * <p>
@@ -23,7 +23,7 @@ import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
  *
  * @author Willi Boelke
  */
-public class DemoServerController implements SdpBluetoothServiceServer
+public class DemoServerController implements BluetoothServiceServer
 {
 
     /**
@@ -38,7 +38,7 @@ public class DemoServerController implements SdpBluetoothServiceServer
      * It can be obtained using {@link #getConnections()}
      * Other entities may listen to updates on this object to get notified about changes.
      */
-    private final MutableLiveData<ArrayList<SdpBluetoothConnection>> connections;
+    private final MutableLiveData<ArrayList<BluetoothConnection>> connections;
 
     /**
      * Instance of the WriteThread,
@@ -60,8 +60,8 @@ public class DemoServerController implements SdpBluetoothServiceServer
     /**
      * Public constructor
      *
-     * @param uuid
-     *         the UUID of the advertised service
+     * @param serviceDescription
+     *         the serviceDescription of the advertised service
      */
     public DemoServerController(ServiceDescription serviceDescription)
     {
@@ -77,10 +77,10 @@ public class DemoServerController implements SdpBluetoothServiceServer
     //
 
     @Override
-    public void onClientConnected(SdpBluetoothConnection connection)
+    public void onClientConnected(BluetoothConnection connection)
     {
         Log.d(TAG, "onClientConnected: a client connect, adding to connections");
-        ArrayList<SdpBluetoothConnection> tempConnections = this.connections.getValue();
+        ArrayList<BluetoothConnection> tempConnections = this.connections.getValue();
         tempConnections.add(connection);
         this.connections.postValue(tempConnections);
     }
@@ -116,13 +116,13 @@ public class DemoServerController implements SdpBluetoothServiceServer
 
     /**
      * This starts the advertisement of the service
-     * using the {@link SdpBluetoothEngine}.
+     * using the {@link BluetoothServiceConnectionEngine}.
      *
      * Please not that the SdpBluetooth engine is require to be initialized at this point.
      */
     public void startService()
     {
-        SdpBluetoothEngine.getInstance().startSDPService(this.serviceDescription, this);
+        BluetoothServiceConnectionEngine.getInstance().startSDPService(this.serviceDescription, this);
     }
 
     /**
@@ -130,8 +130,8 @@ public class DemoServerController implements SdpBluetoothServiceServer
      */
     public void stopService()
     {
-        SdpBluetoothEngine.getInstance().disconnectFromClientsWithUUID(this.serviceDescription);
-        SdpBluetoothEngine.getInstance().stopSDPService(this.serviceDescription);
+        BluetoothServiceConnectionEngine.getInstance().disconnectFromClientsWithUUID(this.serviceDescription);
+        BluetoothServiceConnectionEngine.getInstance().stopSDPService(this.serviceDescription);
     }
 
 
@@ -145,7 +145,7 @@ public class DemoServerController implements SdpBluetoothServiceServer
      * @return
      * LiveData Array list contracting the connections
      */
-    public MutableLiveData<ArrayList<SdpBluetoothConnection>> getConnections()
+    public MutableLiveData<ArrayList<BluetoothConnection>> getConnections()
     {
         return this.connections;
     }
@@ -180,9 +180,9 @@ public class DemoServerController implements SdpBluetoothServiceServer
             int counter = 0;
             while (shouldRun)
             {
-                ArrayList<SdpBluetoothConnection> disconnectedConnections = new ArrayList<>();
-                ArrayList<SdpBluetoothConnection> tmpConnections = (ArrayList<SdpBluetoothConnection>) connections.getValue().clone();
-                for (SdpBluetoothConnection connection : tmpConnections)
+                ArrayList<BluetoothConnection> disconnectedConnections = new ArrayList<>();
+                ArrayList<BluetoothConnection> tmpConnections = (ArrayList<BluetoothConnection>) connections.getValue().clone();
+                for (BluetoothConnection connection : tmpConnections)
                 {
                     if (connection.isConnected())
                     {
@@ -202,7 +202,7 @@ public class DemoServerController implements SdpBluetoothServiceServer
                         disconnectedConnections.add(connection);
                     }
                 }
-                for (SdpBluetoothConnection closedConnection : disconnectedConnections)
+                for (BluetoothConnection closedConnection : disconnectedConnections)
                 {
                     closedConnection.close();
                     tmpConnections.remove(closedConnection);

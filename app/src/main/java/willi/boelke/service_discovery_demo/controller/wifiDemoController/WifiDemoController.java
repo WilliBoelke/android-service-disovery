@@ -1,19 +1,18 @@
 package willi.boelke.service_discovery_demo.controller.wifiDemoController;
 
-import android.Manifest;
 import android.util.Log;
 
-import androidx.annotation.RequiresPermission;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
-import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
-import willi.boelke.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiConnection;
-import willi.boelke.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiEngine;
-import willi.boelke.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiPeer;
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiConnection;
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiEngine;
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiPeer;
+import willi.boelke.services.serviceDiscovery.ServiceDescription;
+
 
 /**
  * Demo implementation of a SdpWifiPeer.

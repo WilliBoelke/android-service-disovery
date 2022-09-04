@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,9 +17,9 @@ import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
 
-import willi.boelke.serviceDiscovery.serviceDescription.ServiceDescription;
-import willi.boelke.serviceDiscovery.wifiDirect.sdpWifiDirectDiscovery.SdpWifiDirectDiscoveryEngine;
-import willi.boelke.serviceDiscovery.wifiDirect.sdpWifiDirectDiscovery.WifiServiceDiscoveryListener;
+import willi.boelke.services.serviceDiscovery.ServiceDescription;
+import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiServiceDiscoveryListener;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.FragmentWifiDirectDiscoverBinding;
 import willi.boelke.service_discovery_demo.view.MainActivity;
@@ -35,7 +34,7 @@ public class WifiDirectDiscoveryFragment extends Fragment implements WifiService
 
     private FragmentWifiDirectDiscoverBinding binding;
 
-    private SdpWifiDirectDiscoveryEngine engine;
+    private WifiDirectDiscoveryEngine engine;
 
     private MainActivity mainActivity;
     private ListView discoveredServicesListView;
@@ -62,7 +61,7 @@ public class WifiDirectDiscoveryFragment extends Fragment implements WifiService
         }
         else
         {
-            this.engine = SdpWifiDirectDiscoveryEngine.getInstance();
+            this.engine = WifiDirectDiscoveryEngine.getInstance();
             this.engine.start(this.getActivity().getApplicationContext());
             this.engine.registerDiscoverListener(this);
         }
@@ -108,22 +107,22 @@ public class WifiDirectDiscoveryFragment extends Fragment implements WifiService
         }
         if (binding.startDiscoveryOneBtn.equals(view))
         {
-            engine.startSdpDiscoveryForService(mainActivity.getDescriptionForServiceOne());
+            engine.startDiscoveryForService(mainActivity.getDescriptionForServiceOne());
             engine.startSdpService(mainActivity.getDescriptionForServiceOne());
         }
         else if (binding.endDiscoveryOneBtn.equals(view))
         {
-            engine.stopSdpDiscovery(mainActivity.getDescriptionForServiceOne());
+            engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceOne());
             engine.stopSdpService(mainActivity.getDescriptionForServiceOne());
         }
         else if (binding.startDiscoveryTwoBtn.equals(view))
         {
-            engine.startSdpDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
+            engine.startDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
             engine.startSdpService(mainActivity.getDescriptionForServiceTwo());
         }
         else if (binding.endDiscoveryTwoBtn.equals(view))
         {
-            engine.stopSdpDiscovery(mainActivity.getDescriptionForServiceTwo());
+            engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
             engine.stopSdpService(mainActivity.getDescriptionForServiceTwo());
         }
         else if (binding.endDiscoveryButton.equals(view))
@@ -150,8 +149,8 @@ public class WifiDirectDiscoveryFragment extends Fragment implements WifiService
         super.onDestroyView();
         if(engine.isRunning()){
             this.engine.unregisterDiscoveryListener(this);
-            this.engine.stopSdpDiscovery(mainActivity.getDescriptionForServiceOne());
-            this.engine.stopSdpDiscovery(mainActivity.getDescriptionForServiceTwo());
+            this.engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceOne());
+            this.engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
             this.engine.stopSdpService(mainActivity.getDescriptionForServiceOne());
             this.engine.stopSdpService(mainActivity.getDescriptionForServiceTwo());
             this.engine.notifyAboutEveryService(false);

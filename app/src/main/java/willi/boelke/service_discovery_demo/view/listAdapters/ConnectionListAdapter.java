@@ -10,17 +10,18 @@ import android.widget.TextView;
 import java.util.ArrayList;
 
 import willi.boelke.service_discovery_demo.R;
-import willi.boelke.serviceDiscovery.bluetooth.sdpBluetoothEngine.SdpBluetoothConnection;
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 
 
-public class ConnectionListAdapter extends ArrayAdapter<SdpBluetoothConnection>
+
+public class ConnectionListAdapter extends ArrayAdapter<BluetoothConnection>
 {
 
     private LayoutInflater mLayoutInflater;
-    private ArrayList<SdpBluetoothConnection> connections;
+    private ArrayList<BluetoothConnection> connections;
     private int mViewResourceId;
 
-    public ConnectionListAdapter(Context context, int tvResourceId, ArrayList<SdpBluetoothConnection> devices)
+    public ConnectionListAdapter(Context context, int tvResourceId, ArrayList<BluetoothConnection> devices)
     {
         super(context, tvResourceId, devices);
         this.connections = devices;
@@ -32,7 +33,7 @@ public class ConnectionListAdapter extends ArrayAdapter<SdpBluetoothConnection>
     {
         convertView = mLayoutInflater.inflate(mViewResourceId, null);
 
-        SdpBluetoothConnection connection = connections.get(position);
+        BluetoothConnection connection = connections.get(position);
 
 
         //Setup the name TextView

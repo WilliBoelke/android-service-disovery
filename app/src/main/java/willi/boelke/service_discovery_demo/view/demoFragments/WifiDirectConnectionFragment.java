@@ -16,7 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
-import willi.boelke.serviceDiscovery.wifiDirect.sdpWifiEngine.SdpWifiEngine;
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiEngine;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.controller.wifiDemoController.WifiDemoController;
 import willi.boelke.service_discovery_demo.view.MainActivity;
