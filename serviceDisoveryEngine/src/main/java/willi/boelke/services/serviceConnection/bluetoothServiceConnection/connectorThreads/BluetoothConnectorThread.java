@@ -1,4 +1,5 @@
 package willi.boelke.services.serviceConnection.bluetoothServiceConnection.connectorThreads;
+
 import java.util.UUID;
 
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;

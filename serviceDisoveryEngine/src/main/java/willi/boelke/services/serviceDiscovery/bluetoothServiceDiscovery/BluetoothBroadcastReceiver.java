@@ -11,11 +11,11 @@ import android.util.Log;
 /**
  * This BroadcastReceiver listens on Broadcasts regarding the state of the
  * bluetooth api.
- *
+ * <p>
  * The only broadcasts used here is the {@link BluetoothAdapter#ACTION_DISCOVERY_FINISHED}
  * which will cause {@link BluetoothDiscoveryEngine#onDeviceDiscoveryFinished()}
  * to be called, this will start the UUID fetching process.
- *
+ * <p>
  * -------
  * Not all broadcasts which are listened on here are in the
  * intent filter, since most of them are for logging and debugging.
@@ -36,8 +36,8 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
     private final String TAG = this.getClass().getSimpleName();
 
     /*
-    * Reference to the engine
-    */
+     * Reference to the engine
+     */
     private final BluetoothDiscoveryEngine discoveryEngine;
 
 
@@ -47,14 +47,16 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
 
     /**
      * Public constructor
+     *
      * @param engine
-     * SdpBluetoothDiscoveryEngine, to be notified
-     * when certain intents are received.
+     *         SdpBluetoothDiscoveryEngine, to be notified
+     *         when certain intents are received.
      */
-    public BluetoothBroadcastReceiver(BluetoothDiscoveryEngine engine){
-            this.discoveryEngine = engine;
+    public BluetoothBroadcastReceiver(BluetoothDiscoveryEngine engine)
+    {
+        this.discoveryEngine = engine;
     }
-    
+
 
     //
     //  ----------  broadcast receiver ----------
@@ -91,7 +93,7 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
         else if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action))
         {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            Log.e(TAG, "ACTION_ACL_CONNECTED: Low level connection established with "+ device);
+            Log.e(TAG, "ACTION_ACL_CONNECTED: Low level connection established with " + device);
         }
         else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action))
         {
@@ -114,12 +116,11 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
                 Log.d(TAG, "ACTION_BOND_STATE_CHANGED: BOND_NONE with" + device);
             }
         }
-        else if(BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action))
+        else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action))
         {
             Log.e(TAG, "ACTION_DISCOVERY_STARTED: Start Discovery");
-
         }
-        if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
+        if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
         {
             discoveryEngine.onDeviceDiscoveryFinished();
             Log.e(TAG, "ACTION_DISCOVERY_STARTED: Finished Discovery");

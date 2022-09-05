@@ -14,7 +14,8 @@ public class SdpWifiConnection
 
     private final ServiceDescription serviceDescription;
 
-    public SdpWifiConnection ( Socket socket, ServiceDescription description){
+    public SdpWifiConnection(Socket socket, ServiceDescription description)
+    {
         this.connectionSocket = socket;
         this.serviceDescription = description;
     }
@@ -29,7 +30,8 @@ public class SdpWifiConnection
         return connectionSocket;
     }
 
-    public ServiceDescription getServiceDescription(){
+    public ServiceDescription getServiceDescription()
+    {
         return this.serviceDescription;
     }
 
@@ -43,7 +45,8 @@ public class SdpWifiConnection
         return connectionSocket.getOutputStream();
     }
 
-    public boolean isConnected(){
+    public boolean isConnected()
+    {
         return connectionSocket.isConnected();
     }
 
@@ -56,7 +59,8 @@ public class SdpWifiConnection
                 '}';
     }
 
-    public void close(){
+    public void close()
+    {
         try
         {
             this.connectionSocket.close();

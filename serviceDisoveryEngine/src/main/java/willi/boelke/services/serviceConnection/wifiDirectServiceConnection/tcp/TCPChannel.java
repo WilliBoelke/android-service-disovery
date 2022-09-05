@@ -10,18 +10,22 @@ abstract class TCPChannel
     static final long WAIT_LOOP_IN_MILLIS = 1000;
     private Socket socket = null;
 
-    void close() throws IOException {
-        if(this.socket != null) {
+    void close() throws IOException
+    {
+        if (this.socket != null)
+        {
             this.socket.close();
         }
     }
 
-    protected void setSocket(Socket socket) {
+    protected void setSocket(Socket socket)
+    {
         this.socket = socket;
     }
 
     /**
      * Create an new socket
+     *
      * @throws IOException
      */
     abstract void createSocket() throws IOException;
@@ -70,7 +74,8 @@ abstract class TCPChannel
         throw new IOException("no further connections possible");
     }
 
-    boolean isConnected() {
+    boolean isConnected()
+    {
         return this.socket != null;
     }
 }

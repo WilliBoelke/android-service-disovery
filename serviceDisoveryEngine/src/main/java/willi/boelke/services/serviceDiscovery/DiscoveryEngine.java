@@ -1,5 +1,6 @@
 package willi.boelke.services.serviceDiscovery;
 
+import android.content.Context;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -17,7 +18,8 @@ public abstract class DiscoveryEngine
 
     protected boolean engineRunning = false;
 
-    protected boolean engineIsNotRunning(){
+    protected boolean engineIsNotRunning()
+    {
         return !engineRunning;
     }
 
@@ -25,19 +27,24 @@ public abstract class DiscoveryEngine
      * Returns true if the engine was started successfully
      * This needs a working BluetoothAdapter to be available on the device
      *
-     * @return
-     * running state of the engine
+     * @return running state of the engine
      */
-    public boolean isRunning(){
+    public boolean isRunning()
+    {
         return engineRunning;
     }
 
+    public abstract void start(Context context);
+
+    public abstract void stop();
     //
     //  ----------  add service for discovery ----------
     //
 
-    public void startDiscoveryForService(ServiceDescription description){
-        if(engineIsNotRunning()){
+    public void startDiscoveryForService(ServiceDescription description)
+    {
+        if (engineIsNotRunning())
+        {
             Log.e(TAG, "startSDPDiscoveryForService: engine is not running - wont start");
         }
         Log.d(TAG, "Starting service discovery");
@@ -57,8 +64,9 @@ public abstract class DiscoveryEngine
     /**
      * called whenever a new service was added to the discovery
      * can be implemented in subclasses
+     *
      * @param description
-     * the description of the service
+     *         the description of the service
      */
     protected abstract void onNewServiceToDiscover(ServiceDescription description);
 
@@ -68,7 +76,8 @@ public abstract class DiscoveryEngine
 
     public void stopDiscoveryForService(ServiceDescription description)
     {
-        if(engineIsNotRunning()){
+        if (engineIsNotRunning())
+        {
             Log.e(TAG, "stopSDPDiscoveryForService: engine is not running - wont start");
         }
         Log.d(TAG, "End service discovery for service with UUID " + description.toString());
@@ -82,8 +91,9 @@ public abstract class DiscoveryEngine
     /**
      * called whenever a  service was removed to the discovery
      * can be implemented in subclasses
+     *
      * @param description
-     * the description of the service
+     *         the description of the service
      */
     protected abstract void onServiceRemoveFromDiscovery(ServiceDescription description);
 
@@ -100,5 +110,4 @@ public abstract class DiscoveryEngine
     {
         return servicesToLookFor.contains(description);
     }
-
 }

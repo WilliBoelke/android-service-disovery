@@ -5,6 +5,7 @@ package willi.boelke.services.serviceConnection.wifiDirectServiceConnection.tcp;
  */
 public interface TCPChannelMakerListener
 {
-     void onConnectionEstablished(TCPChannel channel);
-     void onConnectionEstablishmentFailed(TCPChannel channel, String reason);
+    void onConnectionEstablished(TCPChannel channel);
+
+    void onConnectionEstablishmentFailed(TCPChannel channel, String reason);
 }

@@ -9,8 +9,6 @@ import android.util.Log;
 import java.util.HashMap;
 import java.util.Map;
 
-import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiEngine;
-
 /**
  * Discovers nearby services periodically as long as {@link #retries} are
  * left.
@@ -22,7 +20,7 @@ import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWi
  * A different amount of retries amy be set using the constructor
  * {@link #WifiDiscoveryThread(WifiP2pManager, WifiP2pManager.Channel, WifiDirectDiscoveryEngine, int)}
  * or {@link #setTries(int)}
- *
+ * <p>
  * As longs as there are retries left discovery will be restarted with
  * a 7 second gap in between, to ensure the discovery of nearby services.
  * <p>
@@ -76,11 +74,11 @@ class WifiDiscoveryThread extends Thread
      * Constructor
      *
      * @param manager
-     * The WifiP2P manager
+     *         The WifiP2P manager
      * @param channel
-     *  The Channel
+     *         The Channel
      * @param engine
-     * The WifiDirectDiscoveryEngine to callback
+     *         The WifiDirectDiscoveryEngine to callback
      */
     public WifiDiscoveryThread(WifiP2pManager manager, WifiP2pManager.Channel channel, WifiDirectDiscoveryEngine engine)
     {
@@ -94,13 +92,13 @@ class WifiDiscoveryThread extends Thread
      * Constructor
      *
      * @param manager
-     * The WifiP2P manager
+     *         The WifiP2P manager
      * @param channel
-     *  The Channel
+     *         The Channel
      * @param engine
-     * The WifiDirectDiscoveryEngine to callback
+     *         The WifiDirectDiscoveryEngine to callback
      * @param retries
-     * number of retries
+     *         number of retries
      */
     public WifiDiscoveryThread(WifiP2pManager manager, WifiP2pManager.Channel channel, WifiDirectDiscoveryEngine engine, int retries)
     {
@@ -164,10 +162,9 @@ class WifiDiscoveryThread extends Thread
      * Setting up the callbacks which wil be called when
      * a service was discovered, proving the TXT records and other
      * service information.
-     *
+     * <p>
      * This only needs to be set up once, at the Thread start.
      * It shouldn't called while lopping (re-starting service discovery).
-     *
      */
     private void setupDiscoveryCallbacks()
     {
@@ -188,10 +185,17 @@ class WifiDiscoveryThread extends Thread
         // because i am sure google could make a more reliable matching between the two
         // then i can do here.
         //
+        // todo after thinking about that for a while (well that happens when u actually wanna sleep)
+        // i guess those can (and should) be moved inside the engine, they dont need threads
+        // the thread is only here to start the discovery several times - to prevent it from failing
         // Lets test it out
         //----------------------------------
 
         //--- TXT Record listener ---//
+
+        //
+        //
+        //
 
         WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, txtRecord, device) ->
         {
@@ -206,7 +210,6 @@ class WifiDiscoveryThread extends Thread
         {
             Map<String, String> record = tmpRecordCache.get(device.deviceAddress);
             engine.onServiceDiscovered(device, record, registrationType, instanceName);
-
         };
 
         //--- setting the listeners ---//
@@ -266,6 +269,7 @@ class WifiDiscoveryThread extends Thread
                     }
                 });
             }
+
             @Override
             public void onFailure(int code)
             {
@@ -279,7 +283,8 @@ class WifiDiscoveryThread extends Thread
     //  ---------- others ----------
     //
 
-    protected void cancel(){
+    protected void cancel()
+    {
         Log.d(TAG, "cancel: canceling service discovery");
         this.thread.interrupt();
         this.isDiscovering = false;
@@ -300,11 +305,13 @@ class WifiDiscoveryThread extends Thread
         Log.d(TAG, "cancel: canceled service discovery");
     }
 
-    protected boolean isDiscovering(){
+    protected boolean isDiscovering()
+    {
         return this.isDiscovering;
     }
 
-    private void onServiceDiscoveryFailure(){
+    private void onServiceDiscoveryFailure()
+    {
         //----------------------------------
         // NOTE : There doesn't seem to be
         // much i can do here, wifi could be restarted
@@ -319,9 +326,10 @@ class WifiDiscoveryThread extends Thread
      * as many times as specified trough the tries
      *
      * @param tries
-     * the number of tries
+     *         the number of tries
      */
-    protected void setTries(int tries){
+    protected void setTries(int tries)
+    {
         this.retries = tries;
     }
 }

@@ -13,7 +13,7 @@ import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
 import android.net.wifi.p2p.nsd.WifiP2pServiceInfo;
 import android.util.Log;
-
+import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import androidx.annotation.RequiresPermission;
 
 import java.util.ArrayList;
@@ -21,9 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-
 import willi.boelke.services.serviceDiscovery.DiscoveryEngine;
-import willi.boelke.services.serviceDiscovery.ServiceDescription;
+
 
 /**
  * Discover nearby Wifi Direct / Bonjour Services.
@@ -58,26 +57,25 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * After the services where registered the actual discovery process can be started by
  * calling {@link #startDiscovery()}, only after this point services will be discovered.
  * The discovery can be stopped {@link #stopDiscovery()} or started again as needed.
- * A Service discovery will run for 2.5 Minutes (that's no official number - i found that through 
- * a number of test and it may be different on other devices). 
+ * A Service discovery will run for 2.5 Minutes (that's no official number - i found that through
+ * a number of test and it may be different on other devices).
  * <p>
  * Listener / Observer<br>
  * ------------------------------------------------------------<br>
- * To get notified about discoveries a listener needs to be registered. 
- * {@link #registerDiscoverListener(WifiServiceDiscoveryListener)} thi allows 
- * to asynchronous notify about discovered Services. 
+ * To get notified about discoveries a listener needs to be registered.
+ * {@link #registerDiscoverListener(WifiServiceDiscoveryListener)} thi allows
+ * to asynchronous notify about discovered Services.
  * Several listeners can  be registered at the same time.
  * Every listener wil get notified about every discovered serves.
  * Listeners may unregister by calling {@link #unregisterDiscoveryListener(WifiServiceDiscoveryListener)}
- * if the engine should notify about every service discovered 
+ * if the engine should notify about every service discovered
  * {@link #notifyAboutEveryService(boolean)} can be called with `true`
  * from that moment on until it was called with `false` the engine will notify about
  * every discovered service even if it was not registered through {@link #startSdpService(ServiceDescription)}
- *<p>
+ * <p>
  * Stop the engine<br>
  * ------------------------------------------------------------<br>
  * To stop the engine call {@link #stop()}
- *
  */
 @SuppressLint("MissingPermission")
 public class WifiDirectDiscoveryEngine extends DiscoveryEngine
@@ -193,6 +191,7 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
      *
      * @see #stop()
      */
+    @Override
     public void start(Context context)
     {
         WifiP2pManager tempManager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
@@ -243,6 +242,7 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
      * This stops the engine, the discovery will be stopped
      * and all registered services will be unregistered
      */
+    @Override
     public void stop()
     {
         if (engineIsNotRunning())
@@ -273,10 +273,10 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
             return;
         }
         Log.d(TAG, "startDiscovery: staring discovery");
-        this.discoveredServices = new HashMap<>();
+        this.discoveredServices.clear();
         this.stopDiscovery();
         this.discoveryThread = new WifiDiscoveryThread(manager, channel, this);
-        discoveryThread.start();
+        this.discoveryThread.start();
     }
 
     /**
@@ -390,7 +390,7 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
 
     /**
      * This registers a new service, making it visible to other devices running a service discovery
-     * // TODO maybe it would be useful to add make the service type changable ?
+     * // TODO maybe it would be useful to add make the service type changeable ?
      */
     public void startSdpService(ServiceDescription description)
     {
@@ -400,7 +400,7 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
             return;
         }
         Log.d(TAG, "startSdpService: starting service : " + description);
-        WifiP2pServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(description.getServiceName(), SERVICE_TYPE , description.getServiceRecord());
+        WifiP2pServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(description.getServiceName(), SERVICE_TYPE, description.getServiceRecord());
         manager.addLocalService(channel, serviceInfo, new WifiP2pManager.ActionListener()
         {
             @Override
@@ -572,7 +572,8 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
     protected void onServiceDiscovered(WifiP2pDevice device, Map<String, String> serviceRecord, String registrationType, String instanceName)
     {
         Log.d(TAG, "onServiceDiscovered: ----discovered a new Service on " + device + "----");
-        if(!registrationType.equals(SERVICE_TYPE+".local.")){
+        if (!registrationType.equals(SERVICE_TYPE + ".local."))
+        {
             Log.e(TAG, "onServiceDiscovered: not a " + SERVICE_TYPE + " service - stop");
             return;
         }
@@ -581,13 +582,13 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
 
         boolean newService = false;
 
-        if(this.discoveredServices.containsKey(description)
+        if (this.discoveredServices.containsKey(description)
                 && this.discoveredServices.get(description).contains(device))
         {
             //--- service already cached ---//
             Log.d(TAG, "onServiceDiscovered: already knew the service");
         }
-        else if(! this.discoveredServices.containsKey(description))
+        else if (!this.discoveredServices.containsKey(description))
         {
             //--- service and device new ---//
             Log.d(TAG, "onServiceDiscovered: discovered new service");
@@ -603,7 +604,7 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
             Objects.requireNonNull(discoveredServices.get(description)).add(device);
             newService = true;
         }
-        if(newService)
+        if (newService)
         {
             onNewServiceDiscovered(device, description);
         }

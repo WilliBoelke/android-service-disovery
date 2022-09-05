@@ -12,10 +12,9 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
 /**
  * A SdpBluetoothConnection is a Point-o-Point o point connection between two service records
  * on bluetooth enabled devices.
- *
+ * <p>
  * It is a thin wrapper around a BluetoothSocket to extends it with information about the service
  * it is connected too.
- *
  */
 public class BluetoothConnection
 {
@@ -30,16 +29,17 @@ public class BluetoothConnection
      * This shows if the connection was made as Server or client socket
      * This may be useful for the application
      */
-    private Boolean serverPeer;
-    private BluetoothSocket connectionSocket;
-    private ServiceDescription description;
+    private final Boolean serverPeer;
+    private final BluetoothSocket connectionSocket;
+    private final ServiceDescription description;
 
 
     //
     //  ----------  constructor and init ----------
     //
 
-    public BluetoothConnection(ServiceDescription description, BluetoothSocket socket, boolean serverPeer){
+    public BluetoothConnection(ServiceDescription description, BluetoothSocket socket, boolean serverPeer)
+    {
         this.description = description;
         this.connectionSocket = socket;
         this.serverPeer = serverPeer;
@@ -53,7 +53,7 @@ public class BluetoothConnection
 
     public void close()
     {
-        Log.d(TAG, "close: closing connection " + this.toString());
+        Log.d(TAG, "close: closing connection " + this);
         try
         {
             this.connectionSocket.getInputStream().close();
@@ -110,7 +110,8 @@ public class BluetoothConnection
         return this.connectionSocket.getRemoteDevice();
     }
 
-    public String getRemoteDeviceAddress(){
+    public String getRemoteDeviceAddress()
+    {
         return this.getRemoteDevice().getAddress();
     }
 
@@ -124,13 +125,14 @@ public class BluetoothConnection
         return description;
     }
 
-    public boolean isServerPeer(){
+    public boolean isServerPeer()
+    {
         return serverPeer;
     }
 
     @Override
-    public String toString(){
-        return String.format("{|%-20s|%-20s|%-5s|}", this.connectionSocket.getRemoteDevice().getName(),  this.isServerPeer(), this.description.getServiceUuid());
+    public String toString()
+    {
+        return String.format("{|%-20s|%-20s|%-5s|}", this.connectionSocket.getRemoteDevice().getName(), this.isServerPeer(), this.description.getServiceUuid());
     }
-
 }

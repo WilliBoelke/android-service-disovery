@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/nav_bluetooth_discovery"
-        android:name="willi.boelke.service_discovery_demo.view.demoFragments.BluetoothDiscoveryFragment"
+        android:name="willi.boelke.service_discovery_demo.view.demoFragments.BluetoothBluetoothDiscoveryFragment"
         android:label="Bluetooth Discovery"
         tools:layout="@layout/fragment_wifi_direct_connect" />
 

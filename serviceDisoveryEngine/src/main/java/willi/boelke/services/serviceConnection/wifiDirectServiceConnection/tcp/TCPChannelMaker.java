@@ -10,18 +10,18 @@ import java.net.Socket;
 /**
  * TCP creates a virtual channel between to communication partners. Only during binding procedure,
  * there are two roles: server and client. Server opens a port to which clients can connect to.
- *
+ * <p>
  * After connection, there are an open socket. That class implements that view.
  * Objects of that class can be retrieved by some static factory methods. Again:
  * getting e.g. a server channel makes no difference as soon as a connection is established.
- *
+ * <p>
  * After object creation, start that channel thread simply by calling start().
  * Call {@link TCPChannel#isConnected()} to check if a connection was created or @see waitUntilConnectionEstablished()
  * which blocks the calling thread until a connection was established.
- *
+ * <p>
  * After connection establishment, methods by @see getInputStream() and @see getOutputStream()
  * can be used to get I/O streams to use the TCP channel.
- *
+ * <p>
  * When creating a server, createSocket can be called more than once, if and only if,
  * a server was created with multiple-flag set true (@see getTCPServerCreator()).
  * In that case, the server accepts multiple client connection attempts and tries to create
@@ -53,32 +53,43 @@ public class TCPChannelMaker extends Thread
 
     private TCPChannel channel;
 
-    static {
+    static
+    {
         wait_for_next_connection_try = WAIT_FOR_NEXT_CONNECTION_TRY_DEFAULT;
         max_connection_loops = MAX_CONNECTION_LOOPS_DEFAULT;
     }
 
     /**
      * Create a tcp channel as client
-     * @param hostname remote host - only used when client
-     * @param port port - local port for server or remote port for client
+     *
+     * @param hostname
+     *         remote host - only used when client
+     * @param port
+     *         port - local port for server or remote port for client
      */
-    public static TCPChannelMaker getTCPClientCreator(String hostname, int port) {
+    public static TCPChannelMaker getTCPClientCreator(String hostname, int port)
+    {
         return new TCPChannelMaker(hostname, port, false, false);
     }
 
     /**
      * Create a tcp channel as server
-     * @param port port - local port for server or remote port for client
+     *
+     * @param port
+     *         port - local port for server or remote port for client
      */
-    public static TCPChannelMaker getTCPServerCreator(int port) {
+    public static TCPChannelMaker getTCPServerCreator(int port)
+    {
         return new TCPChannelMaker(null, port, true, false);
     }
 
     /**
      * Create a tcp channel as server
-     * @param port port - local port for server or remote port for client
-     * @param multiple - allow multiple connection on server, createSocket can be more than once
+     *
+     * @param port
+     *         port - local port for server or remote port for client
+     * @param multiple
+     *         - allow multiple connection on server, createSocket can be more than once
      */
     public static TCPChannelMaker getTCPServerCreator(int port, boolean multiple)
     {
@@ -86,12 +97,17 @@ public class TCPChannelMaker extends Thread
     }
 
     /**
-     * @param hostname remote host - only used when client
-     * @param port port - local port for server or remote port for client
-     * @param asServer - act as server or client
-     * @param multiple - allow multiple connection on server - only used when server
+     * @param hostname
+     *         remote host - only used when client
+     * @param port
+     *         port - local port for server or remote port for client
+     * @param asServer
+     *         - act as server or client
+     * @param multiple
+     *         - allow multiple connection on server - only used when server
      */
-    private TCPChannelMaker(String hostname, int port, boolean asServer, boolean multiple) {
+    private TCPChannelMaker(String hostname, int port, boolean asServer, boolean multiple)
+    {
         this.hostname = hostname;
         this.port = port;
         this.asServer = asServer;
@@ -101,7 +117,8 @@ public class TCPChannelMaker extends Thread
     /**
      * connection maker thread already started?
      */
-    public boolean running() {
+    public boolean running()
+    {
         return this.threadRunning;
     }
 
@@ -115,7 +132,7 @@ public class TCPChannelMaker extends Thread
         Log.e(TAG, "run: thread started - creating channel");
         try
         {
-            if(this.asServer)
+            if (this.asServer)
             {
                 this.channel = new TCPServer(this.port, this.multiple);
             }
@@ -126,7 +143,6 @@ public class TCPChannelMaker extends Thread
 
             // this can take a while
             this.channel.createSocket();
-
         }
         catch (IOException ex)
         {
@@ -136,7 +152,7 @@ public class TCPChannelMaker extends Thread
 
     public void close() throws IOException
     {
-        if(this.channel != null)
+        if (this.channel != null)
         {
             this.channel.close();
             Log.d(TAG, "close: channel closed");
@@ -148,7 +164,7 @@ public class TCPChannelMaker extends Thread
      */
     public void waitUntilConnectionEstablished() throws IOException
     {
-        if(!this.threadRunning)
+        if (!this.threadRunning)
         {
             /* in unit tests there is a race condition between the test
             thread and those newly created tests to establish a connection.
@@ -197,11 +213,13 @@ public class TCPChannelMaker extends Thread
     }
 
 
-    private class WaitAndNotifyThread extends Thread {
+    private class WaitAndNotifyThread extends Thread
+    {
         private final TCPChannelMakerListener listener;
         private final TCPChannel channel;
 
-        WaitAndNotifyThread(TCPChannelMakerListener listener, TCPChannel channel) {
+        WaitAndNotifyThread(TCPChannelMakerListener listener, TCPChannel channel)
+        {
             this.listener = listener;
             this.channel = channel;
         }
@@ -209,15 +227,15 @@ public class TCPChannelMaker extends Thread
         @Override
         public void run()
         {
-          try
-          {
+            try
+            {
                 waitUntilConnectionEstablished();
                 this.listener.onConnectionEstablished(this.channel);
-          }
-          catch (IOException e)
-          {
+            }
+            catch (IOException e)
+            {
                 this.listener.onConnectionEstablishmentFailed(this.channel, e.getLocalizedMessage());
-          }
+            }
         }
     }
 

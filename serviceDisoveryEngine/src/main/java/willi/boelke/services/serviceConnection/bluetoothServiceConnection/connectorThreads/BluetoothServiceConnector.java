@@ -15,7 +15,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * This thread registers a Bluetooth Service to the devices service records
  * and accepts incoming connection attempts
  */
-public class BluetoothServiceConnector  extends BluetoothConnectorThread
+public class BluetoothServiceConnector extends BluetoothConnectorThread
 {
 
     /**
@@ -77,9 +77,12 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
 
     private void openServerSocket() throws IOException
     {
-            Log.d(TAG, "openServerSocket: opening server socket with UUID : " + description.getServiceUuid());
-            this.serverSocket = mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(description.getServiceName().toString(), description.getServiceUuid());
-
+        Log.d(TAG, "openServerSocket: opening server socket with UUID : " + description.getServiceUuid());
+        this.serverSocket =
+                mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(
+                        description.getServiceName(),
+                        description.getServiceUuid()
+                );
     }
 
     //
@@ -89,7 +92,8 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
     public void run()
     {
         this.thread = currentThread();
-        while (this.running){
+        while (this.running)
+        {
             acceptConnections();
         }
         Log.d(TAG, "run: Accept thread ended final");
@@ -104,53 +108,54 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
      */
     private void acceptConnections()
     {
-            Log.d(TAG, "run:  Thread started");
-            BluetoothSocket socket = null;
-            //Blocking Call : Accept thread waits here till another device connects (or canceled)
-            Log.d(TAG, "run: RFCOMM server socket started, waiting for connections ...");
+        Log.d(TAG, "run:  Thread started");
+        BluetoothSocket socket = null;
+        //Blocking Call : Accept thread waits here till another device connects (or canceled)
+        Log.d(TAG, "run: RFCOMM server socket started, waiting for connections ...");
+        try
+        {
+            socket = this.serverSocket.accept();
+            Log.d(TAG, "run: RFCOMM server socked accepted client connection");
+        }
+        catch (IOException e)
+        {
+            Log.e(TAG, "acceptConnections: an IOException occurred, trying to fix");
             try
             {
-                socket = this.serverSocket.accept();
-                Log.d(TAG, "run: RFCOMM server socked accepted client connection");
+                Log.e(TAG, "acceptConnections: trying to close socket");
+                this.serverSocket.close();
             }
-            catch (IOException e)
+            catch (IOException e1)
             {
-                Log.e(TAG, "acceptConnections: an IOException occurred, trying to fix");
-                try
-                {
-                    Log.e(TAG, "acceptConnections: trying to close socket");
-                    this.serverSocket.close();
-                }
-                catch (IOException e1){
-                    Log.e(TAG, "acceptConnections: could not close the socket");
-                }
-                try
-                {
-                    Log.e(TAG, "acceptConnections: trying to open new server socket");
-                    this.openServerSocket();
-                }
-                catch (IOException e2){
-                    Log.e(TAG, "acceptConnections: failed to open new server socked...shutting down");
-                    // todo notify engine / shutdown
-                }
+                Log.e(TAG, "acceptConnections: could not close the socket");
+            }
+            try
+            {
+                Log.e(TAG, "acceptConnections: trying to open new server socket");
+                this.openServerSocket();
+            }
+            catch (IOException e2)
+            {
+                Log.e(TAG, "acceptConnections: failed to open new server socked...shutting down");
+                // todo notify engine / shutdown
+            }
+        }
+        catch (Exception ie)
+        {
+            // there is an exception throw here, when interrupting in test cases
+            // it does not say which one...or why, so i go with a general catch.
+            // I guess that it is somehow related to interrupting the thread while it waits for an async
+            // response from a mocked method, which also runs a thread, but i am not really sure in the end
+            Log.d(TAG, "acceptConnections: an unexpected exception occurred, this maybe is because thread was interrupted");
+        }
 
-            }
-            catch (Exception ie)
-            {
-                // there is an exception throw here, when interrupting in test cases
-                // it does not say which one...or why, so i go with a general catch.
-                // I guess that it is somehow related to interrupting the thread while it waits for an async
-                // response from a mocked method, which also runs a thread, but i am not really sure in the end
-                Log.d(TAG, "acceptConnections: an unexpected exception occurred, this maybe is because thread was interrupted");
-            }
-
-            if (socket == null)
-            {
-                Log.d(TAG, "run: Thread was interrupted");
-                return;
-            }
-            Log.d(TAG, "run:  service accepted client connection, opening streams");
-            this.connectionEvenListener.inConnectionSuccess(this , new BluetoothConnection(this.description, socket, true));
+        if (socket == null)
+        {
+            Log.d(TAG, "run: Thread was interrupted");
+            return;
+        }
+        Log.d(TAG, "run:  service accepted client connection, opening streams");
+        this.connectionEvenListener.inConnectionSuccess(this, new BluetoothConnection(this.description, socket, true));
     }
 
 
@@ -162,7 +167,7 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
     {
         Log.d(TAG, "cancel: cancelling accept thread");
         this.running = false;
-        if(this.thread != null)
+        if (this.thread != null)
         {
             this.thread.interrupt();
             Log.d(TAG, "cancel: accept thread interrupted");
@@ -179,21 +184,19 @@ public class BluetoothServiceConnector  extends BluetoothConnectorThread
     }
 
 
-
-
     //
     //  ----------  getter and setter ----------
     //
 
     /**
      * Returns he UUID of this service
+     *
      * @return
      */
     public ServiceDescription getService()
     {
         return this.description;
     }
-
 }
 
 

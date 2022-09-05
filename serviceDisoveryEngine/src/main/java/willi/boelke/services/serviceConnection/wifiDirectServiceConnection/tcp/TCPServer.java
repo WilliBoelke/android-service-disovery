@@ -20,7 +20,6 @@ class TCPServer extends TCPChannel
 
     /**
      * The server socket to accept tcp connections
-     *
      */
     private ServerSocket srvSocket;
 
@@ -28,7 +27,7 @@ class TCPServer extends TCPChannel
 
     private final boolean multiple;
 
-    private List<Socket> socketList;
+    private final List<Socket> socketList;
 
     private Thread acceptThread = null;
 
@@ -48,7 +47,6 @@ class TCPServer extends TCPChannel
      * This method is called within a thread.
      * If multiple is set true
      * each client connection is accept and kept in {@link #socketList}.
-     *
      */
     void createSocket() throws IOException
     {
@@ -64,7 +62,7 @@ class TCPServer extends TCPChannel
             // got a socket
             if (multiple)
             {
-               this.startAcceptThread();
+                this.startAcceptThread();
             }
 
             // set first found socket on top of the queue
@@ -73,7 +71,7 @@ class TCPServer extends TCPChannel
         }
         else
         {
-           waitForAcceptThread();
+            waitForAcceptThread();
         }
     }
 
@@ -110,7 +108,8 @@ class TCPServer extends TCPChannel
             remainingTries--;
         } while (!found && remainingTries > 0);
 
-        if(!found){
+        if (!found)
+        {
             throw new ConnectException("Could not connect to peer");
         }
     }
@@ -136,14 +135,14 @@ class TCPServer extends TCPChannel
     void nextConnection() throws IOException
     {
         Log.d(TAG, "nextConnection called");
-        if(!this.multiple)
+        if (!this.multiple)
         {
             String message = "multiple flag not set - no further connections";
             Log.d(TAG, message);
             throw new IOException(message);
         }
 
-        if(this.srvSocket == null)
+        if (this.srvSocket == null)
         {
             String message = "no open server socket, cannot create another connection";
             Log.d(TAG, message);

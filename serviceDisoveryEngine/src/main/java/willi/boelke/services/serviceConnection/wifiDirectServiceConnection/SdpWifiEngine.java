@@ -11,20 +11,17 @@ import android.content.IntentFilter;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
-
 import android.util.Log;
-
 
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.tcp.TCPChannelMaker;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
-
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiServiceDiscoveryListener;
 
 /**
  * Starts service discovery and service advertisement,
  * manages connection establishment between services and clients.
- *
+ * <p>
  * Sets up a group between peers, the Group owner will be
  * chosen by the underlying Android implementation of wifi direct.
  * Establishes TCP connections between group owner and peers.
@@ -32,7 +29,7 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
  * Initialisation<br>
  * ---------------------------------------------<br>
  * To obtain the singleton instance call {@link #getInstance()}.
- *
+ * <p>
  * After initialization the engine needs to be started before using
  * it {@link #start(Context)}. A running engine can be stopped by calling
  * {@link #stop()} this will cancel the discovery, unregister the
@@ -45,7 +42,7 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
  * exactly one service at a time. To register a service for
  * advertisement and search call
  * {@link #registerService(ServiceDescription, SdpWifiPeer)}.
- *
+ * <p>
  * To start the general discovery (which is needed to find the service)
  * call {@link #startDiscovery()}. The discovery process will run around 20
  * seconds. It can be restarted and stopped as long as the engine runs
@@ -63,7 +60,7 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
  * search for one service at a given time.
  * A service / service discovery will only be started when the
  * already running discovery / service has been stopped by calling the methods
- *<p>
+ * <p>
  * Groups<br>
  * ------------------------------------------------------------<br>
  * As specified in by the wifi direct protocol connections between peers
@@ -73,10 +70,9 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
  * * A client cannot be a group owner at the same time as being a groups client
  * * A group owner cannot connect to other group owners.
  * ------------------------------------------------------------
- *
+ * <p>
  * Permissions:
  * Android requires a number of permissions to allow the usage of wifi direct,
- *
  */
 @SuppressLint("MissingPermission")
 public class SdpWifiEngine
@@ -140,10 +136,11 @@ public class SdpWifiEngine
 
     /**
      * Determines if the engine was or not
+     *
      * @see #start(Context) ()
      * @see #stop()
      */
-    private boolean engineRunning =false;
+    private boolean engineRunning = false;
 
     //
     //  ----------  constructor and initialization ----------
@@ -153,8 +150,7 @@ public class SdpWifiEngine
     /**
      * Returns the singleton instance
      *
-     * @return
-     * The instance
+     * @return The instance
      */
     public static SdpWifiEngine getInstance()
     {
@@ -170,12 +166,13 @@ public class SdpWifiEngine
      */
     private SdpWifiEngine()
     {
-       // private singleton constructor
+        // private singleton constructor
     }
 
     public void start(Context context)
     {
-        if(isRunning()){
+        if (isRunning())
+        {
             Log.e(TAG, "start: engine already running");
             return;
         }
@@ -209,7 +206,8 @@ public class SdpWifiEngine
 
     public void stop()
     {
-        if(engineIsNotRunning()){
+        if (engineIsNotRunning())
+        {
             Log.e(TAG, "engine not started - wont stop");
             return;
         }
@@ -222,7 +220,8 @@ public class SdpWifiEngine
         {
             this.manager.cancelConnect(this.channel, null);
         }
-        catch (RuntimeException e) {
+        catch (RuntimeException e)
+        {
             // nothing to do here
         }
         this.engineRunning = false;
@@ -249,10 +248,10 @@ public class SdpWifiEngine
         {
             this.context.unregisterReceiver(mWifiReceiver);
         }
-        catch(IllegalArgumentException e){
+        catch (IllegalArgumentException e)
+        {
             Log.d(TAG, "unregisterReceiver: receiver was not registered");
         }
-
     }
 
     //
@@ -275,13 +274,14 @@ public class SdpWifiEngine
      */
     public boolean registerService(ServiceDescription description, SdpWifiPeer serviceClient)
     {
-        if(engineIsNotRunning()){
+        if (engineIsNotRunning())
+        {
             Log.e(TAG, "registerService: engine not started - wont register servie");
             return false;
         }
         if (this.currentServiceDescription != null)
         {
-            Log.e(TAG, "registerService: a service is already registered" );
+            Log.e(TAG, "registerService: a service is already registered");
             return false; // already running
         }
 
@@ -298,13 +298,14 @@ public class SdpWifiEngine
      * This stops the engine that means other devices cant find the advertised service anymore,
      * the discovery will stop and the discovered service will be unset,
      * to start the engine again call {@link #registerService(ServiceDescription, SdpWifiPeer)}.
-     *
+     * <p>
      * This however wont cancel existing connections,
      * to leave the current group call {@link #disconnectFromGroup()}.
      */
     public void unregisterService()
     {
-        if(engineIsNotRunning()){
+        if (engineIsNotRunning())
+        {
             Log.e(TAG, "unregisterService: engine not started - wont unregister");
             return;
         }
@@ -320,12 +321,11 @@ public class SdpWifiEngine
      * group, this will also close all current connections
      * And if the local peer is the group owner, completely
      * end the group and disconnect all clients.
-     *
-     *
      */
     public void disconnectFromGroup()
     {
-        if(engineIsNotRunning()){
+        if (engineIsNotRunning())
+        {
             Log.e(TAG, "unregisterService: engine not started - wont disconnect");
             return;
         }
@@ -338,17 +338,19 @@ public class SdpWifiEngine
             {
                 if (group != null && manager != null && channel != null)
                 {
-                    manager.removeGroup(channel, new WifiP2pManager.ActionListener() {
+                    manager.removeGroup(channel, new WifiP2pManager.ActionListener()
+                    {
 
                         @Override
-                        public void onSuccess() {
+                        public void onSuccess()
+                        {
                             Log.d(TAG, "disconnectFromGroup: disconnected succesfully");
                         }
 
                         @Override
                         public void onFailure(int reason)
                         {
-                            SdpWifiEngine.logReason(TAG,"disconnectFromGroup: failed to disconnect " , reason);
+                            SdpWifiEngine.logReason(TAG, "disconnectFromGroup: failed to disconnect ", reason);
                         }
                     });
                 }
@@ -371,7 +373,8 @@ public class SdpWifiEngine
      */
     public void startDiscovery()
     {
-        if(engineIsNotRunning()){
+        if (engineIsNotRunning())
+        {
             Log.e(TAG, "startDiscovery: engine not started - wont start");
             return;
         }
@@ -383,7 +386,8 @@ public class SdpWifiEngine
      */
     public void stopDiscovery()
     {
-        if(engineIsNotRunning()){
+        if (engineIsNotRunning())
+        {
             Log.e(TAG, "stopDiscovery: engine not started - wont stop");
             return;
         }
@@ -396,7 +400,6 @@ public class SdpWifiEngine
     //
 
 
-
     //
     //  ----------  connecting ----------
     //
@@ -406,16 +409,18 @@ public class SdpWifiEngine
     /**
      * Checks if a connection should be established to the remote device
      * if that's the case it sends a connection request.
+     *
      * @param device
-     * the remote device
+     *         the remote device
      * @param description
-     * the description of the devices service
+     *         the description of the devices service
      */
     private void tryToConnect(WifiP2pDevice device, ServiceDescription description)
     {
         Log.d(TAG, "tryToConnect: received a service - trying to connect");
-        Log.e(TAG, "tryToConnect: " + peer );
-        if(peer == null){
+        Log.e(TAG, "tryToConnect: " + peer);
+        if (peer == null)
+        {
             Log.e(TAG, "tryToConnect: peer was null, stop");
             return;
         }
@@ -423,7 +428,7 @@ public class SdpWifiEngine
 
         if (peer.shouldConnectTo(device.deviceAddress, description))
         {
-            Log.d(TAG, "tryToConnect: trying to connect to  " +device);
+            Log.d(TAG, "tryToConnect: trying to connect to  " + device);
             WifiP2pConfig config = new WifiP2pConfig();
             config.deviceAddress = device.deviceAddress;
 
@@ -432,7 +437,7 @@ public class SdpWifiEngine
                 @Override
                 public void onSuccess()
                 {
-                    Log.d(TAG, "Successfully send connection request to " +device);
+                    Log.d(TAG, "Successfully send connection request to " + device);
                 }
 
                 @Override
@@ -457,9 +462,11 @@ public class SdpWifiEngine
      * when a connection request was answered and the local peer became the GO
      * in a group
      */
-    protected void onBecameGroupOwner(){
+    protected void onBecameGroupOwner()
+    {
         Log.d(TAG, "onBecameGroupOwner: became group owner, doing group owner stuff");
-        if(peer!= null){
+        if (peer != null)
+        {
             this.peer.onBecameGroupOwner();
         }
         // As a group owner we cant connect to other devices
@@ -473,8 +480,10 @@ public class SdpWifiEngine
      * when a connection request was answered and the local peer became a client in a
      * group
      */
-    protected void onBecameClient(){
-        if(peer!= null){
+    protected void onBecameClient()
+    {
+        if (peer != null)
+        {
             this.peer.onBecameGroupClient();
         }
         Log.d(TAG, "onBecameClient: became client to a GO, doing client stuff");
@@ -498,10 +507,12 @@ public class SdpWifiEngine
     protected void onSocketConnected(SdpWifiConnection connection)
     {
         Log.d(TAG, "onSocketConnected: Connection established " + connection);
-        if(peer != null){
+        if (peer != null)
+        {
             peer.onConnectionEstablished(connection);
         }
-        else{
+        else
+        {
             connection.close();
         }
     }
@@ -509,8 +520,8 @@ public class SdpWifiEngine
     /**
      * Starts a thread to wait for socket connection being established
      * and then calls {@link #onSocketConnected(SdpWifiConnection)}
-     * @param channelCreator
      *
+     * @param channelCreator
      */
     protected void onSocketConnectionStarted(TCPChannelMaker channelCreator)
     {
@@ -534,7 +545,8 @@ public class SdpWifiEngine
         return this.engineRunning;
     }
 
-    private boolean engineIsNotRunning(){
+    private boolean engineIsNotRunning()
+    {
         return !this.engineRunning;
     }
 

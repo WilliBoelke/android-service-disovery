@@ -17,7 +17,6 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * Note<br>
  * ------------------------------------------------------------<br>
  * This code is partially taken from AsapAndroid
- *
  */
 class AsyncSdpWifiConnectionCreator extends Thread
 {
@@ -75,7 +74,7 @@ class AsyncSdpWifiConnectionCreator extends Thread
             {
                 this.socket.close();
             }
-            catch (IOException | NullPointerException ex )
+            catch (IOException | NullPointerException ex)
             {
                 Log.e(TAG, "run: cannot close the socket...", ex);
             }

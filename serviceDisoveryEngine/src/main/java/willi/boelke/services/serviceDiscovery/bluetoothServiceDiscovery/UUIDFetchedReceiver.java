@@ -36,8 +36,9 @@ class UUIDFetchedReceiver extends BroadcastReceiver
 
     /**
      * Public constructor
+     *
      * @param discoveryEngine
-     * The SdpBluetoothDiscoveryEngine to be notified
+     *         The SdpBluetoothDiscoveryEngine to be notified
      */
     public UUIDFetchedReceiver(BluetoothDiscoveryEngine discoveryEngine)
     {

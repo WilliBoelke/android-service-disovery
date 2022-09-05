@@ -43,7 +43,7 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
 
     //------------Constructors------------
 
-    public BluetoothClientConnector( ServiceDescription description, BluetoothDevice server, ConnectionEventListener connectionStateChangeListener)
+    public BluetoothClientConnector(ServiceDescription description, BluetoothDevice server, ConnectionEventListener connectionStateChangeListener)
     {
         this.connectionStateChangeListener = connectionStateChangeListener;
         this.server = server;
@@ -92,7 +92,7 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
             }
         }
         Log.d(TAG, "run: connection established ");
-        this.connectionStateChangeListener.inConnectionSuccess( this, new BluetoothConnection(this.description, mmSocket, false));
+        this.connectionStateChangeListener.inConnectionSuccess(this, new BluetoothConnection(this.description, mmSocket, false));
         Log.d(TAG, "run: Thread ended");
     }
 
@@ -101,7 +101,8 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
         return this.description;
     }
 
-    public void cancel(){
+    public void cancel()
+    {
         this.thread.interrupt();
         try
         {

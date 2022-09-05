@@ -7,7 +7,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * Interface for a sdp wifi peer
  * A peer can be registered as listener when starting a service / service discovery
  * through {@link SdpWifiEngine#registerService(ServiceDescription, SdpWifiPeer)}
- *
+ * <p>
  * A SdpWifiPeer wil get notified about a range of events through the here
  * defined callback methods.
  *
@@ -21,10 +21,11 @@ public interface SdpWifiPeer
      * At this point a connection has not been established.
      * A connection will be established after calling {@link #shouldConnectTo(String, ServiceDescription)}
      * to decide whether a connection should be established or not.
+     *
      * @param address
-     * The address of the host device
+     *         The address of the host device
      * @param description
-     * the description of the service
+     *         the description of the service
      */
     void onServiceDiscovered(String address, ServiceDescription description);
 
@@ -46,8 +47,8 @@ public interface SdpWifiPeer
      * Providing a SdpWifiConnection
      *
      * @param connection
-     * SdpWifiConnection instance which contains information about
-     * service, peer and the socket.
+     *         SdpWifiConnection instance which contains information about
+     *         service, peer and the socket.
      */
     void onConnectionEstablished(SdpWifiConnection connection);
 
@@ -56,12 +57,13 @@ public interface SdpWifiPeer
      * decides whether a connection should be established.
      * Needs to return true if connection should be made.
      * else needs to return false.
+     *
      * @param address
-     * the address of the remote device
+     *         the address of the remote device
      * @param description
-     * the description of the service
-     * @return
-     * true or false, depending on if a connection should be made or not
+     *         the description of the service
+     *
+     * @return true or false, depending on if a connection should be made or not
      */
     boolean shouldConnectTo(String address, ServiceDescription description);
 }

@@ -48,8 +48,9 @@ class BluetoothConnectionManager
      * Add a connection
      * this wil b keep until the connection dies
      * either by manually closing it or by losing the connection
+     *
      * @param connection
-     * the connection to be stored
+     *         the connection to be stored
      */
     protected void addConnection(BluetoothConnection connection)
     {
@@ -62,11 +63,11 @@ class BluetoothConnectionManager
      * looking the connection up.
      *
      * @param address
-     * the MAC address of the remote BluetoothDevice
+     *         the MAC address of the remote BluetoothDevice
      * @param description
-     * the Service description
-     * @return
-     * true when there is an equal connection - else returns false
+     *         the Service description
+     *
+     * @return true when there is an equal connection - else returns false
      */
     protected boolean isAlreadyConnected(String address, ServiceDescription description)
     {
@@ -103,8 +104,9 @@ class BluetoothConnectionManager
     /**
      * Closes all connections (sockets) which are clients to the service defined to
      * the given service description,
+     *
      * @param description
-     * The description of the service
+     *         The description of the service
      */
     protected void closeAllClientConnectionsToService(ServiceDescription description)
     {
@@ -115,24 +117,23 @@ class BluetoothConnectionManager
      * Closes and removes all connections service servers
      *
      * @param description
-     * The description of the service
+     *         The description of the service
      */
     protected void closeServerConnectionsToService(ServiceDescription description)
     {
-         closeConnectionsWithDescription(description, true);
+        closeConnectionsWithDescription(description, true);
     }
 
     /**
      * Closes all sockets of connections with the given service description and removes them
      *
      * @param description
-     * The description of the connections to close
+     *         The description of the connections to close
      * @param serverOnly
-     * if only server side connections should be closed true
+     *         if only server side connections should be closed true
      *
      * @see #closeServerConnectionsToService(ServiceDescription)
      * @see #closeAllClientConnectionsToService(ServiceDescription)
-     *
      */
     private void closeConnectionsWithDescription(ServiceDescription description, boolean serverOnly)
     {

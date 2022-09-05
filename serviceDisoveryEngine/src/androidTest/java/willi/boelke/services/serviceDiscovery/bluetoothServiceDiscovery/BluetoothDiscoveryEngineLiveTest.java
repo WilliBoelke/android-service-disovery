@@ -184,7 +184,7 @@ public class BluetoothDiscoveryEngineLiveTest
 
         ArrayList<BluetoothDevice> discoveredDevices = new ArrayList<>();
 
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothDiscoveryListener()
         {
 
             @Override
@@ -264,7 +264,7 @@ public class BluetoothDiscoveryEngineLiveTest
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -341,7 +341,7 @@ public class BluetoothDiscoveryEngineLiveTest
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -432,7 +432,7 @@ public class BluetoothDiscoveryEngineLiveTest
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -525,7 +525,7 @@ public class BluetoothDiscoveryEngineLiveTest
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -596,7 +596,7 @@ public class BluetoothDiscoveryEngineLiveTest
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)

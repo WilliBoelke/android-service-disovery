@@ -28,7 +28,8 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
     //
     //  ----------  constructor and initialisation ----------
     //
-    public WifiDirectConnectionInfoListener(SdpWifiEngine sdpWifiEngine) {
+    public WifiDirectConnectionInfoListener(SdpWifiEngine sdpWifiEngine)
+    {
         this.sdpWifiEngine = sdpWifiEngine;
     }
 
@@ -55,18 +56,19 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
         Log.d(TAG, "onConnectionInfoAvailable: received connection info");
         Log.d(TAG, "onConnectionInfoAvailable: " + info);
 
-        if(!this.establishConnection){
+        if (!this.establishConnection)
+        {
             Log.e(TAG, "onConnectionInfoAvailable: should not establish connections");
             return;
         }
 
         TCPChannelMaker.max_connection_loops = 10;
         TCPChannelMaker channelCreator = null;
-        if(info.isGroupOwner)
+        if (info.isGroupOwner)
         {
             //--- creating server channel - just once as group owner ---//
 
-            if(this.serverChannelCreator == null)
+            if (this.serverChannelCreator == null)
             {
                 Log.d(TAG, "onConnectionInfoAvailable: start server channel");
                 this.serverChannelCreator = TCPChannelMaker.getTCPServerCreator(sdpWifiEngine.getPortNumber(), true);
@@ -86,11 +88,12 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
             channelCreator = TCPChannelMaker.getTCPClientCreator(hostAddress, sdpWifiEngine.getPortNumber());
             sdpWifiEngine.onBecameClient();
         }
-        Log.e(TAG, "onConnectionInfoAvailable: channel creator is null = " + (channelCreator == null) );
+        Log.e(TAG, "onConnectionInfoAvailable: channel creator is null = " + (channelCreator == null));
         this.sdpWifiEngine.onSocketConnectionStarted(channelCreator);
     }
 
-    protected void establishConnections(boolean shouldEstablish){
+    protected void establishConnections(boolean shouldEstablish)
+    {
         this.establishConnection = shouldEstablish;
     }
 }

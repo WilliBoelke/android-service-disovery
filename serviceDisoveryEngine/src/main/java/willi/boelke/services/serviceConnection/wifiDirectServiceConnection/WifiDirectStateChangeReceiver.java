@@ -63,7 +63,6 @@ public class WifiDirectStateChangeReceiver extends BroadcastReceiver
                 Log.e(TAG, "onReceive: connection changed, connected to peer ");
                 manager.requestConnectionInfo(channel, connectionInfoListener);
             }
-
         }
         else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action))
         {

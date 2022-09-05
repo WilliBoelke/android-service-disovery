@@ -137,7 +137,7 @@ class BluetoothDiscoveryEngineMockTest {
 
         val foundDevices: ArrayList<BluetoothDevice> = ArrayList()
         BluetoothDiscoveryEngine.getInstance().registerDiscoverListener( object :
-            BluetoothServiceDiscoveryListener {
+            BluetoothDiscoveryListener {
             override fun onServiceDiscovered(host: BluetoothDevice?, description: ServiceDescription?) {
                 // not under test
             }
@@ -168,7 +168,7 @@ class BluetoothDiscoveryEngineMockTest {
         val testDeviceOne = getTestDeviceOne()
         val testDeviceTwo = getTestDeviceTwo()
         BluetoothDiscoveryEngine.getInstance().registerDiscoverListener( object :
-            BluetoothServiceDiscoveryListener {
+            BluetoothDiscoveryListener {
             override fun onServiceDiscovered(host: BluetoothDevice?, description: ServiceDescription?) {
                 // not under test
             }
@@ -199,7 +199,7 @@ class BluetoothDiscoveryEngineMockTest {
         val testDeviceTwo = getTestDeviceTwo()
 
         BluetoothDiscoveryEngine.getInstance().registerDiscoverListener( object :
-            BluetoothServiceDiscoveryListener {
+            BluetoothDiscoveryListener {
             override fun onServiceDiscovered(host: BluetoothDevice?, description: ServiceDescription?) {
                 // not under test
             }
@@ -235,7 +235,7 @@ class BluetoothDiscoveryEngineMockTest {
         val foundDevices: ArrayList<BluetoothDevice> = ArrayList()
         val foundServices: ArrayList<ServiceDescription> = ArrayList()
         BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(object :
-            BluetoothServiceDiscoveryListener {
+            BluetoothDiscoveryListener {
             override fun onServiceDiscovered(
                 host: BluetoothDevice,
                 description: ServiceDescription
@@ -290,7 +290,7 @@ class BluetoothDiscoveryEngineMockTest {
         val foundDevices: ArrayList<BluetoothDevice> = ArrayList()
         val foundServices: ArrayList<ServiceDescription> = ArrayList()
         BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(object :
-            BluetoothServiceDiscoveryListener {
+            BluetoothDiscoveryListener {
             override fun onServiceDiscovered(
                 host: BluetoothDevice,
                 description: ServiceDescription
@@ -342,7 +342,7 @@ class BluetoothDiscoveryEngineMockTest {
         val foundDevices: ArrayList<BluetoothDevice> = ArrayList()
         val foundServices: ArrayList<ServiceDescription> = ArrayList()
         BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(object :
-            BluetoothServiceDiscoveryListener {
+            BluetoothDiscoveryListener {
             override fun onServiceDiscovered(
                 host: BluetoothDevice,
                 description: ServiceDescription
@@ -401,7 +401,7 @@ class BluetoothDiscoveryEngineMockTest {
         val foundDevices: ArrayList<BluetoothDevice> = ArrayList()
         val foundServices: ArrayList<ServiceDescription> = ArrayList()
         BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(object :
-            BluetoothServiceDiscoveryListener {
+            BluetoothDiscoveryListener {
             override fun onServiceDiscovered(
                 host: BluetoothDevice,
                 description: ServiceDescription

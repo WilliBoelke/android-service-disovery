@@ -3,6 +3,7 @@ package willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery;
 import android.bluetooth.BluetoothDevice;
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
 
 /**
  * Listener interface to get notified when
@@ -11,27 +12,28 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  *
  * @author WilliBolke
  */
-public interface BluetoothServiceDiscoveryListener
+public interface BluetoothDiscoveryListener
 {
     /**
      * Called whenever a service was discovered which has been looked for
      * through {@link BluetoothDiscoveryEngine#startDiscoveryForService(ServiceDescription)}
-     *
+     * <p>
      * Provides the remote host device and the service description to identify the service
      *
      * @param host
-     *  The BluetoothDevice hosting / advertising the service
+     *         The BluetoothDevice hosting / advertising the service
      * @param description
-     *  The service description as provided in {@link BluetoothDiscoveryEngine#startDiscoveryForService(ServiceDescription)}
-     *  which was resolved through matching UUIDs
+     *         The service description as provided in {@link BluetoothDiscoveryEngine#startDiscoveryForService(ServiceDescription)}
+     *         which was resolved through matching UUIDs
      */
     void onServiceDiscovered(BluetoothDevice host, ServiceDescription description);
 
     /**
      * Called whenever a remote bluetooth device was discovered.
      * this device does not have to have a desired service available
+     *
      * @param device
-     *   A bluetooth device in range
+     *         A bluetooth device in range
      */
     void onPeerDiscovered(BluetoothDevice device);
 }
