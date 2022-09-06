@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiConnection;
-import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiEngine;
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine;
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiPeer;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
@@ -68,17 +68,17 @@ public class WifiDemoController implements SdpWifiPeer
     {
         this.writeThread = new WriteThread();
         this.readThread = new ReadThread();
-        SdpWifiEngine.getInstance().registerService(this.description, this);
+        WifiDirectConnectionEngine.getInstance().registerService(this.description, this);
     }
 
     public void stop()
     {
-        SdpWifiEngine.getInstance().unregisterService();
-        SdpWifiEngine.getInstance().stopDiscovery();
+        WifiDirectConnectionEngine.getInstance().unregisterService();
+        WifiDirectConnectionEngine.getInstance().stopDiscovery();
         for (SdpWifiConnection connection : openConnections.getValue()){
             connection.close();
         }
-        SdpWifiEngine.getInstance().disconnectFromGroup();
+        WifiDirectConnectionEngine.getInstance().disconnectFromGroup();
         try{
             this.writeThread.cancel();
         }

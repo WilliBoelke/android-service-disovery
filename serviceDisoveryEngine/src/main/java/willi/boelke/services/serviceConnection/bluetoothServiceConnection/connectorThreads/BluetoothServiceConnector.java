@@ -79,7 +79,7 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
     {
         Log.d(TAG, "openServerSocket: opening server socket with UUID : " + description.getServiceUuid());
         this.serverSocket =
-                mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(
+                mBluetoothAdapter.listenUsingRfcommWithServiceRecord(
                         description.getServiceName(),
                         description.getServiceUuid()
                 );
@@ -101,7 +101,7 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
 
     /**
      * Accepts one incoming connection through the {@link #serverSocket}
-     * If a connection was established  {@link SdpBluetoothServiceServer#onClientConnected(BluetoothConnection connection)}
+     * If a connection was established  {@link ConnectionEventListener#onConnectionSuccess(BluetoothConnectorThread, BluetoothConnection)}
      * will be called.
      * <p>
      * This method contains a blocking call  and  will only return after a connection was established !
@@ -129,16 +129,7 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
             {
                 Log.e(TAG, "acceptConnections: could not close the socket");
             }
-            try
-            {
-                Log.e(TAG, "acceptConnections: trying to open new server socket");
-                this.openServerSocket();
-            }
-            catch (IOException e2)
-            {
-                Log.e(TAG, "acceptConnections: failed to open new server socked...shutting down");
-                // todo notify engine / shutdown
-            }
+            this.connectionEvenListener.onConnectionFailed(this.description.getServiceUuid(), this);
         }
         catch (Exception ie)
         {
@@ -155,7 +146,7 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
             return;
         }
         Log.d(TAG, "run:  service accepted client connection, opening streams");
-        this.connectionEvenListener.inConnectionSuccess(this, new BluetoothConnection(this.description, socket, true));
+        this.connectionEvenListener.onConnectionSuccess(this, new BluetoothConnection(this.description, socket, true));
     }
 
 
@@ -163,6 +154,7 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
     //  ----------  end ----------
     //
 
+    @Override
     public void cancel()
     {
         Log.d(TAG, "cancel: cancelling accept thread");

@@ -13,10 +13,12 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
 
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiServiceDiscoveryListener;
@@ -54,23 +56,8 @@ public class WifiDirectDiscoveryFragment extends Fragment implements WifiService
 
         View root = binding.getRoot();
 
-        // Init the engine
-        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        {
-            Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
-        }
-        else
-        {
-            this.engine = WifiDirectDiscoveryEngine.getInstance();
-            this.engine.start(this.getActivity().getApplicationContext());
-            this.engine.registerDiscoverListener(this);
-        }
-        setupListView();
-        setupClickListener();
-        this.mainActivity = (MainActivity)this.getActivity();
         return root;
     }
-
 
     private void setupClickListener()
     {
@@ -92,8 +79,9 @@ public class WifiDirectDiscoveryFragment extends Fragment implements WifiService
 
     private void onClickEventHandler(View view)
     {
-        if(!this.engine.isRunning()){
-            Toast.makeText(getActivity(), "Missing permission or wifi not working", Toast.LENGTH_LONG).show();
+        if (!engine.isRunning())
+        {
+            Toast.makeText(getContext(), "Missing permission or bluetooth not supported", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -134,6 +122,26 @@ public class WifiDirectDiscoveryFragment extends Fragment implements WifiService
             this.notifyAboutAll = !notifyAboutAll;
             engine.notifyAboutEveryService(notifyAboutAll);
         }
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        // Init the engine
+        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
+        }
+        else
+        {
+            this.engine = WifiDirectDiscoveryEngine.getInstance();
+            this.engine.start(this.getActivity().getApplicationContext());
+            this.engine.registerDiscoverListener(this);
+        }
+        this.mainActivity = (MainActivity)this.getActivity();
+        setupListView();
+        setupClickListener();
     }
 
     private void setupListView()

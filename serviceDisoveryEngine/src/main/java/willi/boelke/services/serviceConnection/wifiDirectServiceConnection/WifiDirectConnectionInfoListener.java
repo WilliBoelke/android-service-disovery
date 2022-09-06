@@ -19,7 +19,7 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
      */
     private final String TAG = this.getClass().getSimpleName();
 
-    private final SdpWifiEngine sdpWifiEngine;
+    private final WifiDirectConnectionEngine wifiDirectConnectionEngine;
 
     private TCPChannelMaker serverChannelCreator = null;
     private boolean establishConnection;
@@ -28,9 +28,9 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
     //
     //  ----------  constructor and initialisation ----------
     //
-    public WifiDirectConnectionInfoListener(SdpWifiEngine sdpWifiEngine)
+    public WifiDirectConnectionInfoListener(WifiDirectConnectionEngine wifiDirectConnectionEngine)
     {
-        this.sdpWifiEngine = sdpWifiEngine;
+        this.wifiDirectConnectionEngine = wifiDirectConnectionEngine;
     }
 
 
@@ -61,7 +61,6 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
             Log.e(TAG, "onConnectionInfoAvailable: should not establish connections");
             return;
         }
-
         TCPChannelMaker.max_connection_loops = 10;
         TCPChannelMaker channelCreator = null;
         if (info.isGroupOwner)
@@ -71,25 +70,25 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
             if (this.serverChannelCreator == null)
             {
                 Log.d(TAG, "onConnectionInfoAvailable: start server channel");
-                this.serverChannelCreator = TCPChannelMaker.getTCPServerCreator(sdpWifiEngine.getPortNumber(), true);
+                this.serverChannelCreator = TCPChannelMaker.getTCPServerCreator(wifiDirectConnectionEngine.getPortNumber(), true);
             }
             else
             {
                 Log.d(TAG, "onConnectionInfoAvailable: Server channel already exists");
             }
             channelCreator = this.serverChannelCreator;
-            sdpWifiEngine.onBecameGroupOwner();
+            wifiDirectConnectionEngine.onBecameGroupOwner();
         }
         else
         {
 
             String hostAddress = info.groupOwnerAddress.getHostAddress();
             Log.d(TAG, "onConnectionInfoAvailable: local peer client, group owner = " + hostAddress);
-            channelCreator = TCPChannelMaker.getTCPClientCreator(hostAddress, sdpWifiEngine.getPortNumber());
-            sdpWifiEngine.onBecameClient();
+            channelCreator = TCPChannelMaker.getTCPClientCreator(hostAddress, wifiDirectConnectionEngine.getPortNumber());
+            wifiDirectConnectionEngine.onBecameClient();
         }
         Log.e(TAG, "onConnectionInfoAvailable: channel creator is null = " + (channelCreator == null));
-        this.sdpWifiEngine.onSocketConnectionStarted(channelCreator);
+        this.wifiDirectConnectionEngine.onSocketConnectionStarted(channelCreator);
     }
 
     protected void establishConnections(boolean shouldEstablish)

@@ -11,7 +11,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
 /**
  * This Thread awaits a {@link TCPChannelMaker} to establish a socket connection
  * (or to fail doing that...). IF a connection was established a {@link SdpWifiConnection}
- * will be passed to {@link SdpWifiEngine#onSocketConnected(SdpWifiConnection)}
+ * will be passed to {@link WifiDirectConnectionEngine#onSocketConnected(SdpWifiConnection)}
  *
  * <p>
  * Note<br>
@@ -27,11 +27,11 @@ class AsyncSdpWifiConnectionCreator extends Thread
     private final String TAG = this.getClass().getSimpleName();
 
     private final TCPChannelMaker channelMaker;
-    private final SdpWifiEngine engine;
+    private final WifiDirectConnectionEngine engine;
     private final ServiceDescription serviceDescription;
     private Socket socket;
 
-    public AsyncSdpWifiConnectionCreator(TCPChannelMaker channelMaker, SdpWifiEngine engine, ServiceDescription description)
+    public AsyncSdpWifiConnectionCreator(TCPChannelMaker channelMaker, WifiDirectConnectionEngine engine, ServiceDescription description)
     {
         this.serviceDescription = description;
         this.channelMaker = channelMaker;

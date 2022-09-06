@@ -75,7 +75,7 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
  * Android requires a number of permissions to allow the usage of wifi direct,
  */
 @SuppressLint("MissingPermission")
-public class SdpWifiEngine
+public class WifiDirectConnectionEngine
 {
 
     //
@@ -85,7 +85,7 @@ public class SdpWifiEngine
     /**
      * The singleton instance
      */
-    private static SdpWifiEngine instance;
+    private static WifiDirectConnectionEngine instance;
 
     //
     //  ----------  instance members ----------
@@ -158,11 +158,11 @@ public class SdpWifiEngine
      *
      * @return The instance
      */
-    public static SdpWifiEngine getInstance()
+    public static WifiDirectConnectionEngine getInstance()
     {
         if (instance == null)
         {
-            instance = new SdpWifiEngine();
+            instance = new WifiDirectConnectionEngine();
         }
         return instance;
     }
@@ -170,7 +170,7 @@ public class SdpWifiEngine
     /**
      * Private constructor following the singleton pattern
      */
-    private SdpWifiEngine()
+    private WifiDirectConnectionEngine()
     {
         // private singleton constructor
     }
@@ -359,7 +359,7 @@ public class SdpWifiEngine
                         @Override
                         public void onFailure(int reason)
                         {
-                            SdpWifiEngine.logReason(TAG, "disconnectFromGroup: failed to disconnect ", reason);
+                            WifiDirectConnectionEngine.logReason(TAG, "disconnectFromGroup: failed to disconnect ", reason);
                         }
                     });
                 }

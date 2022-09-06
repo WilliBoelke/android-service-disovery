@@ -14,13 +14,15 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiEngine;
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.controller.wifiDemoController.WifiDemoController;
 import willi.boelke.service_discovery_demo.view.MainActivity;
 import willi.boelke.service_discovery_demo.view.listAdapters.WifiConnectionListAdapter;
+import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
 
 
 public class WifiDirectConnectionFragment extends Fragment
@@ -33,14 +35,14 @@ public class WifiDirectConnectionFragment extends Fragment
 
     private willi.boelke.service_discovery_demo.databinding.FragmentWifiDirectConnectBinding binding;
 
-    private SdpWifiEngine engine;
+    private WifiDirectConnectionEngine engine;
 
     private TextView messageTextView;
 
     private MainActivity mainActivity;
 
-    WifiDemoController wifiDemoControllerOne;
-    WifiDemoController wifiDemoControllerTwo;
+    private WifiDemoController wifiDemoControllerOne;
+    private WifiDemoController wifiDemoControllerTwo;
 
     //
     //  ----------  activity/fragment lifecycle ----------
@@ -53,14 +55,23 @@ public class WifiDirectConnectionFragment extends Fragment
 
         View root = binding.getRoot();
 
-        // Init the engine
+
+        return root;
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+
+
         if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
             Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
         }
         else
         {
-            this.engine = SdpWifiEngine.getInstance();
+            this.engine = WifiDirectConnectionEngine.getInstance();
             this.engine.start(this.getActivity().getApplicationContext());
         }
         this.mainActivity = (MainActivity) getActivity();
@@ -71,7 +82,6 @@ public class WifiDirectConnectionFragment extends Fragment
         setupClickListener();
         setupMessageOneObserver();
         setupConnectionObserver();
-        return root;
     }
 
 
@@ -93,8 +103,9 @@ public class WifiDirectConnectionFragment extends Fragment
 
     private void onClickEventHandler(View view)
     {
-        if(!this.engine.isRunning()){
-            Toast.makeText(getActivity(), "Missing permission or wifi not working", Toast.LENGTH_LONG).show();
+        if (!engine.isRunning())
+        {
+            Toast.makeText(getContext(), "Missing permission or bluetooth not supported", Toast.LENGTH_LONG).show();
             return;
         }
         
@@ -102,7 +113,7 @@ public class WifiDirectConnectionFragment extends Fragment
 
         if (binding.startWifiBtn.equals(view))
         {
-            SdpWifiEngine.getInstance().startDiscovery();
+            WifiDirectConnectionEngine.getInstance().startDiscovery();
         }
         if (binding.startDiscoveryOneBtn.equals(view))
         {
@@ -122,7 +133,7 @@ public class WifiDirectConnectionFragment extends Fragment
         }
         else if (binding.endDiscoveryButton.equals(view))
         {
-            SdpWifiEngine.getInstance().stopDiscovery();
+            WifiDirectConnectionEngine.getInstance().stopDiscovery();
         }
     }
 

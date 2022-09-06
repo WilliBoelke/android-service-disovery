@@ -23,6 +23,8 @@ public abstract class BluetoothConnectorThread extends Thread
     {
         void onConnectionFailed(UUID uuid, BluetoothConnectorThread failedConnector);
 
-        void inConnectionSuccess(BluetoothConnectorThread connector, BluetoothConnection connection);
+        void onConnectionSuccess(BluetoothConnectorThread connector, BluetoothConnection connection);
     }
+
+    public abstract void cancel();
 }

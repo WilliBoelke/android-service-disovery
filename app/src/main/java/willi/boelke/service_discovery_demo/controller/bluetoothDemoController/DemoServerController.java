@@ -1,5 +1,6 @@
 package willi.boelke.service_discovery_demo.controller.bluetoothDemoController;
 
+import android.bluetooth.BluetoothAdapter;
 import android.util.Log;
 
 import androidx.lifecycle.MutableLiveData;
@@ -188,7 +189,7 @@ public class DemoServerController implements BluetoothServiceServer
                     {
                         try
                         {
-                            String msg = "Test message number " + counter + " from : " + serviceDescription.getServiceRecord().get("service-name");
+                            String msg = "Test message number " + counter + " from : " + serviceDescription.getServiceName() + BluetoothAdapter.getDefaultAdapter().getName();
                             connection.getConnectionSocket().getOutputStream().write(msg.getBytes());
                         }
                         catch (IOException e)

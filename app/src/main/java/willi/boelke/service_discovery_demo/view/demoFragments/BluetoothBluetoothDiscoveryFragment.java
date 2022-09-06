@@ -1,6 +1,7 @@
 package willi.boelke.service_discovery_demo.view.demoFragments;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -13,17 +14,20 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
 
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.view.MainActivity;
 import willi.boelke.service_discovery_demo.view.listAdapters.ServiceListAdapter;
+import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
 
 
 public class BluetoothBluetoothDiscoveryFragment extends Fragment implements BluetoothServiceDiscoveryListener
@@ -60,24 +64,6 @@ public class BluetoothBluetoothDiscoveryFragment extends Fragment implements Blu
         binding = willi.boelke.service_discovery_demo.databinding.FragmentBluetoothDiscoverBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        engine = BluetoothDiscoveryEngine.getInstance();
-
-        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        {
-            Log.d(TAG, "onCreateView: starting engine");
-            engine.start(this.getActivity().getApplicationContext());
-            engine.registerDiscoverListener(this);
-        }
-        else
-        {
-            Log.e(TAG, "onCreateView: missing permissions");
-        }
-
-
-        this.mainActivity = (MainActivity) getActivity();
-
-        setupClickListener();
-        setupListView();
         return root;
     }
 
@@ -96,6 +82,30 @@ public class BluetoothBluetoothDiscoveryFragment extends Fragment implements Blu
             engine.notifyAboutAllServices(false);
         }
         binding = null;
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        engine = BluetoothDiscoveryEngine.getInstance();
+
+        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+        {
+            Log.d(TAG, "onCreateView: starting engine");
+            engine.start(this.getActivity().getApplicationContext());
+            engine.registerDiscoverListener(this);
+        }
+        else
+        {
+            Log.e(TAG, "onCreateView: missing permissions");
+        }
+
+
+        this.mainActivity = (MainActivity) getActivity();
+
+        setupClickListener();
+        setupListView();
     }
 
 
@@ -180,6 +190,7 @@ public class BluetoothBluetoothDiscoveryFragment extends Fragment implements Blu
     //  ----------  Listener ----------
     //
 
+    @SuppressLint("MissingPermission")
     @Override
     public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
     {
@@ -193,6 +204,7 @@ public class BluetoothBluetoothDiscoveryFragment extends Fragment implements Blu
         connectionListAdapter.notifyDataSetChanged();
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     public void onPeerDiscovered(BluetoothDevice device)
     {

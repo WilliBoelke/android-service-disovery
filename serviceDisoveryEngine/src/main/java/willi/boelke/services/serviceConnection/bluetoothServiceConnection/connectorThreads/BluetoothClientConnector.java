@@ -68,20 +68,21 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
             e.printStackTrace();
         }
         mmSocket = tmp;
-        // Blocking call:
-        // only return on successful connection or exception
+
         Log.d(TAG, "run: socket created - tyring to connect");
         try
         {
+            // Blocking call:
+            // only return on successful connection or exception
             mmSocket.connect();
         }
         catch (IOException e)
         {
-            Log.e(TAG, "run: could not make connection, socket closed  " + Arrays.toString(e.getStackTrace()));
+            Log.e(TAG, "run: could not make connection, socket closed ", e);
             try
             {
-                this.connectionStateChangeListener.onConnectionFailed(this.description.getServiceUuid(), this);
                 mmSocket.close();
+                this.connectionStateChangeListener.onConnectionFailed(this.description.getServiceUuid(), this);
                 Log.e(TAG, "run: socked closed ");
                 return;
             }
@@ -92,7 +93,7 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
             }
         }
         Log.d(TAG, "run: connection established ");
-        this.connectionStateChangeListener.inConnectionSuccess(this, new BluetoothConnection(this.description, mmSocket, false));
+        this.connectionStateChangeListener.onConnectionSuccess(this, new BluetoothConnection(this.description, mmSocket, false));
         Log.d(TAG, "run: Thread ended");
     }
 
@@ -101,6 +102,7 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
         return this.description;
     }
 
+    @Override
     public void cancel()
     {
         this.thread.interrupt();
@@ -111,6 +113,9 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
         catch (IOException e)
         {
             e.printStackTrace();
+        }
+        catch (NullPointerException e){
+            Log.e(TAG, "cancel: socket was not yet initialized");
         }
     }
 }

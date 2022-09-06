@@ -606,7 +606,7 @@ public class BluetoothServiceConnectionEngine
             }
 
             @Override
-            public void inConnectionSuccess(BluetoothConnectorThread bluetoothClientConnector, BluetoothConnection connection)
+            public void onConnectionSuccess(BluetoothConnectorThread bluetoothClientConnector, BluetoothConnection connection)
             {
                 connectionManager.addConnection(connection);
                 Objects.requireNonNull(serviceClients.get(description)).onConnectedToService(connection);
@@ -631,13 +631,18 @@ public class BluetoothServiceConnectionEngine
         BluetoothServiceConnector bluetoothServiceConnector = new BluetoothServiceConnector(bluetoothAdapter, description, new BluetoothServiceConnector.ConnectionEventListener()
         {
             @Override
-            public void onConnectionFailed(UUID uuid, BluetoothConnectorThread failedClientConnector)
+            public void onConnectionFailed(UUID uuid, BluetoothConnectorThread failedConnector)
             {
-                // Noting for now just go on
+                BluetoothServiceConnector connector = (BluetoothServiceConnector) failedConnector;
+                connector.cancel();
+                //Todo this should be handeled differently. but when the server socket fails we an end teh service
+                runningServiceConnectors.remove(serviceServer);
+                disconnectFromClientsWithUUID(connector.getService());
+                stopSDPService(connector.getService());
             }
 
             @Override
-            public void inConnectionSuccess(BluetoothConnectorThread bluetoothClientConnector, BluetoothConnection connection)
+            public void onConnectionSuccess(BluetoothConnectorThread bluetoothClientConnector, BluetoothConnection connection)
             {
                 connectionManager.addConnection(connection);
                 serviceServer.onClientConnected(connection);
