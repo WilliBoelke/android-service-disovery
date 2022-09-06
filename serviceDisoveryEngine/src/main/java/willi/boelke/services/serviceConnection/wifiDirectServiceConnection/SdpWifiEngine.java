@@ -132,6 +132,12 @@ public class SdpWifiEngine
      */
     private WifiDirectDiscoveryEngine discoveryEngine;
 
+    /**
+     * The service the engine tries to find
+     * at a given times.
+     * @see #registerService(ServiceDescription, SdpWifiPeer)
+     * @see #unregisterService()
+     */
     private ServiceDescription currentServiceDescription;
 
     /**
@@ -289,7 +295,7 @@ public class SdpWifiEngine
         this.currentServiceDescription = description;
         // Enable connection establishment (again)
         this.connectionListener.establishConnections(true);
-        this.discoveryEngine.startSdpService(description);
+        this.discoveryEngine.startService(description);
         this.discoveryEngine.startDiscoveryForService(description);
         return true;
     }
@@ -309,8 +315,11 @@ public class SdpWifiEngine
             Log.e(TAG, "unregisterService: engine not started - wont unregister");
             return;
         }
+        if(currentServiceDescription == null) {
+            return; // service description was already null - means no service was registered
+        }
         this.discoveryEngine.stopDiscoveryForService(currentServiceDescription);
-        this.discoveryEngine.stopSdpService(currentServiceDescription);
+        this.discoveryEngine.stopService(currentServiceDescription);
         this.currentServiceDescription = null;
         this.connectionListener.establishConnections(false);
         this.peer = null;
@@ -487,7 +496,7 @@ public class SdpWifiEngine
             this.peer.onBecameGroupClient();
         }
         Log.d(TAG, "onBecameClient: became client to a GO, doing client stuff");
-        this.discoveryEngine.stopSdpService(currentServiceDescription);
+        this.discoveryEngine.stopService(currentServiceDescription);
         this.connectionListener.establishConnections(false);
         //----------------------------------
         // NOTE : as a client, the local device does

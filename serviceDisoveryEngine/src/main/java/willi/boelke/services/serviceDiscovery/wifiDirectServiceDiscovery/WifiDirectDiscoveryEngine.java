@@ -46,8 +46,8 @@ import willi.boelke.services.serviceDiscovery.DiscoveryEngine;
  * <p>
  * Service advertisement<br>
  * ------------------------------------------------------------<br>
- * Services can be advertised using {@link #startSdpService(ServiceDescription)}
- * the service will stay advertised until {@link #stopSdpService(ServiceDescription)}
+ * Services can be advertised using {@link #startService(ServiceDescription)}
+ * the service will stay advertised until {@link #stopService(ServiceDescription)}
  * or {@link #stop()} is called.
  * For a service to be Discoverable the device also needs to run the discovery.
  * (TODO this is weird behavior look into that more...could not find much in documenatation)
@@ -71,7 +71,7 @@ import willi.boelke.services.serviceDiscovery.DiscoveryEngine;
  * if the engine should notify about every service discovered
  * {@link #notifyAboutEveryService(boolean)} can be called with `true`
  * from that moment on until it was called with `false` the engine will notify about
- * every discovered service even if it was not registered through {@link #startSdpService(ServiceDescription)}
+ * every discovered service even if it was not registered through {@link #startService(ServiceDescription)}
  * <p>
  * Stop the engine<br>
  * ------------------------------------------------------------<br>
@@ -133,8 +133,8 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
      * when they where started.
      * This is to remove them again at a later point.
      *
-     * @see #startSdpService(ServiceDescription)
-     * @see #stopSdpService(ServiceDescription)
+     * @see #startService(ServiceDescription)
+     * @see #stopService(ServiceDescription)
      */
     private final HashMap<ServiceDescription, WifiP2pServiceInfo> runningServices = new HashMap<>();
 
@@ -392,7 +392,7 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
      * This registers a new service, making it visible to other devices running a service discovery
      * // TODO maybe it would be useful to add make the service type changeable ?
      */
-    public void startSdpService(ServiceDescription description)
+    public void startService(ServiceDescription description)
     {
         if (engineIsNotRunning())
         {
@@ -422,7 +422,7 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
      * This stops the advertisement of the service,
      * other peers who are running a service discovery wont
      */
-    public void stopSdpService(ServiceDescription description)
+    public void stopService(ServiceDescription description)
     {
         if (engineIsNotRunning())
         {
@@ -463,7 +463,7 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
         // both don't seem to work reliable
         for (ServiceDescription description : runningServices.keySet())
         {
-            stopSdpService(description);
+            stopService(description);
         }
 
         this.manager.clearLocalServices(channel, new WifiP2pManager.ActionListener()
@@ -629,15 +629,6 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
         }
     }
 
-    /**
-     * Will be called by the discovery thread, when the discovery process
-     * is finished
-     * todo - do we need that ?
-     */
-    protected void onDiscoveryFinished()
-    {
-        Log.d(TAG, "onDiscoveryFinished: the discovery process finished");
-    }
 
     /**
      * Setting this to true will notify ALL registered listener

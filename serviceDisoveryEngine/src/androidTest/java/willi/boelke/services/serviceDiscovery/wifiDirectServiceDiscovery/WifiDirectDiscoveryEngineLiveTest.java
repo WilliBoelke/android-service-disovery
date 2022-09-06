@@ -176,7 +176,7 @@ public class WifiDirectDiscoveryEngineLiveTest
 
     public void itShouldFindOneNearbyService_advertise() throws InterruptedException
     {
-        WifiDirectDiscoveryEngine.getInstance().startSdpService(descriptionForServiceOne);
+        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
         WifiDirectDiscoveryEngine.getInstance().startDiscovery();
         synchronized (this)
         {
@@ -229,8 +229,8 @@ public class WifiDirectDiscoveryEngineLiveTest
 
     public void itShouldFindTwoNearbyService_advertise() throws InterruptedException
     {
-        WifiDirectDiscoveryEngine.getInstance().startSdpService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startSdpService(descriptionForServiceTwo);
+        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
+        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceTwo);
         WifiDirectDiscoveryEngine.getInstance().startDiscovery();
         synchronized (this)
         {
@@ -294,7 +294,7 @@ public class WifiDirectDiscoveryEngineLiveTest
 
     public void iitShouldFindTwoNearbyServiceOnTwoDevices_advertise() throws InterruptedException
     {
-        WifiDirectDiscoveryEngine.getInstance().startSdpService(descriptionForServiceOne);
+        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
         WifiDirectDiscoveryEngine.getInstance().startDiscovery();
         synchronized (this)
         {
@@ -356,8 +356,8 @@ public class WifiDirectDiscoveryEngineLiveTest
 
     public void itShouldNotifyAboutAllServices_advertise() throws InterruptedException
     {
-        WifiDirectDiscoveryEngine.getInstance().startSdpService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startSdpService(descriptionForServiceTwo);
+        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
+        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceTwo);
         WifiDirectDiscoveryEngine.getInstance().startDiscovery();
         synchronized (this)
         {

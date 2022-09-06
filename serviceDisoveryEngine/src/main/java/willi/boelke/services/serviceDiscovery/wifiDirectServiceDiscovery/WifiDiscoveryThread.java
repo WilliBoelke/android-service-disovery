@@ -10,19 +10,32 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Discovers nearby services periodically as long as {@link #retries} are
- * left.
+ * Starts the discovery and sets up callback to notify
+ * the engine when a service is discovered.
+ *
  * <p>
  * Retries<br>
  * ------------------------------------------------------------<br>
  * Retries are per default set to two, which increases the chance
- * of discovering a service (as my finding are).
- * A different amount of retries amy be set using the constructor
- * {@link #WifiDiscoveryThread(WifiP2pManager, WifiP2pManager.Channel, WifiDirectDiscoveryEngine, int)}
- * or {@link #setTries(int)}
+ * of discovering a service (as my finding are). This seems to
+ * prevent some cases in which the discovery does not
+ * discovery any services - even though no error was
+ * given.
+ * If the discovery fails due to "busy", "error" etc.
+ * the service discovery will be restarted up to 3 times.
+ * Giving it a maximum of 5 restarts (if needed).
+ *
  * <p>
- * As longs as there are retries left discovery will be restarted with
- * a 7 second gap in between, to ensure the discovery of nearby services.
+ * Retries<br>
+ * ------------------------------------------------------------<br>
+ * The thread is just for setting up the discovery.
+ * The discovery itself - once it started will notify about
+ * services through the callbacks set top the WifiP2pManager.
+ * There was no exact number to be found on how long this works.
+ * It does not seem to work indefinitely.
+ * However through a series of tests it seemed that after 2.5 minutes
+ * a discovery was not performed anymore.
+ *
  * <p>
  * Whats returned?<br>
  * ------------------------------------------------------------<br>
@@ -47,11 +60,7 @@ class WifiDiscoveryThread extends Thread
      */
     private final String TAG = this.getClass().getSimpleName();
 
-    private final int WAIT_BEFORE_RETRY = 10000;
-
-    private final int TRIES = 2;
-
-    private int retries;
+    private int retries = 2;
 
     private int runningTries = 0;
 
@@ -85,29 +94,7 @@ class WifiDiscoveryThread extends Thread
         this.manager = manager;
         this.channel = channel;
         this.engine = engine;
-        this.retries = TRIES;
     }
-
-    /**
-     * Constructor
-     *
-     * @param manager
-     *         The WifiP2P manager
-     * @param channel
-     *         The Channel
-     * @param engine
-     *         The WifiDirectDiscoveryEngine to callback
-     * @param retries
-     *         number of retries
-     */
-    public WifiDiscoveryThread(WifiP2pManager manager, WifiP2pManager.Channel channel, WifiDirectDiscoveryEngine engine, int retries)
-    {
-        this.manager = manager;
-        this.channel = channel;
-        this.engine = engine;
-        this.retries = retries;
-    }
-
 
     //
     //  ----------  discovery ----------
@@ -131,26 +118,23 @@ class WifiDiscoveryThread extends Thread
 
         while (isDiscovering && runningTries < retries)
         {
-            try
+            runningTries++;
+            startDiscovery();
+            synchronized (this)
             {
-                runningTries++;
-                startDiscovery();
-                // give it some time
-                synchronized (this)
+                try
                 {
-                    this.wait(WAIT_BEFORE_RETRY);
+                    this.wait(10000);
                 }
-            }
-            catch (InterruptedException e)
-            {
-                Log.e(TAG, "run:discovery thread was interrupted (maybe cancelled)");
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
             }
         }
 
         //--- end ---//
 
-        engine.onDiscoveryFinished();
-        this.cancel();
         Log.d(TAG, "run: discovery thread finished");
     }
 
@@ -184,11 +168,6 @@ class WifiDiscoveryThread extends Thread
         // cant quite understand. I think both should come in teh same callback
         // because i am sure google could make a more reliable matching between the two
         // then i can do here.
-        //
-        // todo after thinking about that for a while (well that happens when u actually wanna sleep)
-        // i guess those can (and should) be moved inside the engine, they dont need threads
-        // the thread is only here to start the discovery several times - to prevent it from failing
-        // Lets test it out
         //----------------------------------
 
         //--- TXT Record listener ---//
@@ -269,7 +248,6 @@ class WifiDiscoveryThread extends Thread
                     }
                 });
             }
-
             @Override
             public void onFailure(int code)
             {
@@ -283,6 +261,11 @@ class WifiDiscoveryThread extends Thread
     //  ---------- others ----------
     //
 
+    /**
+     * This interrupts the service thread
+     * and unregisters all service requests.
+     * the service discovery will stop.
+     */
     protected void cancel()
     {
         Log.d(TAG, "cancel: canceling service discovery");
@@ -310,26 +293,25 @@ class WifiDiscoveryThread extends Thread
         return this.isDiscovering;
     }
 
+    /**
+     * If the discovery fails
+     */
     private void onServiceDiscoveryFailure()
     {
-        //----------------------------------
-        // NOTE : There doesn't seem to be
-        // much i can do here, wifi could be restarted
-        // (of / on) but that's all
-        //----------------------------------
-    }
-
-    /**
-     * Sets the amount retries for the service discovery
-     * the default is 1 try.
-     * A higher value will restart the discovery every 10 seconds
-     * as many times as specified trough the tries
-     *
-     * @param tries
-     *         the number of tries
-     */
-    protected void setTries(int tries)
-    {
-        this.retries = tries;
+        if(retries <= 5)
+        {
+            retries++;
+        }
+        try
+        {
+            synchronized (this)
+            {
+                this.wait(5000); // wait an additional 5 seconds so other processes can
+                // (hopefully) finish
+            }
+        }
+        catch (InterruptedException e){
+            Log.e(TAG, "onServiceDiscoveryFailure: wait interrupted");
+        }
     }
 }

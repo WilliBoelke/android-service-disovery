@@ -108,22 +108,22 @@ public class WifiDirectDiscoveryFragment extends Fragment implements WifiService
         if (binding.startDiscoveryOneBtn.equals(view))
         {
             engine.startDiscoveryForService(mainActivity.getDescriptionForServiceOne());
-            engine.startSdpService(mainActivity.getDescriptionForServiceOne());
+            engine.startService(mainActivity.getDescriptionForServiceOne());
         }
         else if (binding.endDiscoveryOneBtn.equals(view))
         {
             engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceOne());
-            engine.stopSdpService(mainActivity.getDescriptionForServiceOne());
+            engine.stopService(mainActivity.getDescriptionForServiceOne());
         }
         else if (binding.startDiscoveryTwoBtn.equals(view))
         {
             engine.startDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
-            engine.startSdpService(mainActivity.getDescriptionForServiceTwo());
+            engine.startService(mainActivity.getDescriptionForServiceTwo());
         }
         else if (binding.endDiscoveryTwoBtn.equals(view))
         {
             engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
-            engine.stopSdpService(mainActivity.getDescriptionForServiceTwo());
+            engine.stopService(mainActivity.getDescriptionForServiceTwo());
         }
         else if (binding.endDiscoveryButton.equals(view))
         {
@@ -151,8 +151,8 @@ public class WifiDirectDiscoveryFragment extends Fragment implements WifiService
             this.engine.unregisterDiscoveryListener(this);
             this.engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceOne());
             this.engine.stopDiscoveryForService(mainActivity.getDescriptionForServiceTwo());
-            this.engine.stopSdpService(mainActivity.getDescriptionForServiceOne());
-            this.engine.stopSdpService(mainActivity.getDescriptionForServiceTwo());
+            this.engine.stopService(mainActivity.getDescriptionForServiceOne());
+            this.engine.stopService(mainActivity.getDescriptionForServiceTwo());
             this.engine.notifyAboutEveryService(false);
             this.engine.stop();
         }
