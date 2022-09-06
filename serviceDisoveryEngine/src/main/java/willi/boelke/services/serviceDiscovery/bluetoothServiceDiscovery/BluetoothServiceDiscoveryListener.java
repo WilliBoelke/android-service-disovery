@@ -12,7 +12,7 @@ import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.Bluetoot
  *
  * @author WilliBolke
  */
-public interface BluetoothDiscoveryListener
+public interface BluetoothServiceDiscoveryListener
 {
     /**
      * Called whenever a service was discovered which has been looked for

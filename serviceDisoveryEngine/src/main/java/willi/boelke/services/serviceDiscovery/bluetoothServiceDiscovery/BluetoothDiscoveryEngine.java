@@ -50,9 +50,9 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * range or stopped accepting clients.
  * <p>
  * To get notified about discovered services and their host devices a
- * {@link BluetoothDiscoveryListener} needs to be registered using
- * {@link #registerDiscoverListener(BluetoothDiscoveryListener)}.
- * A listener can be unregistered using  {@link #unregisterDiscoveryListener(BluetoothDiscoveryListener)}.
+ * {@link BluetoothServiceDiscoveryListener} needs to be registered using
+ * {@link #registerDiscoverListener(BluetoothServiceDiscoveryListener)}.
+ * A listener can be unregistered using  {@link #unregisterDiscoveryListener(BluetoothServiceDiscoveryListener)}.
  *
  * <p>
  * Sequence Example<br>
@@ -187,11 +187,11 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
 
     /**
      * List of all listeners who registered
-     * using {@link #registerDiscoverListener(BluetoothDiscoveryListener)}
+     * using {@link #registerDiscoverListener(BluetoothServiceDiscoveryListener)}
      *
      * @see #unregisterReceivers()
      */
-    private final ArrayList<BluetoothDiscoveryListener> bluetoothDiscoveryListeners = new ArrayList<>();
+    private final ArrayList<BluetoothServiceDiscoveryListener> bluetoothDiscoveryListeners = new ArrayList<>();
 
     private boolean notifyAboutAllServices = false;
 
@@ -525,7 +525,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
     //
 
     /**
-     * Registers a {@link BluetoothDiscoveryListener} to be notified about
+     * Registers a {@link BluetoothServiceDiscoveryListener} to be notified about
      * discovered devices and services
      *
      * @param listener
@@ -533,7 +533,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
      *
      * @see #unregisterReceivers()
      */
-    public void registerDiscoverListener(BluetoothDiscoveryListener listener)
+    public void registerDiscoverListener(BluetoothServiceDiscoveryListener listener)
     {
         if (engineIsNotRunning())
         {
@@ -547,13 +547,13 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
     }
 
 
-    public void unregisterDiscoveryListener(BluetoothDiscoveryListener listener)
+    public void unregisterDiscoveryListener(BluetoothServiceDiscoveryListener listener)
     {
         bluetoothDiscoveryListeners.remove(listener);
     }
 
     /**
-     * Calls {@link BluetoothDiscoveryListener#onServiceDiscovered(BluetoothDevice, ServiceDescription)}
+     * Calls {@link BluetoothServiceDiscoveryListener#onServiceDiscovered(BluetoothDevice, ServiceDescription)}
      * on all listeners in {@link #bluetoothDiscoveryListeners}
      *
      * @param device
@@ -563,7 +563,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
      */
     private void notifyOnServiceDiscovered(BluetoothDevice device, ServiceDescription description)
     {
-        for (BluetoothDiscoveryListener lister : this.bluetoothDiscoveryListeners)
+        for (BluetoothServiceDiscoveryListener lister : this.bluetoothDiscoveryListeners)
         {
             //Notify client about discovery
             lister.onServiceDiscovered(device, description);
@@ -571,7 +571,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
     }
 
     /**
-     * Calls {@link BluetoothDiscoveryListener#onPeerDiscovered(BluetoothDevice)}
+     * Calls {@link BluetoothServiceDiscoveryListener#onPeerDiscovered(BluetoothDevice)}
      * on all listeners in {@link #bluetoothDiscoveryListeners}
      *
      * @param device
@@ -579,7 +579,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
      */
     private void notifyOnPeerDiscovered(BluetoothDevice device)
     {
-        for (BluetoothDiscoveryListener lister : this.bluetoothDiscoveryListeners)
+        for (BluetoothServiceDiscoveryListener lister : this.bluetoothDiscoveryListeners)
         {
             //Notify client about discovery
             lister.onPeerDiscovered(device);

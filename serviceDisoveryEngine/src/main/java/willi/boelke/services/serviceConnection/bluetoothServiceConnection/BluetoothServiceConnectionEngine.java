@@ -18,7 +18,7 @@ import willi.boelke.services.serviceConnection.bluetoothServiceConnection.connec
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.connectorThreads.BluetoothServiceConnector;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryListener;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
 
 /**
  * Establishes connections between bluetooth devices.
@@ -193,7 +193,7 @@ public class BluetoothServiceConnectionEngine
         //--- starting the discovery engine ---//
 
         BluetoothDiscoveryEngine.getInstance().start(context, adapter);
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothDiscoveryListener()
+        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)

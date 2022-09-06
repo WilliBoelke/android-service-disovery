@@ -18,7 +18,7 @@ import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
 
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryListener;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.service_discovery_demo.R;
@@ -26,7 +26,7 @@ import willi.boelke.service_discovery_demo.view.MainActivity;
 import willi.boelke.service_discovery_demo.view.listAdapters.ServiceListAdapter;
 
 
-public class BluetoothBluetoothDiscoveryFragment extends Fragment implements BluetoothDiscoveryListener
+public class BluetoothBluetoothDiscoveryFragment extends Fragment implements BluetoothServiceDiscoveryListener
 {
 
     //------------Instance Variables------------
