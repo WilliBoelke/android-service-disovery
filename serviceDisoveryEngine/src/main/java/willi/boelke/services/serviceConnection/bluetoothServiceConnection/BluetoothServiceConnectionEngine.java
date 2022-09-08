@@ -200,7 +200,6 @@ public class BluetoothServiceConnectionEngine
             {
                 try
                 {
-
                     Objects.requireNonNull(serviceClients.get(description)).onServiceDiscovered(host.getAddress(), description);
                     launchConnectionAttempt(host, description);
                 }
@@ -602,6 +601,7 @@ public class BluetoothServiceConnectionEngine
             @Override
             public void onConnectionFailed(UUID uuid, BluetoothConnectorThread failedConnector)
             {
+
                 runningClientConnectors.remove(failedConnector);
             }
 

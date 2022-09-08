@@ -6,14 +6,14 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
 /**
  * Interface for a sdp wifi peer
  * A peer can be registered as listener when starting a service / service discovery
- * through {@link WifiDirectConnectionEngine#registerService(ServiceDescription, SdpWifiPeer)}
+ * through {@link WifiDirectConnectionEngine#registerService(ServiceDescription, WifiDirectPeer)}
  * <p>
  * A SdpWifiPeer wil get notified about a range of events through the here
  * defined callback methods.
  *
  * @author WilliBoelke
  */
-public interface SdpWifiPeer
+public interface WifiDirectPeer
 {
     /**
      * This will be called when a instance of the searched service was discovered

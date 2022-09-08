@@ -41,7 +41,7 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
  * After the engine was started it can advertise and search
  * exactly one service at a time. To register a service for
  * advertisement and search call
- * {@link #registerService(ServiceDescription, SdpWifiPeer)}.
+ * {@link #registerService(ServiceDescription, WifiDirectPeer)}.
  * <p>
  * To start the general discovery (which is needed to find the service)
  * call {@link #startDiscovery()}. The discovery process will run around 20
@@ -51,7 +51,7 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
  * Listener<br>
  * ------------------------------------------------------------<br>
  * To use the engine and get notified about established connections, group
- * info (becoming GO or client) it is needed to implement the {@link SdpWifiPeer}
+ * info (becoming GO or client) it is needed to implement the {@link WifiDirectPeer}
  * interface and pass it when calling the aforementioned methods.
  * <p>
  * Limitations<br>
@@ -115,7 +115,7 @@ public class WifiDirectConnectionEngine
      * Implemented SdpWifiPeer interface
      * to callback on events.
      */
-    private SdpWifiPeer peer;
+    private WifiDirectPeer peer;
 
     /**
      * BroadcastReceiver to listen to Android System Broadcasts specified in the intentFilter
@@ -135,7 +135,7 @@ public class WifiDirectConnectionEngine
     /**
      * The service the engine tries to find
      * at a given times.
-     * @see #registerService(ServiceDescription, SdpWifiPeer)
+     * @see #registerService(ServiceDescription, WifiDirectPeer)
      * @see #unregisterService()
      */
     private ServiceDescription currentServiceDescription;
@@ -278,7 +278,7 @@ public class WifiDirectConnectionEngine
      * @return true if a service discovery could be started, false if another service discovery
      *         is running already
      */
-    public boolean registerService(ServiceDescription description, SdpWifiPeer serviceClient)
+    public boolean registerService(ServiceDescription description, WifiDirectPeer serviceClient)
     {
         if (engineIsNotRunning())
         {
@@ -303,7 +303,7 @@ public class WifiDirectConnectionEngine
     /**
      * This stops the engine that means other devices cant find the advertised service anymore,
      * the discovery will stop and the discovered service will be unset,
-     * to start the engine again call {@link #registerService(ServiceDescription, SdpWifiPeer)}.
+     * to start the engine again call {@link #registerService(ServiceDescription, WifiDirectPeer)}.
      * <p>
      * This however wont cancel existing connections,
      * to leave the current group call {@link #disconnectFromGroup()}.
@@ -378,7 +378,7 @@ public class WifiDirectConnectionEngine
     /**
      * This starts the discovery process, which will discover all nearby services
      * a connection will only be established if a service was specified with in
-     * {@link #registerService(ServiceDescription, SdpWifiPeer)}
+     * {@link #registerService(ServiceDescription, WifiDirectPeer)}
      */
     public void startDiscovery()
     {

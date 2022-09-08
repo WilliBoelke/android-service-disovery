@@ -10,7 +10,7 @@ import java.util.ArrayList;
 
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiConnection;
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine;
-import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiPeer;
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectPeer;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 
@@ -27,7 +27,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  *
  * @author Willi Boelke
  */
-public class WifiDemoController implements SdpWifiPeer
+public class WifiDemoController implements WifiDirectPeer
 {
     private static final String GROUP_OWNER_DEFAULT_MESSAGE = "writing to clients...";
 
