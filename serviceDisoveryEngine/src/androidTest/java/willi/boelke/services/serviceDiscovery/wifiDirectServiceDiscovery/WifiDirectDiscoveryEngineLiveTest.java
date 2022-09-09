@@ -153,6 +153,47 @@ public class WifiDirectDiscoveryEngineLiveTest
     }
 
 
+    //
+    //  ----------  service s ----------
+    //
+
+    /**
+     * Advertises one service with he service Description
+     * {@link #descriptionForServiceOne}
+     */
+    public void advertise_ServiceOne() throws InterruptedException
+    {
+        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
+        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
+        synchronized (this)
+        {
+            this.wait(20000);
+        }
+    }
+
+    /**
+     * Advertises two services with the descriptions
+     * {@link #descriptionForServiceOne} and {@link #descriptionForServiceTwo}
+     */
+    public void advertise_twoServices() throws InterruptedException
+    {
+        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
+        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceTwo);
+        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
+        synchronized (this)
+        {
+            this.wait(20000); // wait for test to finish
+        }
+    }
+
+
+    //
+    //  ----------  discover one nearby service ----------
+    //
+
+    /**
+     * Discovers one service, advertised by one remote device
+     */
     @Test
     public void itShouldFindOneNearbyService() throws InterruptedException
     {
@@ -162,28 +203,18 @@ public class WifiDirectDiscoveryEngineLiveTest
                 itShouldFindOneNearbyService_discover();
                 break;
             case DEVICE_B:
-                itShouldFindOneNearbyService_advertise();
+                advertise_ServiceOne();
                 break;
             case DEVICE_C:
                 synchronized (this)
                 {
-                    this.wait(17000); // wait for test to finish
+                    this.wait(20000); // wait for test to finish
                 }
             default:
                 System.out.println("device not specified " + getCurrentDeviceName());
         }
     }
-
-    public void itShouldFindOneNearbyService_advertise() throws InterruptedException
-    {
-        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
-        synchronized (this)
-        {
-            this.wait(15000); // wait for test to finish
-        }
-    }
-
+    
     public void itShouldFindOneNearbyService_discover() throws InterruptedException
     {
 
@@ -194,7 +225,7 @@ public class WifiDirectDiscoveryEngineLiveTest
 
         synchronized (this)
         {
-            this.wait(15000); // wait for test to finish
+            this.wait(20000); // wait for test to finish
         }
 
         assertEquals(descriptionForServiceOne, foundServiceDescription[0]);
@@ -205,7 +236,9 @@ public class WifiDirectDiscoveryEngineLiveTest
     //  ----------  two services on the same device ----------
     //
 
-
+    /**
+     * Discovers two services advertised by one remote device
+     */
     @Test
     public void itShouldFindTwoNearbyService() throws InterruptedException
     {
@@ -215,26 +248,15 @@ public class WifiDirectDiscoveryEngineLiveTest
                 itShouldFindTwoNearbyService_discover();
                 break;
             case DEVICE_B:
-                itShouldFindTwoNearbyService_advertise();
+                advertise_twoServices();
                 break;
             case DEVICE_C:
                 synchronized (this)
                 {
-                    this.wait(18000); // wait for test to finish
+                    this.wait(20000); // wait for test to finish
                 }
             default:
                 System.out.println("device not specified " + getCurrentDeviceName());
-        }
-    }
-
-    public void itShouldFindTwoNearbyService_advertise() throws InterruptedException
-    {
-        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceTwo);
-        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
-        synchronized (this)
-        {
-            this.wait(18000); // wait for test to finish
         }
     }
 
@@ -274,7 +296,9 @@ public class WifiDirectDiscoveryEngineLiveTest
     //  ----------  two services on the separate device ----------
     //
 
-
+    /**
+     * Discovers two services advertised by two different remote devices
+     */
     @Test
     public void itShouldFindTwoNearbyServiceOnTwoDevices() throws InterruptedException
     {
@@ -285,20 +309,10 @@ public class WifiDirectDiscoveryEngineLiveTest
                 break;
             case DEVICE_B:
             case DEVICE_C:
-                iitShouldFindTwoNearbyServiceOnTwoDevices_advertise();
+                advertise_ServiceOne();
                 break;
             default:
                 System.out.println("device not specified " + getCurrentDeviceName());
-        }
-    }
-
-    public void iitShouldFindTwoNearbyServiceOnTwoDevices_advertise() throws InterruptedException
-    {
-        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
-        synchronized (this)
-        {
-            this.wait(18000);
         }
     }
 
@@ -326,7 +340,7 @@ public class WifiDirectDiscoveryEngineLiveTest
 
         synchronized (this)
         {
-            this.wait(15000); // wait for test to finish
+            this.wait(20000); // wait for test to finish
         }
 
         assertEquals(2, foundServiceDescriptions.size());
@@ -335,8 +349,14 @@ public class WifiDirectDiscoveryEngineLiveTest
     }
 
 
+    //
+    //  ----------  notify about all services enabled ----------
+    //
 
-
+    /**
+     * Tests if the engine notifies about every discovered service
+     * when the option is enabled
+     */
     @Test
     public void itShouldNotifyAboutAllServices() throws InterruptedException
     {
@@ -347,21 +367,10 @@ public class WifiDirectDiscoveryEngineLiveTest
                 break;
             case DEVICE_B:
             case DEVICE_C:
-                iitShouldFindTwoNearbyServiceOnTwoDevices_advertise();
+                advertise_twoServices();
                 break;
             default:
                 System.out.println("device not specified " + getCurrentDeviceName());
-        }
-    }
-
-    public void itShouldNotifyAboutAllServices_advertise() throws InterruptedException
-    {
-        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceTwo);
-        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
-        synchronized (this)
-        {
-            this.wait(18000);
         }
     }
 
@@ -371,6 +380,7 @@ public class WifiDirectDiscoveryEngineLiveTest
         {
             this.wait(3000);
         }
+
         ArrayList<ServiceDescription> foundServiceDescriptions = new ArrayList<>();
         ArrayList<WifiP2pDevice> foundHosts = new ArrayList<>();
         WifiDirectDiscoveryEngine.getInstance().registerDiscoverListener((host, description) ->
@@ -389,7 +399,7 @@ public class WifiDirectDiscoveryEngineLiveTest
 
         synchronized (this)
         {
-            this.wait(15000); // wait for test to finish
+            this.wait(20000); // wait for test to finish
         }
 
         assertEquals(4, foundServiceDescriptions.size());

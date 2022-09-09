@@ -192,8 +192,8 @@ public class ServiceDescription
     {
         ByteBuffer byteBuffer = ByteBuffer.allocate(16);
         byteBuffer
-                .putLong(this.serviceUuid.getLeastSignificantBits())
-                .putLong(this.serviceUuid.getMostSignificantBits());
+                .putLong(this.getServiceUuid().getLeastSignificantBits())
+                .putLong(this.getServiceUuid().getMostSignificantBits());
         byteBuffer.rewind();
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
         return new UUID(byteBuffer.getLong(), byteBuffer.getLong());

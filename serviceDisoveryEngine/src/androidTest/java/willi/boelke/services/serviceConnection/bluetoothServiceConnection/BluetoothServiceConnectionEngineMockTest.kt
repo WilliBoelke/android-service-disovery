@@ -1,4 +1,4 @@
-package willi.boelke.services.serviceDiscovery.connecton.BluetoothServiceConnectionEngine
+package willi.boelke.services.serviceConnection.bluetoothServiceConnection
 
 import android.arch.core.executor.testing.CountingTaskExecutorRule
 import android.bluetooth.BluetoothAdapter
@@ -13,9 +13,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceClient
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine
 import willi.boelke.services.serviceDiscovery.ServiceDescription
 import willi.boelke.services.serviceDiscovery.testUtils.*
@@ -123,7 +120,10 @@ class BluetoothServiceConnectionEngineMockTest {
         verify(exactly = 3) {mockedContext.registerReceiver(any(), any())}
     }
 
-
+    /**
+     * Clients  who registered for service search should
+     * be notified about discovered peers
+     */
     @Test
     fun itShouldNotifyClientAboutDiscoveredDevices() {
 
@@ -165,7 +165,9 @@ class BluetoothServiceConnectionEngineMockTest {
         assertEquals(testDeviceOne, foundDevices[0])
     }
 
-
+    /**
+     * Several clients should be  notified about discovered peers
+     */
     @Test
     fun itShouldNotifySeveralClientsAboutDiscoveredDevices() {
 
@@ -234,7 +236,9 @@ class BluetoothServiceConnectionEngineMockTest {
         assertEquals(testDeviceOne, foundDevices[1])
     }
 
-
+    /**
+     * When a service is discovered the listener should be notified
+     */
     @Test
     fun itShouldNotifyAboutAServiceDiscovery() {
         val foundDevices: ArrayList<String> = ArrayList()
@@ -280,8 +284,10 @@ class BluetoothServiceConnectionEngineMockTest {
         assertEquals(testDescriptionTwo, foundServices[0])
     }
 
-
-
+    /**
+     * Several client can register to search a service, each should be notified only
+     * about the service it looks for
+     */
     @Test
     fun itShouldOnlyNotifyTheRightClientAboutItsServices() {
 
@@ -417,13 +423,21 @@ class BluetoothServiceConnectionEngineMockTest {
         assert(openedConnection?.isServerPeer == false) // connected as client
     }
 
+    /**
+     * The engine can advertise services and search services
+     * at the same time
+     */
     @Test
     fun aServiceCanBeAdvertisedWhileAnotherIsSearched(){
         // TODO
     }
 
+    /**
+     * When connection the sockets an IO Exception can occur
+     * this should be handled
+     */
     @Test
-    fun itShouldHandleIoExceptionsWhenTryingToConnect(){
+    fun  itShouldHandleIoExceptionsWhenTryingToConnect(){
 
         BluetoothServiceConnectionEngine.getInstance()
 
@@ -470,7 +484,10 @@ class BluetoothServiceConnectionEngineMockTest {
         verify (exactly = 1){ mockedSocket.close() }
     }
 
-
+    /**
+     * When a Service was started clients connections should be accepted and
+     * the service should get notified
+     */
     @Test
     fun itShouldAcceptConnectionsWhenServiceStarted() {
         val mockedServerSocket = mockk<BluetoothServerSocket>()
@@ -480,28 +497,29 @@ class BluetoothServiceConnectionEngineMockTest {
         every { mockedServerSocket.accept() } .answers(answerF)
         justRun { mockedServerSocket.close() }
 
-        every { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
+        every { mockedBtAdapter.listenUsingRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
 
         BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {
         }
 
         Thread.sleep(3000)
         // In the given time exactly one connection should be accepted
-        verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
+        verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
             testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
         // Accept will be called twice, once will go trough, then the tread loops and watt for the next connection
         verify(exactly = 2) { mockedServerSocket.accept()}
         Thread.sleep(2000)
         // Still only one Server socket should be opened
-        verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
+        verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
             testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
         // his should accept he second connection and start waiting for the next
         verify(exactly = 3) { mockedServerSocket.accept()}
     }
 
-
-
-
+    /**
+     * A service (with a given service description)
+     * can only be registered once
+     */
     @Test
     fun itShouldNotStartTheSameServiceTwice(){
         val mockedServerSocket = mockk<BluetoothServerSocket>()
@@ -511,7 +529,7 @@ class BluetoothServiceConnectionEngineMockTest {
         every { mockedServerSocket.accept() } .answers(answerF)
         justRun { mockedServerSocket.close() }
 
-        every { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
+        every { mockedBtAdapter.listenUsingRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
 
         val createdFirst = BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {
         }
@@ -522,13 +540,13 @@ class BluetoothServiceConnectionEngineMockTest {
         // This should all stay he same, there is no second service created =
         Thread.sleep(3000)
         // In the given time exactly one connection should be accepted
-        verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
+        verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
             testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
         // Accept will be called twice, once will go trough, then the tread loops and watt for the next connection
         verify(exactly = 2) { mockedServerSocket.accept()}
         Thread.sleep(2000)
         // Still only one Server socket should be opened
-        verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
+        verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
             testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
         // his should accept he second connection and start waiting for the next
         verify(exactly = 3) { mockedServerSocket.accept()}
@@ -537,8 +555,6 @@ class BluetoothServiceConnectionEngineMockTest {
         assertTrue(createdFirst)
         assertFalse(createdSecond)
     }
-
-
 
     @Test
     fun itShouldNotifyServerOnCreatedConnection()
@@ -549,7 +565,7 @@ class BluetoothServiceConnectionEngineMockTest {
 
         every { mockedServerSocket.accept() } .answers(answerF)
         justRun { mockedServerSocket.close() }
-        every { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
+        every { mockedBtAdapter.listenUsingRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
 
         var openedConnection: BluetoothConnection? = null
 
@@ -564,7 +580,6 @@ class BluetoothServiceConnectionEngineMockTest {
         assertEquals(getTestDeviceOne().address, openedConnection?.remoteDevice?.address)
         assertEquals(getTestDeviceOne().name, openedConnection?.remoteDevice?.name)
     }
-
 
     /**
      * Testing if several services and be advertised at the same times, and incoming connections
@@ -587,8 +602,8 @@ class BluetoothServiceConnectionEngineMockTest {
         justRun { mockedServerSocketTwo.close() }
 
         // setting up the adapter to return mocked ServerSockets
-        every { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(testDescriptionOne.serviceName, any()) } returns mockedServerSocketOne
-        every { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(testDescriptionTwo.serviceName, any()) } returns mockedServerSocketTwo
+        every { mockedBtAdapter.listenUsingRfcommWithServiceRecord(testDescriptionOne.serviceName, any()) } returns mockedServerSocketOne
+        every { mockedBtAdapter.listenUsingRfcommWithServiceRecord(testDescriptionTwo.serviceName, any()) } returns mockedServerSocketTwo
 
         var openedConnectionOne: BluetoothConnection? = null
         var openedConnectionTwo: BluetoothConnection? = null
@@ -602,17 +617,17 @@ class BluetoothServiceConnectionEngineMockTest {
 
         Thread.sleep(3000)
         // In the given time exactly one connection should be accepted
-         verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
+         verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
             testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
-        verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
+        verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
             testDescriptionTwo.serviceName, testDescriptionTwo.serviceUuid)}
         verify(exactly = 2) { mockedServerSocketOne.accept()}
         verify(exactly = 1) { mockedServerSocketTwo.accept()}
         Thread.sleep(2000)
         // Still only one Server socket should be opened
-        verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
+        verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
             testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
-        verify(exactly = 1) { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(
+        verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
             testDescriptionTwo.serviceName, testDescriptionTwo.serviceUuid)}
         // his should accept he second connection and start waiting for the next
         verify(exactly = 3) { mockedServerSocketOne.accept()}
@@ -635,7 +650,10 @@ class BluetoothServiceConnectionEngineMockTest {
         assertEquals(getTestDeviceTwo().name, openedConnectionTwo?.remoteDevice?.name)
     }
 
-
+    /**
+     * When a service is closed and unregistered
+     * the service socket needs to eb closed
+     */
     @Test
     fun  itShouldCloseTheServerSocketWhenEndingTheService(){
         val mockedServerSocket = mockk<BluetoothServerSocket>()
@@ -644,7 +662,7 @@ class BluetoothServiceConnectionEngineMockTest {
         val answerF = FunctionAnswer { Thread.sleep(5000); mockedSocket }
         every { mockedServerSocket.accept() } .answers(answerF)
         justRun { mockedServerSocket.close() }
-        every { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
+        every { mockedBtAdapter.listenUsingRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
         BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {
         }
 
@@ -654,6 +672,10 @@ class BluetoothServiceConnectionEngineMockTest {
         verify(exactly = 1) { mockedServerSocket.close()}
     }
 
+    /**
+     * The server socket may produce a null pointer exception which
+     * needs to be handled
+     */
     @Test
     fun  iShouldNotCrashOnAServerSocketNullPointerException(){
         val mockedServerSocket = mockk<BluetoothServerSocket>()
@@ -664,7 +686,7 @@ class BluetoothServiceConnectionEngineMockTest {
 
         every { mockedServerSocket.close() } throws NullPointerException()
 
-        every { mockedBtAdapter.listenUsingInsecureRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
+        every { mockedBtAdapter.listenUsingRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
 
         BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {
         }
@@ -673,7 +695,5 @@ class BluetoothServiceConnectionEngineMockTest {
         Thread.sleep(1000)
         verify(exactly = 1) { mockedServerSocket.close()}
     }
-
-
 
 }

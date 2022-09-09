@@ -1,4 +1,4 @@
-package willi.boelke.services.serviceDiscovery.connecton.sdpWifiEngine.bluetooth;
+package willi.boelke.services.serviceConnection.bluetoothServiceConnection;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
@@ -21,8 +21,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
-import willi.boelke.services.serviceDiscovery.connecton.sdpBluetoothEngine.BluetoothConnection;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 @RunWith(MockitoJUnitRunner.class)

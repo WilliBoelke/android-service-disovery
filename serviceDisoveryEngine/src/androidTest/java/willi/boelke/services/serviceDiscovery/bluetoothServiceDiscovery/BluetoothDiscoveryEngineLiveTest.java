@@ -15,6 +15,9 @@ import android.Manifest;
 import android.arch.core.executor.testing.CountingTaskExecutorRule;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
+import android.content.Intent;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -30,6 +33,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -102,8 +106,9 @@ public class BluetoothDiscoveryEngineLiveTest
      */
     private final String TAG = this.getClass().getSimpleName();
 
-    ServiceDescription descriptionForServiceOne;
-    ServiceDescription descriptionForServiceTwo;
+    private ServiceDescription descriptionForServiceOne;
+    private ServiceDescription descriptionForServiceTwo;
+    private BluetoothAdapter adapter;
 
     @Rule
     public GrantPermissionRule fineLocationPermissionRule = GrantPermissionRule.grant(Manifest.permission.ACCESS_FINE_LOCATION);
@@ -127,8 +132,8 @@ public class BluetoothDiscoveryEngineLiveTest
         serviceAttributesTwo.put("service-info", "This is another test service description");
         descriptionForServiceOne = new ServiceDescription("test service one", serviceAttributesOne);
         descriptionForServiceTwo = new ServiceDescription("test service two", serviceAttributesTwo);
-        BluetoothServiceConnectionEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
         BluetoothDiscoveryEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
+        adapter = BluetoothAdapter.getDefaultAdapter();
     }
 
     @After
@@ -138,12 +143,14 @@ public class BluetoothDiscoveryEngineLiveTest
     }
 
 
-
-    
     //
     //  ----------  discovers nearby devices ----------
     //
- 
+
+    /**
+     * Tests if the engine can find nearby devices
+     * through start discovery
+     */
     @Test
     public void itShouldFindNearbyDevice() throws InterruptedException
     {
@@ -153,12 +160,11 @@ public class BluetoothDiscoveryEngineLiveTest
                 itShouldFindNearbyDevice_discovery();
                 break;
             case DEVICE_B:
-                itShouldFindNearbyDevice_discoverable();
-                break;
             case DEVICE_C:
                 itShouldFindNearbyDevice_discoverable();
+                break;
             default:
-              Log.e(TAG, "device not specified " + getCurrentDeviceName());
+                Log.e(TAG, "device not specified " + getCurrentDeviceName());
         }
     }
 
@@ -167,10 +173,10 @@ public class BluetoothDiscoveryEngineLiveTest
      */
     private void itShouldFindNearbyDevice_discoverable() throws InterruptedException
     {
-        BluetoothServiceConnectionEngine.getInstance().startDiscoverable();
-        assertTrue(true); // test shouldn't fail on this device
+
+        this.startDiscoverable();
         synchronized (this){
-            this.wait(13000); // device discovery takes about 12s
+            this.wait(14000); // wait for discovery
         }
     }
 
@@ -180,10 +186,11 @@ public class BluetoothDiscoveryEngineLiveTest
      */
     private void itShouldFindNearbyDevice_discovery() throws InterruptedException
     {
-
+        synchronized (this){
+            wait(1000);
+        }
 
         ArrayList<BluetoothDevice> discoveredDevices = new ArrayList<>();
-
         BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
 
@@ -208,12 +215,16 @@ public class BluetoothDiscoveryEngineLiveTest
         assertTrue(discoveredDevices.contains(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(MAC_C_BT)));
     }
 
-    
+
 
     //
     //  ----------  discovers one nearby service ----------
     //
 
+    /**
+     * Tests if the engine can find one service
+     * advertised by one nearby device
+     */
     @Test
     public void itShouldFindOneNearbyAvailableService() throws InterruptedException
     {
@@ -232,28 +243,23 @@ public class BluetoothDiscoveryEngineLiveTest
                 }
                 assertTrue(true); // test shouldn't fail on this device
             default:
-              Log.e(TAG, "device not specified " + getCurrentDeviceName());
+                Log.e(TAG, "device not specified " + getCurrentDeviceName());
         }
 
     }
-
 
     /**
      * Starts the device discoverability and a service {@link #descriptionForServiceOne}
      */
     private void itShouldFindOneNearbyAvailableService_serviceAdvertisement() throws InterruptedException
     {
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(descriptionForServiceOne, connection ->
-        {
-            // do nothing here, we wont connect ..just advertisement
-        });
-        BluetoothServiceConnectionEngine.getInstance().startDiscoverable();
+        ServiceAdvertisementThread thread = new ServiceAdvertisementThread(adapter, descriptionForServiceOne);
+        thread.startService();
+        startDiscoverable();
         synchronized (this)
         {
-            this.wait(30000); // wait for test to finish
+            this.wait(31000); // wait for test to finish
         }
-        assertTrue(true); // test shouldn't fail on this device
-
     }
 
     /**
@@ -261,6 +267,9 @@ public class BluetoothDiscoveryEngineLiveTest
      */
     private void   itShouldFindOneNearbyAvailableServices_serviceDiscovery() throws InterruptedException
     {
+        synchronized (this){
+            wait(1000);
+        }
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
@@ -269,14 +278,17 @@ public class BluetoothDiscoveryEngineLiveTest
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
             {
-                serviceHosts.add(host);
-                services.add(description);
+                if(host.getAddress().equals(MAC_B_BT))
+                {
+                    serviceHosts.add(host);
+                    services.add(description);
+                }
             }
 
             @Override
             public void onPeerDiscovered(BluetoothDevice device)
             {
-              // not to test here
+                // not to test here
             }
         });
 
@@ -284,20 +296,23 @@ public class BluetoothDiscoveryEngineLiveTest
         BluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
 
         synchronized (this){
-            this.wait(30000); // this is the maximum time i give it to find the service
+            this.wait(30000); // give it a maximum of 30 seconds
         }
 
         assertTrue(serviceHosts.contains(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(MAC_B_BT)));
         assertTrue(services.contains(descriptionForServiceOne));
-
     }
 
-    
+
     //
     //  ----------  discovers 2 services on the same device  ----------
     //
 
 
+    /**
+     * It should be able to find teh same
+     * service on two nearby devicees
+     */
     @Test
     public void itShouldFindTwoNearbyAvailableService() throws InterruptedException
     {
@@ -311,9 +326,8 @@ public class BluetoothDiscoveryEngineLiveTest
                 itShouldFindTwoNearbyAvailableService_serviceAdvertisement();
                 break;
             default:
-              Log.e(TAG, "device not specified " + getCurrentDeviceName());
+                Log.e(TAG, "device not specified " + getCurrentDeviceName());
         }
-
     }
 
     /**
@@ -321,16 +335,13 @@ public class BluetoothDiscoveryEngineLiveTest
      */
     private void itShouldFindTwoNearbyAvailableService_serviceAdvertisement() throws InterruptedException
     {
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(descriptionForServiceOne, connection ->
-        {
-            // do nothing here, we wont connect ..just advertisement
-        });
-        BluetoothServiceConnectionEngine.getInstance().startDiscoverable();
+        ServiceAdvertisementThread thread = new ServiceAdvertisementThread(adapter, descriptionForServiceOne);
+        thread.startService();
+        startDiscoverable();
         synchronized (this)
         {
-            this.wait(30000); // wait for test to finish
+            this.wait(31000); // wait for test to finish
         }
-        assertTrue(true); // test shouldn't fail on this device
     }
 
     /**
@@ -338,6 +349,10 @@ public class BluetoothDiscoveryEngineLiveTest
      */
     private void itShouldFindTwoNearbyAvailableService_serviceDiscovery() throws InterruptedException
     {
+        synchronized (this)
+        {
+            this.wait(1000);
+        }
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
@@ -346,8 +361,11 @@ public class BluetoothDiscoveryEngineLiveTest
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
             {
-                serviceHosts.add(host);
-                services.add(description);
+                if(host.getAddress().equals(MAC_B_BT) || host.getAddress().equals(MAC_C_BT))
+                {
+                    serviceHosts.add(host);
+                    services.add(description);
+                }
             }
 
             @Override
@@ -363,7 +381,7 @@ public class BluetoothDiscoveryEngineLiveTest
 
         synchronized (this)
         {
-            this.wait(30000); // this is the maximum time i give it to find the service
+            this.wait(30000); // performing discovery
         }
 
         assertTrue(serviceHosts.contains(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(MAC_B_BT)));
@@ -377,7 +395,9 @@ public class BluetoothDiscoveryEngineLiveTest
     //  ----------  it can find two different services on a single device ----------
     //
 
-
+    /**
+     * Tests if several services running on one device can e found
+     */
     @Test
     public void itShouldFindTwoDifferentServicesOnOneDevice() throws InterruptedException
     {
@@ -396,32 +416,26 @@ public class BluetoothDiscoveryEngineLiveTest
                 itShouldFindTwoDifferentServices_serviceAdvertisement();
                 break;
             default:
-              Log.e(TAG, "device not specified " + getCurrentDeviceName());
+                Log.e(TAG, "device not specified " + getCurrentDeviceName());
 
         }
 
     }
 
     /**
-     * Starts the device discoverability and a service {@link #descriptionForServiceOne}
+     * Starts the device discoverability and two services
      */
     private void itShouldFindTwoDifferentServices_serviceAdvertisement() throws InterruptedException
     {
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(descriptionForServiceOne, connection ->
-        {
-            // do nothing here, we wont connect ..just advertisement
-        });
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(descriptionForServiceTwo, connection ->
-        {
-            // do nothing here, we wont connect ..just advertisement
-        });
-        BluetoothServiceConnectionEngine.getInstance().startDiscoverable();
+        ServiceAdvertisementThread threadOne = new ServiceAdvertisementThread(adapter, descriptionForServiceOne);
+        threadOne.startService();
+        ServiceAdvertisementThread threadTwo = new ServiceAdvertisementThread(adapter, descriptionForServiceTwo);
+        threadTwo.startService();
+        startDiscoverable();
         synchronized (this)
         {
-            this.wait(31000); // wait for test to finish
+            this.wait(31500); // wait for test to finish
         }
-        assertTrue(true); // test shouldn't fail on this device
-
     }
 
     /**
@@ -429,6 +443,10 @@ public class BluetoothDiscoveryEngineLiveTest
      */
     private void itShouldFindTwoDifferentServices_serviceDiscovery() throws InterruptedException
     {
+        synchronized (this){
+            this.wait(1000);
+        }
+
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
@@ -437,8 +455,11 @@ public class BluetoothDiscoveryEngineLiveTest
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
             {
-                serviceHosts.add(host);
-                services.add(description);
+                if(host.getAddress().equals(MAC_C_BT))
+                {
+                    serviceHosts.add(host);
+                    services.add(description);
+                }
             }
 
             @Override
@@ -453,7 +474,7 @@ public class BluetoothDiscoveryEngineLiveTest
         BluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
 
         synchronized (this){
-            this.wait(30000); // this is the maximum time i give it to find the service
+            this.wait(30000);
         }
 
         assertTrue(serviceHosts.contains(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(MAC_C_BT)));
@@ -466,97 +487,12 @@ public class BluetoothDiscoveryEngineLiveTest
     //  ----------  it finds two different services on separate devices ----------
     //
 
-
-    @Test
-    public void itShouldFindTwoDifferentServicesOnSeparateDevice() throws InterruptedException
-    {
-        switch (getTestRunner())
-        {
-            case DEVICE_A:
-                itShouldFindTwoDifferentServicesOnSeparateDevice_serviceDiscovery();
-                break;
-            case DEVICE_B:
-                itShouldFindTwoDifferentServicesOnSeparateDevice_serviceAdvertisement_A();
-                break;
-            case DEVICE_C:
-                itShouldFindTwoDifferentServicesOnSeparateDevice_serviceAdvertisement_B();
-                break;
-            default:
-              Log.e(TAG, "device not specified " + getCurrentDeviceName());
-
-        }
-
-    }
-
-
-    private void itShouldFindTwoDifferentServicesOnSeparateDevice_serviceAdvertisement_B() throws InterruptedException
-    {
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(descriptionForServiceOne, connection ->
-        {
-            // do nothing here, we wont connect ..just advertisement
-        });
-        BluetoothServiceConnectionEngine.getInstance().startDiscoverable();
-        synchronized (this)
-        {
-            this.wait(30000); // wait for test to finish
-        }
-        assertTrue(true); // test shouldn't fail on this device
-
-    }
-
-    private void itShouldFindTwoDifferentServicesOnSeparateDevice_serviceAdvertisement_A() throws InterruptedException
-    {
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(descriptionForServiceTwo, connection ->
-        {
-            // do nothing here, we wont connect ..just advertisement
-        });
-        BluetoothServiceConnectionEngine.getInstance().startDiscoverable();
-        synchronized (this)
-        {
-            this.wait(30000); // wait for test to finish
-        }
-        assertTrue(true); // test shouldn't fail on this device
-
-    }
-
-
-    private void itShouldFindTwoDifferentServicesOnSeparateDevice_serviceDiscovery() throws InterruptedException
-    {
-        ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
-        ArrayList<ServiceDescription> services = new ArrayList<>();
-
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
-        {
-            @Override
-            public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
-            {
-                serviceHosts.add(host);
-                services.add(description);
-            }
-
-            @Override
-            public void onPeerDiscovered(BluetoothDevice device)
-            {
-                // not to test here
-            }
-        });
-
-        BluetoothDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
-        BluetoothDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceTwo);
-        BluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
-
-        synchronized (this)
-        {
-            this.wait(30000); // this is the maximum time i give it to find the service
-        }
-
-        assertTrue(serviceHosts.contains(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(MAC_C_BT)));
-        assertTrue(serviceHosts.contains(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(MAC_B_BT)));
-        assertTrue(services.contains(descriptionForServiceOne));
-        assertTrue(services.contains(descriptionForServiceTwo));
-    }
-
-
+    /**
+     * A device and service discovery is performed before
+     * a service is registered to be discovered
+     * devices and services should be cashed
+     * and the listener should be notified immediately
+     */
     @Test
     public void itShouldNotifiedAboutMatchingServicesAlreadyDiscovered() throws InterruptedException
     {
@@ -570,7 +506,7 @@ public class BluetoothDiscoveryEngineLiveTest
                 itShouldNotifiedAboutMatchingServicesAlreadyDiscovered_serviceAdvertisement();
                 break;
             default:
-              Log.e(TAG, "device not specified " + getCurrentDeviceName());
+                Log.e(TAG, "device not specified " + getCurrentDeviceName());
         }
 
     }
@@ -578,21 +514,20 @@ public class BluetoothDiscoveryEngineLiveTest
 
     private void itShouldNotifiedAboutMatchingServicesAlreadyDiscovered_serviceAdvertisement() throws InterruptedException
     {
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(descriptionForServiceOne, connection ->
-        {
-            // do nothing here, we wont connect ..just advertisement
-        });
-        BluetoothServiceConnectionEngine.getInstance().startDiscoverable();
+        ServiceAdvertisementThread thread = new ServiceAdvertisementThread(adapter, descriptionForServiceOne);
+        thread.startService();
+        startDiscoverable();
         synchronized (this)
         {
-            this.wait(30000); // wait for test to finish
+            this.wait(31500); // wait for test to finish
         }
-        assertTrue(true); // test shouldn't fail on this device
-
     }
 
     private void itShouldNotifiedAboutMatchingServicesAlreadyDiscovered_serviceDiscovery() throws InterruptedException
     {
+        synchronized (this){
+            this.wait(1000);
+        }
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
@@ -616,20 +551,179 @@ public class BluetoothDiscoveryEngineLiveTest
 
         synchronized (this)
         {
-            this.wait(25000); // this is the maximum time i give it to find the service
+            this.wait(30000); // device and service discovery
         }
 
-        assertEquals(0, serviceHosts.size());
-
+        assertEquals(0, serviceHosts.size()); // should not notify yet
+        // registering service for search
         BluetoothDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
         synchronized (this)
         {
-            this.wait(5000); // this is the maximum time i give it to find the service
+            this.wait(1000); // this should be pretty fast, one second is to much actually
         }
         assertTrue(serviceHosts.contains(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(MAC_C_BT)));
         assertTrue(serviceHosts.contains(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(MAC_B_BT)));
         assertTrue(services.contains(descriptionForServiceOne));
     }
 
+    /**
+     * This thread is just for starting a bluetooth Server socket
+     * and advertise a service through that
+     */
+    private class ServiceAdvertisementThread extends Thread
+    {
 
+        /**
+         * Log Tag
+         */
+        private final String TAG = this.getClass().getSimpleName();
+
+        /**
+         * The BluetoothAdapter
+         */
+        private final BluetoothAdapter mBluetoothAdapter;
+
+        private final ServiceDescription description;
+
+        /**
+         * Bluetooth server socket to accept incoming connections
+         */
+        private BluetoothServerSocket serverSocket;
+
+        private boolean running;
+
+        private Thread thread;
+
+
+        //
+        //  ----------  constructor and initialisation ----------
+        //
+
+        /**
+         * Constructor
+         *
+         * @param bluetoothAdapter
+         *         The BluetoothAdapter tto use (usually the defaultAdapter)
+         */
+        public ServiceAdvertisementThread(BluetoothAdapter bluetoothAdapter, ServiceDescription description)
+        {
+            this.mBluetoothAdapter = bluetoothAdapter;
+            this.description = description;
+            this.running = true;
+        }
+
+        //
+        //  ----------  start  ----------
+        //
+
+        public synchronized void startService()
+        {
+            Log.d(TAG, "startService : starting Bluetooth Service");
+            openServerSocket();
+            this.start();
+        }
+
+        private void openServerSocket()
+        {
+            Log.d(TAG, "openServerSocket: opening server socket with UUID : " + description.getServiceUuid());
+            try
+            {
+                this.serverSocket = mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(description.getServiceUuid().toString(), description.getServiceUuid());
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        //
+        //  ----------  run ----------
+        //
+
+        public void run()
+        {
+            this.thread = currentThread();
+            while (this.running)
+            {
+                acceptConnections();
+            }
+            Log.d(TAG, "run: Accept thread ended final");
+        }
+
+        /**
+         * Advertises the service with the uuid given through {@link #description}
+         */
+        private void acceptConnections()
+        {
+            Log.d(TAG, "run:  Thread started");
+            BluetoothSocket socket = null;
+            //Blocking Call : Accept thread waits here till another device connects (or canceled)
+            Log.d(TAG, "run: RFCOMM server socket started, waiting for connections ...");
+            try
+            {
+                socket = this.serverSocket.accept();
+                Log.d(TAG, "run: RFCOMM server socked accepted client connection");
+            }
+            catch (IOException e)
+            {
+                Log.e(TAG, "acceptConnections: an IOException occurred, trying to fix");
+                try
+                {
+                    Log.e(TAG, "acceptConnections: trying to close socket");
+                    this.serverSocket.close();
+                }
+                catch (IOException e1)
+                {
+                    Log.e(TAG, "acceptConnections: could not close the socket");
+                }
+                Log.e(TAG, "acceptConnections: trying to open new server socket");
+                this.openServerSocket();
+            }
+            if (socket == null)
+            {
+                Log.d(TAG, "run: Thread was interrupted");
+                return;
+            }
+            Log.d(TAG, "run:  service accepted client connection, opening streams");
+        }
+
+        //
+        //  ----------  end ----------
+        //
+
+        public void cancel()
+        {
+            Log.d(TAG, "cancel: cancelling accept thread");
+            this.running = false;
+            if (this.thread != null)
+            {
+                this.thread.interrupt();
+                Log.d(TAG, "cancel: accept thread interrupted");
+            }
+            try
+            {
+                this.serverSocket.close();
+                Log.d(TAG, "cancel: closed AcceptThread");
+            }
+            catch (NullPointerException | IOException e)
+            {
+                Log.e(TAG, "cancel: socket was null", e);
+            }
+        }
+
+        //
+        //  ----------  getter and setter ----------
+        //
+    }
+
+    /**
+     * Asks user (the tester in this case) to make device discoverable
+     */
+    public void startDiscoverable()
+    {
+        Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120);
+        discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // tests  wand we do add this
+        InstrumentationRegistry.getInstrumentation().getTargetContext().startActivity(discoverableIntent);
+    }
 }

@@ -331,7 +331,8 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
     @Override
     public void stopDiscoveryForService(ServiceDescription description)
     {
-        super.stopDiscoveryForService(description);
+        if(!engineIsNotRunning())
+            super.stopDiscoveryForService(description);
     }
 
     @Override

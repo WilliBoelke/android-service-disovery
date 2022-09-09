@@ -297,6 +297,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
         if (engineIsNotRunning())
         {
             Log.e(TAG, "stop: engine is not running - wont stop");
+            return;
         }
         unregisterReceivers();
         stopDeviceDiscovery();
@@ -382,6 +383,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
         if (engineIsNotRunning())
         {
             Log.e(TAG, "startDeviceDiscovery: engine is not running - wont start");
+            return false;
         }
         // resetting discovered devices
         this.discoveredDevices.clear();
@@ -486,6 +488,10 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
      */
     private void cancelDiscoveryIfNothingToLookFor()
     {
+        if(engineIsNotRunning()){
+            Log.d(TAG, "cancelDiscoveryIfNothingToLookFor: engine not running -- wont cancel discovery");
+            return;
+        }
         if (this.servicesToLookFor.isEmpty())
         {
             bluetoothAdapter.cancelDiscovery();
@@ -504,6 +510,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
         if (engineIsNotRunning())
         {
             Log.e(TAG, "refreshNearbyServices: engine is not running - wont start");
+            return;
         }
         Log.d(TAG, "refreshNearbyServices: start refreshing");
         this.bluetoothAdapter.cancelDiscovery();
@@ -538,6 +545,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
         if (engineIsNotRunning())
         {
             Log.e(TAG, "startSDPService: engine is not running - wont start");
+            return;
         }
         if (bluetoothDiscoveryListeners.contains(listener))
         {

@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNotEquals;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.UUID;
 
 /**
  * Unit tests for {@link ServiceDescription}
@@ -79,5 +80,25 @@ public class ServiceDescriptionTest
         ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
         ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service One", serviceAttributesOne);
         assertEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
+    }
+
+    /**
+     * Custom UUIDs can be set for the use of Bluetooth
+     * these should override the uuid generated from the attributes
+     */
+    @Test
+    public void itShouldOverwriteTheUuid(){
+        HashMap<String, String> serviceAttributesOne = new HashMap<>();
+        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
+        serviceAttributesOne.put("service-name", "Test Service One");
+        serviceAttributesOne.put("service-info", "This is a test service description");
+        serviceAttributesTwo.put("service-name", "Test Service One");
+        serviceAttributesTwo.put("service-info", "This is a test service description");
+        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service One", serviceAttributesOne);
+        UUID uuid = UUID.fromString("e3d4932e-1016-4b95-8466-9f160ec1b553");
+        descriptionForServiceTwo.overrideUuidForBluetooth(uuid);
+        assertNotEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
+        assertEquals(descriptionForServiceTwo.getServiceUuid(), uuid);
     }
 }
