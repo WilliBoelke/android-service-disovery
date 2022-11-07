@@ -1,6 +1,8 @@
 package willi.boelke.services.serviceConnection.wifiDirectServiceConnection;
 
 
+import android.net.wifi.p2p.WifiP2pDevice;
+
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
@@ -19,15 +21,15 @@ public interface WifiDirectPeer
      * This will be called when a instance of the searched service was discovered
      * on a remote device.
      * At this point a connection has not been established.
-     * A connection will be established after calling {@link #shouldConnectTo(String, ServiceDescription)}
+     * A connection will be established after calling {@link #shouldConnectTo(WifiP2pDevice, ServiceDescription)}
      * to decide whether a connection should be established or not.
      *
-     * @param address
-     *         The address of the host device
+     * @param device
+     *         The host device
      * @param description
      *         the description of the service
      */
-    void onServiceDiscovered(String address, ServiceDescription description);
+    void onServiceDiscovered(WifiP2pDevice device, ServiceDescription description);
 
     /**
      * Will be called when the local peer became the group owner
@@ -50,7 +52,7 @@ public interface WifiDirectPeer
      *         SdpWifiConnection instance which contains information about
      *         service, peer and the socket.
      */
-    void onConnectionEstablished(SdpWifiConnection connection);
+    void onConnectionEstablished(WifiConnection connection);
 
     /**
      * Will  be called after a instance of the searched service was discovered
@@ -65,5 +67,5 @@ public interface WifiDirectPeer
      *
      * @return true or false, depending on if a connection should be made or not
      */
-    boolean shouldConnectTo(String address, ServiceDescription description);
+    boolean shouldConnectTo(WifiP2pDevice device, ServiceDescription description);
 }

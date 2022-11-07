@@ -10,17 +10,17 @@ import android.widget.TextView;
 import java.util.ArrayList;
 
 import willi.boelke.service_discovery_demo.R;
-import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.SdpWifiConnection;
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiConnection;
 
 
-public class WifiConnectionListAdapter extends ArrayAdapter<SdpWifiConnection>
+public class WifiConnectionListAdapter extends ArrayAdapter<WifiConnection>
 {
 
     private LayoutInflater mLayoutInflater;
-    private ArrayList<SdpWifiConnection> connections;
+    private ArrayList<WifiConnection> connections;
     private int mViewResourceId;
 
-    public WifiConnectionListAdapter(Context context, int tvResourceId, ArrayList<SdpWifiConnection> devices)
+    public WifiConnectionListAdapter(Context context, int tvResourceId, ArrayList<WifiConnection> devices)
     {
         super(context, tvResourceId, devices);
         this.connections = devices;
@@ -32,7 +32,7 @@ public class WifiConnectionListAdapter extends ArrayAdapter<SdpWifiConnection>
     {
         convertView = mLayoutInflater.inflate(mViewResourceId, null);
 
-        SdpWifiConnection connection = connections.get(position);
+        WifiConnection connection = connections.get(position);
 
         //Setup the name TextView
         TextView name = convertView.findViewById(R.id.service_name_tv);

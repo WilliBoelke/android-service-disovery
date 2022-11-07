@@ -394,7 +394,7 @@ public class WifiDirectDiscoveryEngineLiveTest
             }
         });
 
-        WifiDirectDiscoveryEngine.getInstance().notifyAboutEveryService(true);
+        WifiDirectDiscoveryEngine.getInstance().notifyAboutAllServices(true);
         WifiDirectDiscoveryEngine.getInstance().startDiscovery();
 
         synchronized (this)

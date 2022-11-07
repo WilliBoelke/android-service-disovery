@@ -1,29 +1,24 @@
 package willi.boelke.service_discovery_demo.view.demoFragments;
 
 import android.Manifest;
+import android.bluetooth.BluetoothDevice;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 import willi.boelke.service_discovery_demo.R;
-import willi.boelke.service_discovery_demo.controller.bluetoothDemoController.DemoClientController;
-import willi.boelke.service_discovery_demo.controller.bluetoothDemoController.DemoServerController;
 import willi.boelke.service_discovery_demo.databinding.FragmentBluetoothConnectBinding;
-import willi.boelke.service_discovery_demo.view.MainActivity;
 import willi.boelke.service_discovery_demo.view.listAdapters.ConnectionListAdapter;
 import willi.boelke.service_discovery_demo.view.listAdapters.DeviceListAdapter;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
@@ -44,23 +39,17 @@ public class BluetoothConnectionFragment extends Fragment
      * The Log Tag
      */
     private final String TAG = this.getClass().getSimpleName();
+
     private FragmentBluetoothConnectBinding binding;
     private DeviceListAdapter deviceLisAdapter;
     private ConnectionListAdapter connectionListAdapter;
-    private ArrayList<BluetoothConnection> connections = new ArrayList<>();
-    private ArrayList<BluetoothConnection> clientConnectionsOne = new ArrayList<>();
-    private ArrayList<BluetoothConnection> serverConnectionsOne = new ArrayList<>();
-    private ArrayList<BluetoothConnection> serverConnectionsTwo = new ArrayList<>();
-    private ArrayList<BluetoothConnection> clientConnectionsTwo = new ArrayList<>();
-
-    private DemoClientController clientControllerOne;
-    private DemoServerController serverControllerOne;
-    private DemoClientController clientControllerTwo;
-    private DemoServerController serverControllerTwo;
+    private BluetoothConnectionViewModel model;
 
     private TextView messageTextView;
     private BluetoothServiceConnectionEngine engine;
-    private MainActivity mainActivity;
+
+    private final ArrayList<BluetoothConnection> openConnections = new ArrayList<>();
+    private final ArrayList<BluetoothDevice> devicesInRange = new ArrayList<>();
 
 
     //
@@ -74,26 +63,21 @@ public class BluetoothConnectionFragment extends Fragment
         binding = FragmentBluetoothConnectBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
+        model = new ViewModelProvider(this).get(BluetoothConnectionViewModel.class);
+
+        //--- starting the discovery engine ---//
+
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
         {
             engine = BluetoothServiceConnectionEngine.getInstance();
             engine.start(this.getActivity().getApplicationContext());
         }
 
-        //--- setup controllers ---//
-
-       this.mainActivity = (MainActivity)getActivity();
-
-
-        clientControllerOne = new DemoClientController(mainActivity.getDescriptionForServiceOne());
-        clientControllerTwo = new DemoClientController(mainActivity.getDescriptionForServiceTwo());
-        serverControllerOne = new DemoServerController(mainActivity.getDescriptionForServiceOne());
-        serverControllerTwo = new DemoServerController(mainActivity.getDescriptionForServiceTwo());
-
         //--- setup views ---//
 
         this.setupClickListener();
         this.setupMessageTextView();
+        this.setupListViews();
 
         //--- setup observers ---//
 
@@ -105,22 +89,35 @@ public class BluetoothConnectionFragment extends Fragment
         return root;
     }
 
-    @Override
-    public void onDestroyView()
+    /**
+     * Sets up the list view which display the
+     * connections and discovered devices.
+     * <p>
+     * The Adapters will be stored in instance variables
+     * to access and update them later on in {@link #devicesInRangeObserver()}
+     * and {@link #connectionsObserver()}
+     */
+    private void setupListViews()
     {
-        super.onDestroyView();
-        if (engine.isRunning())
-        {
-            engine.stop();
-        }
+        //--- connections ListView ---//
+        connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, openConnections);
+        binding.connectionListView.setAdapter(connectionListAdapter);
 
+        //--- descovered devices ListView ---//
+        deviceLisAdapter = new DeviceListAdapter(getContext(), R.layout.recycler_card_device, devicesInRange);
+        binding.devicesInRange.setAdapter(deviceLisAdapter);
     }
+
 
     private void setupMessageTextView()
     {
         messageTextView = binding.msgTextView;
     }
 
+    /**
+     * Sets the click listener of all Buttons in this fragment to
+     * {@link #onClickEventHandler(View)}.
+     */
     private void setupClickListener()
     {
         binding.discoverableButton.setOnClickListener(this::onClickEventHandler);
@@ -136,15 +133,21 @@ public class BluetoothConnectionFragment extends Fragment
         binding.endSdpTwoButton.setOnClickListener(this::onClickEventHandler);
     }
 
+    /**
+     * Handles all click events on button in this
+     * view as set in {@link #setupClickListener()}
+     *
+     */
     private void onClickEventHandler(View view)
     {
-        if(!engine.isRunning()){
+        if (!engine.isRunning())
+        {
 
             return;
         }
         if (binding.discoverableButton.equals(view))
         {
-            engine.startDiscoverable();
+            model.makeDiscoverable();
         }
         if (binding.startDiscoveryButton.equals(view))
         {
@@ -152,42 +155,35 @@ public class BluetoothConnectionFragment extends Fragment
         }
         else if (binding.startServiceOneButton.equals(view))
         {
-            this.serverControllerOne.startWriting();
-            this.serverControllerOne.startService();
+            model.startServiceOne();
         }
         else if (binding.startServiceTwoButton.equals(view))
         {
-            this.serverControllerTwo.startWriting();
-            this.serverControllerTwo.startService();
+            model.startServiceTwo();
         }
         else if (binding.endServiceOneButton.equals(view))
         {
-            this.serverControllerOne.stopWriting();
-            this.serverControllerOne.stopService();
+            model.stopServiceOne();
         }
         else if (binding.endServiceTwoButton.equals(view))
         {
-            this.serverControllerTwo.stopWriting();
-            this.serverControllerTwo.stopService();
+            model.stopServiceTwo();
         }
         else if (binding.startSdpOneButton.equals(view))
         {
-            this.clientControllerOne.startReading();
-            this.clientControllerOne.startClient();
+            model.startClientOne();
         }
         else if (binding.startSdpTwoButton.equals(view))
         {
-            this.clientControllerTwo.startReading();
-            this.clientControllerTwo.startClient();
+            model.startClientTwo();
         }
         else if (binding.endSdpOneButton.equals(view))
         {
-            Log.e(TAG, "onClickEventHandler: ----end");
-            this.clientControllerOne.endClient();
+            model.stopClientOne();
         }
         else if (binding.endSdpTwoButton.equals(view))
         {
-            this.clientControllerTwo.endClient();
+            model.stopClientTwo();
         }
         else if (binding.refreshButton.equals(view))
         {
@@ -205,14 +201,12 @@ public class BluetoothConnectionFragment extends Fragment
      */
     private void messageObserver()
     {
-        clientControllerTwo.getLatestMessage().observe(this.getViewLifecycleOwner(), message -> messageTextView.setText(message));
-        clientControllerOne.getLatestMessage().observe(this.getViewLifecycleOwner(), message -> messageTextView.setText(message));
+        model.getMessage().observe(this.getViewLifecycleOwner(), message -> messageTextView.setText(message));
     }
 
     private void notificationObserver()
     {
-        clientControllerOne.getLatestNotification().observe(this.getViewLifecycleOwner(), message -> Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show());
-        clientControllerTwo.getLatestNotification().observe(this.getViewLifecycleOwner(), message -> Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show());
+        model.getNotification().observe(this.getViewLifecycleOwner(), message -> Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show());
     }
 
     /**
@@ -221,61 +215,22 @@ public class BluetoothConnectionFragment extends Fragment
      */
     private void connectionsObserver()
     {
-        clientControllerOne.getConnections().observe(this.getViewLifecycleOwner(), newClientConnections ->
+        model.getOpenConnections().observe(this.getViewLifecycleOwner(), openConnections ->
         {
-            clientConnectionsOne = newClientConnections;
-            connections = mergeConnectionLists(newClientConnections, serverConnectionsTwo, serverConnectionsOne, clientConnectionsTwo);
-
-            ListView openConnectionsListView = binding.connectionListView;
-            connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
-            openConnectionsListView.setAdapter(connectionListAdapter);
-        });
-
-        clientControllerTwo.getConnections().observe(this.getViewLifecycleOwner(), newClientConnections ->
-        {
-            clientConnectionsTwo = newClientConnections;
-            connections = mergeConnectionLists( newClientConnections, serverConnectionsTwo, serverConnectionsOne, clientConnectionsOne);
-            ListView openConnectionsListView = binding.connectionListView;
-            connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
-            openConnectionsListView.setAdapter(connectionListAdapter);
-        });
-
-
-        serverControllerOne.getConnections().observe(this.getViewLifecycleOwner(), newServerConnections ->
-        {
-            serverConnectionsOne = newServerConnections;
-            connections = mergeConnectionLists(newServerConnections, serverConnectionsTwo, clientConnectionsOne, clientConnectionsTwo);
-            ListView openConnectionsListView = binding.connectionListView;
-            connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
-            openConnectionsListView.setAdapter(connectionListAdapter);
-        });
-
-        serverControllerTwo.getConnections().observe(this.getViewLifecycleOwner(), newServerConnections ->
-        {
-            serverConnectionsTwo = newServerConnections;
-            connections = mergeConnectionLists(newServerConnections, serverConnectionsOne, clientConnectionsOne, clientConnectionsTwo);
-            ListView openConnectionsListView = binding.connectionListView;
-            connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
-            openConnectionsListView.setAdapter(connectionListAdapter);
+            this.openConnections.clear();
+            this.openConnections.addAll(openConnections);
+            connectionListAdapter.notifyDataSetChanged();
         });
     }
 
     private void devicesInRangeObserver()
     {
-        clientControllerOne.getDevicesInRange().observe(this.getViewLifecycleOwner(), devicesInRange ->
+        model.getDiscoveredDevices().observe(this.getViewLifecycleOwner(), devicesInRange ->
         {
-            ListView devicesInRangeListView = binding.devicesInRange;
-            deviceLisAdapter = new DeviceListAdapter(getContext(), R.layout.recycler_card_device, devicesInRange);
-            devicesInRangeListView.setAdapter(deviceLisAdapter);
+            this.devicesInRange.clear();
+            this.devicesInRange.addAll(devicesInRange);
+            deviceLisAdapter.notifyDataSetChanged();
         });
     }
 
-    private  ArrayList<BluetoothConnection> mergeConnectionLists(ArrayList<BluetoothConnection> listOne, ArrayList<BluetoothConnection> listTwo, ArrayList<BluetoothConnection> listThree, ArrayList<BluetoothConnection> listFour)
-    {
-        Set<BluetoothConnection> fooSet = new LinkedHashSet<>(listOne);
-        fooSet.addAll(listTwo);
-        fooSet.addAll(listThree);
-        fooSet.addAll(listFour);
-        return new ArrayList<>(fooSet);
-    }
 }

@@ -17,9 +17,9 @@ import willi.boelke.services.serviceConnection.bluetoothServiceConnection.Blueto
 public class ConnectionListAdapter extends ArrayAdapter<BluetoothConnection>
 {
 
-    private LayoutInflater mLayoutInflater;
-    private ArrayList<BluetoothConnection> connections;
-    private int mViewResourceId;
+    private final LayoutInflater mLayoutInflater;
+    private final ArrayList<BluetoothConnection> connections;
+    private final int mViewResourceId;
 
     public ConnectionListAdapter(Context context, int tvResourceId, ArrayList<BluetoothConnection> devices)
     {
@@ -35,7 +35,6 @@ public class ConnectionListAdapter extends ArrayAdapter<BluetoothConnection>
 
         BluetoothConnection connection = connections.get(position);
 
-
         //Setup the name TextView
         TextView name = convertView.findViewById(R.id.service_name_tv);
         TextView description = convertView.findViewById(R.id.description_tv);
@@ -49,10 +48,10 @@ public class ConnectionListAdapter extends ArrayAdapter<BluetoothConnection>
         peerName.setText(connection.getRemoteDevice().getName());
         if(connection.isServerPeer())
         {
-            peerState.setText("as Client");
+            peerState.setText(R.string.ConnectionType_Client);
         }
         else{
-            peerState.setText("as Server");
+            peerState.setText(R.string.ConnectionType_Server);
         }
 
         return convertView;

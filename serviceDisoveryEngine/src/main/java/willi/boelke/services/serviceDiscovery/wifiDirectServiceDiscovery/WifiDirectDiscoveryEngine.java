@@ -69,7 +69,7 @@ import willi.boelke.services.serviceDiscovery.DiscoveryEngine;
  * Every listener wil get notified about every discovered serves.
  * Listeners may unregister by calling {@link #unregisterDiscoveryListener(WifiServiceDiscoveryListener)}
  * if the engine should notify about every service discovered
- * {@link #notifyAboutEveryService(boolean)} can be called with `true`
+ * {@link #notifyAboutAllServices(boolean)} can be called with `true`
  * from that moment on until it was called with `false` the engine will notify about
  * every discovered service even if it was not registered through {@link #startService(ServiceDescription)}
  * <p>
@@ -146,16 +146,7 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
      */
     private final ArrayList<WifiServiceDiscoveryListener> discoveryListeners = new ArrayList<>();
 
-    /**
-     * If this is set to true all listeners
-     * will be notified about all discovered services
-     * even if they are not registered for discovery
-     *
-     * @see #notifyAboutEveryService(boolean)
-     */
-    private boolean shouldNotifyAboutAll;
 
-    //
     //  ----------  constructor and initialization ----------
     //
 
@@ -272,9 +263,9 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
             Log.e(TAG, "startDiscovery: engine not running - wont discover");
             return;
         }
-        Log.d(TAG, "startDiscovery: staring discovery");
         this.discoveredServices.clear();
         this.stopDiscovery();
+        Log.d(TAG, "startDiscovery: staring discovery");
         this.discoveryThread = new WifiDiscoveryThread(manager, channel, this);
         this.discoveryThread.start();
     }
@@ -623,24 +614,13 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
     private void onNewServiceDiscovered(WifiP2pDevice device, ServiceDescription description)
     {
         Log.d(TAG, "onNewServiceDiscovered: got service, checking if looked for");
-        if (servicesToLookFor.contains(description) || shouldNotifyAboutAll)
+        if (servicesToLookFor.contains(description) || notifyAboutAllServices)
         {
             Log.d(TAG, "onNewServiceDiscovered: service is registered for search notify listeners");
             notifyOnServiceDiscovered(device, description);
         }
     }
 
-
-    /**
-     * Setting this to true will notify ALL registered listener
-     * about every discovered service.
-     * Even though the service was not registered through {@link #startDiscoveryForService}.
-     * This can be deactivate again at any time by calling this method again with false
-     */
-    public void notifyAboutEveryService(boolean shouldNotifyAboutAll)
-    {
-        this.shouldNotifyAboutAll = shouldNotifyAboutAll;
-    }
 
     protected static void logReason(String tag, String msg, int arg0)
     {

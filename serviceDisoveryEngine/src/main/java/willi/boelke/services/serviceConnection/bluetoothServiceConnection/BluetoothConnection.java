@@ -4,9 +4,15 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
+import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Objects;
 
+import willi.boelke.services.serviceConnection.ServiceConnection;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
@@ -16,14 +22,13 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * It is a thin wrapper around a BluetoothSocket to extends it with information about the service
  * it is connected too.
  */
-public class BluetoothConnection
+public class BluetoothConnection implements ServiceConnection
 {
 
 
     //
     //  ----------  instance variables ----------
     //
-
     private final String TAG = this.getClass().getSimpleName();
     /**
      * This shows if the connection was made as Server or client socket
@@ -51,6 +56,7 @@ public class BluetoothConnection
     //
 
 
+    @Override
     public void close()
     {
         Log.d(TAG, "close: closing connection " + this);
@@ -80,10 +86,24 @@ public class BluetoothConnection
         }
     }
 
+    @Override
     public boolean isConnected()
     {
         return this.connectionSocket.isConnected();
     }
+
+    @Override
+    public InputStream getInputStream() throws IOException
+    {
+        return connectionSocket.getInputStream();
+    }
+
+    @Override
+    public OutputStream getOutputStream() throws IOException
+    {
+        return connectionSocket.getOutputStream();
+    }
+
 
     @Override
     public boolean equals(Object o)
@@ -110,16 +130,19 @@ public class BluetoothConnection
         return this.connectionSocket.getRemoteDevice();
     }
 
+    @Override
     public String getRemoteDeviceAddress()
     {
         return this.getRemoteDevice().getAddress();
     }
+
 
     public BluetoothSocket getConnectionSocket()
     {
         return connectionSocket;
     }
 
+    @Override
     public ServiceDescription getServiceDescription()
     {
         return description;
@@ -133,6 +156,6 @@ public class BluetoothConnection
     @Override
     public String toString()
     {
-        return String.format("{|%-20s|%-20s|%-5s|}", this.connectionSocket.getRemoteDevice().getName(), this.isServerPeer(), this.description.getServiceUuid());
+        return String.format("{|Peer: %-20s|Server: %-5s|UUID: %-36s|}", this.connectionSocket.getRemoteDevice().getName(), this.isServerPeer(), this.description.getServiceUuid());
     }
 }

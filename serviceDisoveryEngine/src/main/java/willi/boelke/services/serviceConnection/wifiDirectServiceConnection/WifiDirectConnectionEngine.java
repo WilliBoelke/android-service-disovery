@@ -427,7 +427,6 @@ public class WifiDirectConnectionEngine
     private void tryToConnect(WifiP2pDevice device, ServiceDescription description)
     {
         Log.d(TAG, "tryToConnect: received a service - trying to connect");
-        Log.e(TAG, "tryToConnect: " + peer);
         if (peer == null)
         {
             Log.e(TAG, "tryToConnect: peer was null, stop");
@@ -435,7 +434,7 @@ public class WifiDirectConnectionEngine
         }
 
 
-        if (peer.shouldConnectTo(device.deviceAddress, description))
+        if (peer.shouldConnectTo(device, description))
         {
             Log.d(TAG, "tryToConnect: trying to connect to  " + device);
             WifiP2pConfig config = new WifiP2pConfig();
@@ -513,7 +512,7 @@ public class WifiDirectConnectionEngine
         this.stopDiscovery();
     }
 
-    protected void onSocketConnected(SdpWifiConnection connection)
+    protected void onSocketConnected(WifiConnection connection)
     {
         Log.d(TAG, "onSocketConnected: Connection established " + connection);
         if (peer != null)
@@ -528,7 +527,7 @@ public class WifiDirectConnectionEngine
 
     /**
      * Starts a thread to wait for socket connection being established
-     * and then calls {@link #onSocketConnected(SdpWifiConnection)}
+     * and then calls {@link #onSocketConnected(WifiConnection)}
      *
      * @param channelCreator
      */

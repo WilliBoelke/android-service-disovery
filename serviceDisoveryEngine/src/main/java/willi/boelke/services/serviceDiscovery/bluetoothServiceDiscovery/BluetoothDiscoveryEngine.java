@@ -193,8 +193,6 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
      */
     private final ArrayList<BluetoothServiceDiscoveryListener> bluetoothDiscoveryListeners = new ArrayList<>();
 
-    private boolean notifyAboutAllServices = false;
-
 
     //
     //  ----------  initialisation and setup ----------
@@ -387,21 +385,22 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
         }
         // resetting discovered devices
         this.discoveredDevices.clear();
-        Log.d(TAG, "startDiscovery: start looking for other devices");
+        Log.d(TAG, "startDeviceDiscovery: start looking for other devices");
         if (bluetoothAdapter.isDiscovering())
         {
-            Log.d(TAG, "startDiscovery: already scanning, restarting ... ");
+            Log.d(TAG, "startDeviceDiscovery: already scanning, restarting ... ");
             this.bluetoothAdapter.cancelDiscovery();
         }
 
+        Log.d(TAG, "startDeviceDiscovery: enabled ? = " + bluetoothAdapter.isEnabled());
         if (this.bluetoothAdapter.startDiscovery())
         {
-            Log.d(TAG, "startDiscovery: started device discovery");
+            Log.d(TAG, "startDeviceDiscovery: started device discovery");
             return true;
         }
         else
         {
-            Log.e(TAG, "startDiscovery: could not start Discovery");
+            Log.e(TAG, "startDeviceDiscovery: could not start Discovery");
             return false;
         }
     }
@@ -544,7 +543,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
     {
         if (engineIsNotRunning())
         {
-            Log.e(TAG, "startSDPService: engine is not running - wont start");
+            Log.e(TAG, "registerDiscoverListener: engine is not running - wont start");
             return;
         }
         if (bluetoothDiscoveryListeners.contains(listener))
@@ -754,26 +753,6 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
     public void shouldCheckLittleEndianUuids(boolean checkLittleEndianUuids)
     {
         this.checkLittleEndianUuids = checkLittleEndianUuids;
-    }
-
-    /**
-     * Setting this to true will notify all receivers about all
-     * discovered services and not just the ones which where
-     * looked for.
-     * Services for which no service description is present
-     * will just contain the UUID and empty service attributes
-     * <p>
-     * for the services which are registered though
-     * service attributes can be resolved and will be available
-     *
-     * @param all
-     *         boolean - true to notify about all services, false to just notify about the ones
-     *         given through {@link #startDiscoveryForService(ServiceDescription)}
-     */
-    public void notifyAboutAllServices(boolean all)
-    {
-        Log.d(TAG, "notifyAboutAllServices: notifying about all service = " + all);
-        this.notifyAboutAllServices = all;
     }
 }
 

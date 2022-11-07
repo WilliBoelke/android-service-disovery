@@ -23,7 +23,7 @@ public interface WifiServiceDiscoveryListener
      * @param host
      *         The BluetoothDevice hosting / advertising the service
      * @param description
-     *         The service description as provided in {@link BluetoothDiscoveryEngine#startSdpDiscoveryForService(ServiceDescription)}
+     *         The service description as provided in {@link BluetoothDiscoveryEngine#startDiscoveryForService(ServiceDescription)}
      *         which was resolved through matching UUIDs
      */
     void onServiceDiscovered(WifiP2pDevice host, ServiceDescription description);

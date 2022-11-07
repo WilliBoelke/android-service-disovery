@@ -10,8 +10,8 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
  * This Thread awaits a {@link TCPChannelMaker} to establish a socket connection
- * (or to fail doing that...). IF a connection was established a {@link SdpWifiConnection}
- * will be passed to {@link WifiDirectConnectionEngine#onSocketConnected(SdpWifiConnection)}
+ * (or to fail doing that...). IF a connection was established a {@link WifiConnection}
+ * will be passed to {@link WifiDirectConnectionEngine#onSocketConnected(WifiConnection)}
  *
  * <p>
  * Note<br>
@@ -64,7 +64,7 @@ class AsyncSdpWifiConnectionCreator extends Thread
             }
 
             // Creating the connection
-            SdpWifiConnection connection = new SdpWifiConnection(this.socket, this.serviceDescription);
+            WifiConnection connection = new WifiConnection(this.socket, this.serviceDescription);
             this.engine.onSocketConnected(connection);
         }
         catch (IOException e)

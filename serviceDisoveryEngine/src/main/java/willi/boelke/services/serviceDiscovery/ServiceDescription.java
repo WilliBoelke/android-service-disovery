@@ -224,13 +224,8 @@ public class ServiceDescription
     @Override
     public String toString()
     {
-        StringBuilder sd = new StringBuilder();
-        sd.append("Service: { ");
-        sd.append("\nUuid = ");
-        sd.append(this.getServiceUuid());
-        sd.append(",");
-        sd.append("\n Attributes =  " + this.attributes.toString());
-        return sd.toString();
+        return String.format("{|Name: %-20s|UUID: %-36s|Attr: %-10s|}",
+                this.getServiceName(), this.getServiceUuid(), this.getServiceRecord());
     }
 
     public String getServiceName()

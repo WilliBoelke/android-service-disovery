@@ -3,12 +3,13 @@ package willi.boelke.service_discovery_demo.controller.bluetoothDemoController;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
-
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import willi.boelke.service_discovery_demo.controller.ControllerListener;
+import willi.boelke.service_discovery_demo.controller.ReadThread;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceClient;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
@@ -31,44 +32,42 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
 public class DemoClientController implements BluetoothServiceClient
 {
 
+    /**
+     * Classname for logging
+     */
     private final String TAG = this.getClass().getSimpleName();
 
-    private final MutableLiveData<ArrayList<BluetoothConnection>> connections = new MutableLiveData<>();
+    private final CopyOnWriteArrayList<BluetoothConnection> connections = new CopyOnWriteArrayList<>();
 
-    private final MutableLiveData<String> currentMessage = new MutableLiveData<>();
+    private ControllerListener<BluetoothConnection, BluetoothDevice> listener;
 
-    private final MutableLiveData<String> currentNotification = new MutableLiveData<>();
-
-    private final MutableLiveData<ArrayList<BluetoothDevice>> devicesInRange = new MutableLiveData<>();
-
-    private ReadThread reader;
+    private ReadThread<BluetoothConnection, BluetoothDevice> reader;
 
     private final ServiceDescription serviceDescription;
 
     public DemoClientController(ServiceDescription serviceDescription)
     {
         this.serviceDescription = serviceDescription;
-        this.reader = new ReadThread();
-        this.connections.setValue(new ArrayList<>());
-        this.devicesInRange.setValue(new ArrayList<>());
-        this.currentMessage.setValue("");
-        this.currentNotification.setValue("");
+        this.reader = new ReadThread<>(connections, listener);
     }
+
+    //
+    //  ---------- BluetoothServiceClient ----------
+    //
 
     @Override
     public void onServiceDiscovered(String address, ServiceDescription description)
     {
-        this.currentNotification.postValue("Discovered service " + description.getServiceUuid());
+        this.listener.onNewNotification("Discovered service " + description.getServiceUuid());
         Log.d(TAG, "onServiceDiscovered: a service with the UUID " + description + " has been discovered");
     }
 
     @Override
     public void onConnectedToService(BluetoothConnection connection)
     {
-        ArrayList<BluetoothConnection> tmp = this.connections.getValue();
-        tmp.add(connection);
-        this.connections.postValue(tmp);
-        this.currentNotification.postValue("New connection established to " + connection.getRemoteDeviceAddress());
+        this.connections.add(connection);
+        this.listener.onNewNotification("New connection established to " + connection.getRemoteDeviceAddress());
+        this.listener.onNewConnection(connection);
     }
 
     @Override
@@ -81,105 +80,78 @@ public class DemoClientController implements BluetoothServiceClient
     public void onPeerDiscovered(BluetoothDevice device)
     {
         Log.d(TAG, "onDevicesInRangeChange: called with new device");
-        if (!this.devicesInRange.getValue().contains(device))
-        {
-            ArrayList<BluetoothDevice> tmp = devicesInRange.getValue();
-            tmp.add(device);
-            this.devicesInRange.postValue(tmp);
-            this.currentNotification.postValue("new peer discovered " + device.getAddress());
-        }
+        this.listener.onNewNotification("New peer discovered " + device);
+        this.listener.onNewDiscovery(device);
     }
 
-    public MutableLiveData<ArrayList<BluetoothConnection>> getConnections()
-    {
-        return this.connections;
-    }
 
-    public MutableLiveData<String> getLatestMessage()
-    {
-        return this.currentMessage;
-    }
+    //
+    //  ----------  starting and stopping the client ----------
+    //
 
-    public MutableLiveData<ArrayList<BluetoothDevice>> getDevicesInRange()
-    {
-        return this.devicesInRange;
-    }
-
+    /**
+     * This starts the client.
+     * the client will be registered.
+     *
+     * The discovers process though needs to be started manually through the
+     * BluetoothServiceConnectionEngine.
+     */
     public void startClient()
     {
         BluetoothServiceConnectionEngine.getInstance().startSDPDiscoveryForService(serviceDescription, this);
+        startReading();
     }
 
-    public void endClient()
+    /**
+     * Stops the client by unregistering in from the
+     * Engine. This will also disconnect all
+     * running connections of this client.
+     */
+    public void stopClient()
     {
+        Log.d(TAG, "stopClient: stopping client for service " + serviceDescription);
         BluetoothServiceConnectionEngine.getInstance().stopSDPDiscoveryForService(serviceDescription);
         BluetoothServiceConnectionEngine.getInstance().disconnectFromServicesWith(serviceDescription);
-        this.currentNotification.setValue("disconnected client");
-        this.currentMessage.setValue("");
+        stopReading();
+        this.listener.onNewNotification("Stopped client for service " + this.serviceDescription.getServiceUuid());
+        this.listener.onMessageChange("");
     }
 
+
+    //
+    //  ----------  listener ----------
+    //
+
+
+    public void setListener(ControllerListener<BluetoothConnection, BluetoothDevice> listener){
+        this.listener = listener;
+    }
+
+
+    //
+    //  ----------  reading ----------
+    //
+
+    /**
+     * Starts a new ReadThread and stores it in {@link #reader}.
+     * If a reader is already running i will be canceled first. 
+     */
     public void startReading()
     {
-        reader = new ReadThread();
+        if(reader.isRunning()){
+            stopReading();
+        }
+        reader = new ReadThread<>(connections, listener);
         reader.start();
     }
 
-    public LiveData<String> getLatestNotification()
+    /**
+     * Cancels the {@link #reader} if it is currently running.
+     */
+    private void stopReading()
     {
-        return this.currentNotification;
-    }
-
-    private class ReadThread extends Thread
-    {
-
-        private boolean running = true;
-        private Thread thread;
-
-        @Override
-        public void run()
-        {
-            this.thread = Thread.currentThread();
-
-            while (running)
-            {
-                ArrayList<BluetoothConnection> disconnecedConnections = new ArrayList<>();
-                ArrayList<BluetoothConnection> tmpConnections = (ArrayList<BluetoothConnection>) connections.getValue().clone();
-                for (BluetoothConnection connection : tmpConnections)
-                {
-                    if (connection.isConnected())
-                    {
-                        try
-                        {
-                            byte[] buffer = new byte[2048];
-                            int bytes;
-                            bytes = connection.getConnectionSocket().getInputStream().read(buffer);
-                            String incomingTransmission = new String(buffer, 0, bytes);
-                            currentMessage.postValue(incomingTransmission);
-                        }
-                        catch (IOException e)
-                        {
-                            disconnecedConnections.add(connection);
-                        }
-                    }
-                    else
-                    {
-                        disconnecedConnections.add(connection);
-                    }
-                }
-
-                for (BluetoothConnection connection : disconnecedConnections)
-                {
-                    connection.close();
-                    tmpConnections.remove(connection);
-                    connections.postValue(tmpConnections);
-                }
-            }
-        }
-
-        public void cancel()
-        {
-            this.running = false;
-            this.thread.interrupt();
+        if(reader.isRunning()){
+            reader.cancel();
         }
     }
 }

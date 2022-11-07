@@ -421,6 +421,7 @@ public class BluetoothServiceConnectionEngine
      */
     public void disconnectFromServicesWith(ServiceDescription description)
     {
+        Log.d(TAG, "disconnectFromServicesWith: disconnecting from servers with " + description);
         this.connectionManager.closeAllClientConnectionsToService(description);
     }
 
@@ -535,6 +536,7 @@ public class BluetoothServiceConnectionEngine
      * this point will remain connected and working.
      *
      * @param description
+     *  The description of the service
      */
     public void stopSDPService(ServiceDescription description)
     {
@@ -601,7 +603,6 @@ public class BluetoothServiceConnectionEngine
             @Override
             public void onConnectionFailed(UUID uuid, BluetoothConnectorThread failedConnector)
             {
-
                 runningClientConnectors.remove(failedConnector);
             }
 

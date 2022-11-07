@@ -6,23 +6,18 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
-import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine;
 import willi.boelke.service_discovery_demo.R;
-import willi.boelke.service_discovery_demo.controller.wifiDemoController.WifiDemoController;
-import willi.boelke.service_discovery_demo.view.MainActivity;
+import willi.boelke.service_discovery_demo.databinding.FragmentWifiDirectConnectBinding;
 import willi.boelke.service_discovery_demo.view.listAdapters.WifiConnectionListAdapter;
-import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine;
 
 
 public class WifiDirectConnectionFragment extends Fragment
@@ -33,16 +28,11 @@ public class WifiDirectConnectionFragment extends Fragment
      */
     private final String TAG = this.getClass().getSimpleName();
 
-    private willi.boelke.service_discovery_demo.databinding.FragmentWifiDirectConnectBinding binding;
+    private FragmentWifiDirectConnectBinding binding;
 
     private WifiDirectConnectionEngine engine;
 
-    private TextView messageTextView;
-
-    private MainActivity mainActivity;
-
-    private WifiDemoController wifiDemoControllerOne;
-    private WifiDemoController wifiDemoControllerTwo;
+    private WifiDirectConnectionViewModel model;
 
     //
     //  ----------  activity/fragment lifecycle ----------
@@ -52,18 +42,7 @@ public class WifiDirectConnectionFragment extends Fragment
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
         binding = willi.boelke.service_discovery_demo.databinding.FragmentWifiDirectConnectBinding.inflate(inflater, container, false);
-
         View root = binding.getRoot();
-
-
-        return root;
-    }
-
-    @Override
-    public void onResume()
-    {
-        super.onResume();
-
 
         if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
@@ -74,31 +53,24 @@ public class WifiDirectConnectionFragment extends Fragment
             this.engine = WifiDirectConnectionEngine.getInstance();
             this.engine.start(this.getActivity().getApplicationContext());
         }
-        this.mainActivity = (MainActivity) getActivity();
 
-        this.wifiDemoControllerOne = new WifiDemoController(mainActivity.getDescriptionForServiceOne());
-        this.wifiDemoControllerTwo = new WifiDemoController(mainActivity.getDescriptionForServiceTwo());
-        this.messageTextView = binding.msgTextView;
+        model = new ViewModelProvider(this).get(WifiDirectConnectionViewModel.class);
+
         setupClickListener();
         setupMessageOneObserver();
         setupConnectionObserver();
+        setupNotificationObserver();
+        return root;
     }
-
 
     private void setupClickListener()
     {
-        final Button discoveryBtn = binding.startWifiBtn;
-        final Button startSdpOneBtn = binding.startDiscoveryOneBtn;
-        final Button endSdpOneBtn = binding.endDiscoveryOneBtn;
-        final Button startSdpTwoBtn = binding.startDiscoveryTwoBtn;
-        final Button endSdpTwoBtn = binding.endDiscoveryTwoBtn;
-        final Button endDiscoveryButton = binding.endDiscoveryButton;
-        discoveryBtn.setOnClickListener(this::onClickEventHandler);
-        startSdpOneBtn.setOnClickListener(this::onClickEventHandler);
-        endSdpOneBtn.setOnClickListener(this::onClickEventHandler);
-        startSdpTwoBtn.setOnClickListener(this::onClickEventHandler);
-        endSdpTwoBtn.setOnClickListener(this::onClickEventHandler);
-        endDiscoveryButton.setOnClickListener(this::onClickEventHandler);
+        binding.startWifiBtn.setOnClickListener(this::onClickEventHandler);
+        binding.startDiscoveryOneBtn.setOnClickListener(this::onClickEventHandler);
+        binding.endDiscoveryOneBtn.setOnClickListener(this::onClickEventHandler);
+        binding.startDiscoveryTwoBtn.setOnClickListener(this::onClickEventHandler);
+        binding.endDiscoveryTwoBtn.setOnClickListener(this::onClickEventHandler);
+        binding.endDiscoveryButton.setOnClickListener(this::onClickEventHandler);
     }
 
     private void onClickEventHandler(View view)
@@ -108,47 +80,35 @@ public class WifiDirectConnectionFragment extends Fragment
             Toast.makeText(getContext(), "Missing permission or bluetooth not supported", Toast.LENGTH_LONG).show();
             return;
         }
-        
+
         //--- clicks ---//
 
         if (binding.startWifiBtn.equals(view))
         {
-            WifiDirectConnectionEngine.getInstance().startDiscovery();
+            model.startDiscovery();
         }
         if (binding.startDiscoveryOneBtn.equals(view))
         {
-            this.wifiDemoControllerOne.startService();
+            model.startServiceOne();
         }
         else if (binding.endDiscoveryOneBtn.equals(view))
         {
-            this.wifiDemoControllerOne.stop();
+            model.stopServiceOne();
         }
         else if (binding.startDiscoveryTwoBtn.equals(view))
         {
-            this.wifiDemoControllerTwo.startService();
+            model.startServiceTwo();
         }
         else if (binding.endDiscoveryTwoBtn.equals(view))
         {
-            this.wifiDemoControllerTwo.stop();
+            model.stopServiceTwo();
         }
         else if (binding.endDiscoveryButton.equals(view))
         {
-            WifiDirectConnectionEngine.getInstance().stopDiscovery();
+            model.stopDiscovery();
         }
     }
 
-
-    @Override
-    public void onDestroyView()
-    {
-        super.onDestroyView();
-        if(engine.isRunning()){
-            this.wifiDemoControllerOne.stop();
-            this.wifiDemoControllerTwo.stop();
-            this.engine.stop();
-        }
-        binding = null;
-    }
 
     //
     //  ---------- live data observers ----------
@@ -156,26 +116,23 @@ public class WifiDirectConnectionFragment extends Fragment
 
     private void setupMessageOneObserver()
     {
-        wifiDemoControllerOne.getCurrentMessage().observe(this.getViewLifecycleOwner(), message -> messageTextView.setText(message));
-        wifiDemoControllerTwo.getCurrentMessage().observe(this.getViewLifecycleOwner(), message -> messageTextView.setText(message));
+        model.getLatestMessage().observe(this.getViewLifecycleOwner(), message -> binding.msgTextView.setText(message));
     }
 
-  private void setupConnectionObserver(){
-      wifiDemoControllerOne.getConnections().observe(this.getViewLifecycleOwner(), connections ->
-      {
+    private void setupNotificationObserver()
+    {
+        model.getLatestNotification().observe(this.getViewLifecycleOwner(), message -> Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show());
+    }
 
-          ListView openConnectionsListView = binding.connectionsListView;
-          WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
-          openConnectionsListView.setAdapter(connectionListAdapter);
-      });
+    private void setupConnectionObserver()
+    {
+        model.getOpenConnections().observe(this.getViewLifecycleOwner(), connections ->
+        {
 
-      wifiDemoControllerTwo.getConnections().observe(this.getViewLifecycleOwner(), connections ->
-      {
-
-          ListView openConnectionsListView = binding.connectionsListView;
-          WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
-          openConnectionsListView.setAdapter(connectionListAdapter);
-      });
-  }
+            ListView openConnectionsListView = binding.connectionsListView;
+            WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
+            openConnectionsListView.setAdapter(connectionListAdapter);
+        });
+    }
 }
 

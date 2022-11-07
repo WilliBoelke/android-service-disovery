@@ -30,4 +30,6 @@
 
     <string name="discover_all">discover all</string>
     <string name="refresh_services">refresh services</string>
+    <string name="ConnectionType_Server">as Server</string>
+    <string name="ConnectionType_Client">as Client</string>
 </resources>

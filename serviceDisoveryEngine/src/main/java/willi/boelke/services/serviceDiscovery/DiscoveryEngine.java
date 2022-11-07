@@ -18,6 +18,8 @@ public abstract class DiscoveryEngine
 
     protected boolean engineRunning = false;
 
+    protected boolean notifyAboutAllServices = false;
+
     protected boolean engineIsNotRunning()
     {
         return !engineRunning;
@@ -109,5 +111,26 @@ public abstract class DiscoveryEngine
     protected boolean isServiceAlreadyInDiscovery(ServiceDescription description)
     {
         return servicesToLookFor.contains(description);
+    }
+
+
+    /**
+     * Setting this to true will notify all receivers about all
+     * discovered services and not just the ones which where
+     * looked for.
+     * Services for which no service description is present
+     * will just contain the UUID and empty service attributes
+     * <p>
+     * for the services which are registered though
+     * service attributes can be resolved and will be available
+     *
+     * @param all
+     *         boolean - true to notify about all services, false to just notify about the ones
+     *         given through {@link #startDiscoveryForService(ServiceDescription)}
+     */
+    public void notifyAboutAllServices(boolean all)
+    {
+        Log.d(TAG, "notifyAboutAllServices: notifying about all service = " + all);
+        this.notifyAboutAllServices = all;
     }
 }

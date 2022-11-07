@@ -1,13 +1,15 @@
 package willi.boelke.service_discovery_demo.controller.bluetoothDemoController;
 
-import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
-import androidx.lifecycle.MutableLiveData;
-
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import willi.boelke.service_discovery_demo.controller.ControllerListener;
+import willi.boelke.service_discovery_demo.controller.WriteThread;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceServer;
@@ -33,26 +35,20 @@ public class DemoServerController implements BluetoothServiceServer
     private final String TAG = this.getClass().getSimpleName();
 
     /**
-     * LiveData ArrayList, this will be updated when new connections
-     * are reported or connections closed.
-     * <p>
-     * It can be obtained using {@link #getConnections()}
-     * Other entities may listen to updates on this object to get notified about changes.
-     */
-    private final MutableLiveData<ArrayList<BluetoothConnection>> connections;
-
-    /**
      * Instance of the WriteThread,
      * will write messages in a periodical interval
      * to all open connections
      */
-    private WriteThread writer;
+    private WriteThread<BluetoothConnection, BluetoothDevice> writer;
 
     /**
      * The UUID of the advertised service
      */
     private final ServiceDescription serviceDescription;
 
+    private ControllerListener<BluetoothConnection, BluetoothDevice> listener;
+
+    private final CopyOnWriteArrayList<BluetoothConnection> connections;
 
     //
     //  ---------- constructor and initialisation ----------
@@ -67,11 +63,9 @@ public class DemoServerController implements BluetoothServiceServer
     public DemoServerController(ServiceDescription serviceDescription)
     {
         this.serviceDescription = serviceDescription;
-        this.writer = new WriteThread();
-        this.connections = new MutableLiveData<>();
-        this.connections.setValue(new ArrayList<>());
+        this.connections = new CopyOnWriteArrayList<>();
+        this.writer = new WriteThread<>(connections, serviceDescription, listener);
     }
-
 
     //
     //  ---------- bluetooth service server ----------
@@ -81,11 +75,10 @@ public class DemoServerController implements BluetoothServiceServer
     public void onClientConnected(BluetoothConnection connection)
     {
         Log.d(TAG, "onClientConnected: a client connect, adding to connections");
-        ArrayList<BluetoothConnection> tempConnections = this.connections.getValue();
-        tempConnections.add(connection);
-        this.connections.postValue(tempConnections);
+        listener.onNewNotification("A Client connected " + connection);
+        listener.onNewConnection(connection);
+        connections.add(connection);
     }
-
 
     //
     //  ---------- start / stop service ----------
@@ -97,11 +90,11 @@ public class DemoServerController implements BluetoothServiceServer
      */
     public void startWriting()
     {
-        if (!writer.isRunning())
-        {
-            writer = new WriteThread();
-            writer.start();
-        }
+       if (!writer.isRunning())
+       {
+         writer = new WriteThread<>(connections, serviceDescription, listener);
+         writer.start();
+       }
     }
 
     /**
@@ -131,119 +124,22 @@ public class DemoServerController implements BluetoothServiceServer
      */
     public void stopService()
     {
+        //--- closing all sockets and stopping service advertisement ---//
         BluetoothServiceConnectionEngine.getInstance().disconnectFromClientsWithUUID(this.serviceDescription);
         BluetoothServiceConnectionEngine.getInstance().stopSDPService(this.serviceDescription);
+        //--- notify listener that all connections where closed and clear the list ---//
+        for(BluetoothConnection connection : connections){
+            listener.onConnectionLost(connection);
+        }
+        this.connections.clear();
     }
-
 
     //
-    //  ---------- getter and setter ----------
+    //  ----------  listener ----------
     //
 
-    /**
-     * Returns a LiveData object containing a
-     * up to date list of the currently active connections
-     * @return
-     * LiveData Array list contracting the connections
-     */
-    public MutableLiveData<ArrayList<BluetoothConnection>> getConnections()
-    {
-        return this.connections;
+    public void setListener(ControllerListener<BluetoothConnection, BluetoothDevice> listener){
+        this.listener = listener;
     }
 
-
-    ////
-    ////------------  the write thread ---------------
-    ////
-
-    /**
-     * The Write thread will iterate through the list of
-     * open connections, and write a message to each of them.
-     *
-     * This will happen periodically with a random waiting time in between.
-     *
-     * The WriteThread will run indefinitely till it is stopped by calling
-     * its `cancel` method.
-     *
-     * @author Willi Boelke
-     */
-    private class WriteThread extends Thread
-    {
-        private final String TAG = this.getClass().getSimpleName();
-        private boolean shouldRun = true;
-        private boolean isRunning = false;
-        private Thread thread;
-
-        public void run()
-        {
-            this.isRunning = true;
-            this.thread = Thread.currentThread();
-            int counter = 0;
-            while (shouldRun)
-            {
-                ArrayList<BluetoothConnection> disconnectedConnections = new ArrayList<>();
-                ArrayList<BluetoothConnection> tmpConnections = (ArrayList<BluetoothConnection>) connections.getValue().clone();
-                for (BluetoothConnection connection : tmpConnections)
-                {
-                    if (connection.isConnected())
-                    {
-                        try
-                        {
-                            String msg = "Test message number " + counter + " from : " + serviceDescription.getServiceName() + BluetoothAdapter.getDefaultAdapter().getName();
-                            connection.getConnectionSocket().getOutputStream().write(msg.getBytes());
-                        }
-                        catch (IOException e)
-                        {
-                            disconnectedConnections.add(connection);
-                        }
-                    }
-                    else
-                    {
-
-                        disconnectedConnections.add(connection);
-                    }
-                }
-                for (BluetoothConnection closedConnection : disconnectedConnections)
-                {
-                    closedConnection.close();
-                    tmpConnections.remove(closedConnection);
-                    connections.postValue(tmpConnections);
-                }
-
-                try
-                {
-                    synchronized (this)
-                    {
-                        int timeOut = 600 + (int) ((Math.random() * (400 - 100)) + 100);
-                        this.wait(timeOut);
-                    }
-                    if (counter < Integer.MAX_VALUE)
-                    {
-                        counter++;
-                    }
-                    else
-                    {
-                        counter = 0;
-                    }
-                }
-                catch (InterruptedException e)
-                {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        public void cancel()
-        {
-            Log.d(TAG, "cancel: stopping write thread");
-            this.shouldRun = false;
-            this.isRunning = false;
-            this.thread.interrupt();
-        }
-
-        public boolean isRunning()
-        {
-            return this.isRunning;
-        }
-    }
 }

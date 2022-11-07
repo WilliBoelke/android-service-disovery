@@ -23,7 +23,6 @@ class TCPClient extends TCPChannel
     void createSocket()
     {
         int i = TCPChannelMaker.max_connection_loops;
-
         for (; i > 0; i--)
         {
             try
@@ -38,7 +37,6 @@ class TCPClient extends TCPChannel
                 b.append(i);
                 Log.d(TAG, "createSocket: " + b);
                 this.setSocket(new Socket(this.hostname, this.port));
-
                 // break loop if no exception thrown
                 return;
             }

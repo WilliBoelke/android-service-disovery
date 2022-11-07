@@ -3,6 +3,10 @@ package willi.boelke.services.serviceConnection.bluetoothServiceConnection;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
@@ -28,7 +32,7 @@ class BluetoothConnectionManager
      */
     private final String TAG = this.getClass().getSimpleName();
 
-    private ArrayList<BluetoothConnection> openConnections;
+    private final CopyOnWriteArrayList<BluetoothConnection> openConnections;
 
 
     //
@@ -37,7 +41,7 @@ class BluetoothConnectionManager
 
     protected BluetoothConnectionManager()
     {
-        this.openConnections = new ArrayList<>();
+        this.openConnections =  new CopyOnWriteArrayList<>();
     }
 
     //
@@ -54,6 +58,7 @@ class BluetoothConnectionManager
      */
     protected void addConnection(BluetoothConnection connection)
     {
+        Log.d(TAG, "store connections :" + openConnections);
         this.openConnections.add(connection);
     }
 
@@ -72,6 +77,7 @@ class BluetoothConnectionManager
     protected boolean isAlreadyConnected(String address, ServiceDescription description)
     {
         Log.d(TAG, "isAlreadyConnected: looking for a equal connection that already is established");
+        logConnectionTable();
         this.closeAndRemoveZombieConnections();
         Log.d(TAG, "isAlreadyConnected: there are " + this.openConnections.size() + " open connections");
         for (BluetoothConnection connection : this.openConnections)
@@ -94,11 +100,12 @@ class BluetoothConnectionManager
      */
     protected void closeAllConnections()
     {
+        logConnectionTable();
         for (BluetoothConnection connection : this.openConnections)
         {
             connection.close();
         }
-        this.openConnections = new ArrayList<>();
+        this.openConnections.clear();
     }
 
     /**
@@ -110,6 +117,7 @@ class BluetoothConnectionManager
      */
     protected void closeAllClientConnectionsToService(ServiceDescription description)
     {
+        Log.d(TAG, "closeAllClientConnectionsToService: closing connections to servers with " + description);
         closeConnectionsWithDescription(description, false);
     }
 
@@ -137,7 +145,9 @@ class BluetoothConnectionManager
      */
     private void closeConnectionsWithDescription(ServiceDescription description, boolean serverOnly)
     {
-        ArrayList<BluetoothConnection> connectionsToClose = new ArrayList();
+        Log.d(TAG, "closeConnectionsWithDescription: " + description);
+        logConnectionTable();
+        ArrayList<BluetoothConnection> connectionsToClose = new ArrayList<>();
         for (BluetoothConnection connection : this.openConnections)
         {
             if (connection.getServiceDescription().equals(description) && connection.isServerPeer() == serverOnly)
@@ -148,8 +158,8 @@ class BluetoothConnectionManager
 
         for (BluetoothConnection connectionToClose : connectionsToClose)
         {
-            connectionToClose.close();
             this.openConnections.remove(connectionToClose);
+            connectionToClose.close();
             Log.d(TAG, "closeServiceConnectionsToServiceWithUUID: closed client connections");
         }
     }
@@ -173,7 +183,8 @@ class BluetoothConnectionManager
     private void closeAndRemoveZombieConnections()
     {
         Log.d(TAG, "closeAndRemoveZombieConnections: closing zombie sockets");
-        ArrayList<BluetoothConnection> zombies = new ArrayList();
+        logConnectionTable();
+        ArrayList<BluetoothConnection> zombies = new ArrayList<>();
         for (BluetoothConnection connection : this.openConnections)
         {
             if (!connection.isConnected())
@@ -190,5 +201,18 @@ class BluetoothConnectionManager
             this.openConnections.remove(zombie);
             Log.d(TAG, "closeAndRemoveZombieConnections: closed zombie connections");
         }
+    }
+
+    private void logConnectionTable(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("---------------------------------\n");
+        for (BluetoothConnection connection : openConnections){
+            sb.append(connection);
+            sb.append("\n");
+        }
+        sb.append("---------------------------------\n");
+        Log.d(TAG, "currently open connections: \n"
+         +sb
+        );
     }
 }
