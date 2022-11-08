@@ -13,7 +13,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne
 import willi.boelke.services.serviceDiscovery.ServiceDescription
 import willi.boelke.services.serviceDiscovery.testUtils.*
 import java.io.IOException
@@ -111,7 +111,7 @@ class BluetoothServiceConnectionEngineMockTest {
     @After
     fun teardown() {
         BluetoothServiceConnectionEngine.getInstance().callPrivateFunc("teardownEngine")
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("teardownEngine")
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("teardownEngine")
     }
 
     @Test
@@ -159,7 +159,7 @@ class BluetoothServiceConnectionEngineMockTest {
         val testDeviceOne = getTestDeviceOne()
 
         // Discovery happens in the wrapped SdpBluetoothDiscoveryEngine
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
 
         assertTrue(foundDevices.size == 1)
         assertEquals(testDeviceOne, foundDevices[0])
@@ -229,7 +229,7 @@ class BluetoothServiceConnectionEngineMockTest {
         val testDeviceOne = getTestDeviceOne()
 
         // Discovery happens in the wrapped SdpBluetoothDiscoveryEngine
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
 
         assertTrue(foundDevices.size == 2)
         assertEquals(testDeviceOne, foundDevices[0])
@@ -275,10 +275,10 @@ class BluetoothServiceConnectionEngineMockTest {
 
         // discovered device with
         val testDeviceOne = getTestDeviceOne()
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
         verify(exactly = 1) { testDeviceOne.fetchUuidsWithSdp()}
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
 
         assertEquals(testDeviceOne.address, foundDevices[0])
         assertEquals(testDescriptionTwo, foundServices[0])
@@ -355,12 +355,12 @@ class BluetoothServiceConnectionEngineMockTest {
         // discovered device with
         val testDeviceOne = getTestDeviceOne()
         val testDeviceTwo = getTestDeviceTwo()
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceTwo)
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceTwo)
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
         verify(exactly = 1) { testDeviceOne.fetchUuidsWithSdp()}
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onUuidsFetched", testDeviceTwo, getTestUuidArrayTwo())
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onUuidsFetched", testDeviceTwo, getTestUuidArrayTwo())
 
         assertEquals(1, foundDevicesOne.size)
         assertEquals(1, foundDevicesTwo.size)
@@ -415,9 +415,9 @@ class BluetoothServiceConnectionEngineMockTest {
         justRun { mockedSocket.connect() }
 
         // Discovery and SDP process
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
 
         assertEquals(getTestDeviceTwo().name, openedConnection?.remoteDevice?.name) // the remote device (testDeviceTwo)
         assert(openedConnection?.isServerPeer == false) // connected as client
@@ -473,9 +473,9 @@ class BluetoothServiceConnectionEngineMockTest {
         every { mockedSocket.connect() } throws IOException()
 
         // Discovery and SDP process
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
-        BluetoothDiscoveryEngine.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
+        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
 
         // checking the result and verifying some method calls
         verify (exactly = 1){ testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) }

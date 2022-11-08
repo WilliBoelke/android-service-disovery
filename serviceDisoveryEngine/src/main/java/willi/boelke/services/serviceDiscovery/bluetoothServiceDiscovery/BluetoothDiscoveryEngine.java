@@ -18,100 +18,135 @@ import willi.boelke.services.serviceDiscovery.DiscoveryEngine;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
- * The SdpBluetoothDiscoveryEngine is the main controller the Android Bluetooth-SDP API.
- * It allows to start a discovery for a (1-n) services simultaneously.
+ * The BluetoothDiscoveryEngine is the parent class for a bluetooth service
+ * discovery. This implements several methods to started and execute a
+ * discovery and enables listeners to subscribe to get notified about
+ * important events (device discovery and service discovery).
  * <p>
- * Start engine<br>
+ * It provides public methods to start and stop a device discovery.
+ * A service discovery will be conducted automatically. Depending
+ * <p>
+ * The premise here is :
+ * -The device discovery will be started.<br>
+ * -A service discovery will be conducted on all discovered devices
+ * depending on the implementation in the subclasses {@link BluetoothDiscoveryVTwo}
+ * and/or {@link BluetoothDiscoveryVOne}.<br>
+ * -Listeners will be notified about discovered services and devices/peers.<br>
+ * -Methods are provided to register a number (0-n) specific services to get notified about.<br>
+ * -Methods are provided to get notified about each and every service which is discovered.<br>
+ * -The above methods can be combined.<br>
+ *
+ * <p><p>
+ * Starting the engine<br>
  * ------------------------------------------------------------<br>
- * The singleton insane can be accessed using {@link #getInstance()}
- * <p>
- * The engine needs to be started by calling {@link #start(Context)} or {@link #start(Context, BluetoothAdapter)} this will also enable bluetooth
+ * The engine needs to be started by calling {@link #start(Context)}
+ * or {@link #start(Context, BluetoothAdapter)} this will also enable bluetooth
  * on the device.
  * Call {@link #stop()} to stop the engine and all running discoveries.
- * <p>
+ *
+ * <p><p>
  * Discover Services<br>
  * ------------------------------------------------------------<br>
- * Services can be discovered using {@link #startDiscoveryForService(ServiceDescription)}
- * For a service to be found it is mandatory to run a device discovery using
+ * Services can be discovered using
+ * {@link #startDiscoveryForService(ServiceDescription)}. For a service
+ * to be found it is mandatory to run a device discovery using
  * {@link #startDeviceDiscovery()}.
  * <p>
- * The device discovery will run for ~12 seconds, after that all discovered devices
- * will be queried for the Services available on them.
+ * The time before services are discovered is dependant on the later
+ * implementation in the subclasses
  * <p>
- * The device discovery can be started before or after a service discovery was started.
- * as long as a service discovery runs and was not ended via
- * {@link #stopDiscoveryForService(ServiceDescription)}} services will be discovered
- * on all subsequently and previously discovered devices.
+ * The device discovery can be started before or after a service
+ * discovery was started. as long as a service discovery runs and
+ * was not ended via {@link #stopDiscoveryForService(ServiceDescription)}}
+ * services will be discovered on all subsequently and previously d
+ * iscovered devices.
  * <p>
- * Note<br>
+ * If a general service discovery is required and no specific
+ * UUIDs / ServiceDescriptions are known
+ * {@link #notifyAboutAllServices(boolean)} can be used.
+ *
+ * <p><p>
+ * UUIDs and Service descriptions<br>
+ * ------------------------------------------------------------<br>
+ * For registering specific services {@link ServiceDescription}s are used.
+ * Service descriptions will generate a UUID. For services which are
+ * registered and a description is known the fitting description will be
+ * returned. If the option is used to get notified about all services it
+ * is likely that no description for the five UUID is known to the engine.
+ * The engine then will return a description only containing the UUID
+ * without any further information.
+ *
+ * <p><p>
+ * Caching of devices and Services<br>
  * ------------------------------------------------------------<br>
  * Note: other bluetooth devices and their services will be cashed, it is possible
  * that a service will be found on a bluetooth devices which either moved out of
- * range or stopped accepting clients.
- * <p>
+ * range or stopped accepting clients. This can happen when a Service is added after
+ * a service discovery was conducted. {@link #refreshNearbyServices()} will refresh
+ * the cached services. {@link #startDeviceDiscovery()} will refresh
+ * both cached devices and services.
+ *
+ * <p><p>
+ * Listener<br>
+ * ------------------------------------------------------------<br>
  * To get notified about discovered services and their host devices a
  * {@link BluetoothServiceDiscoveryListener} needs to be registered using
  * {@link #registerDiscoverListener(BluetoothServiceDiscoveryListener)}.
  * A listener can be unregistered using  {@link #unregisterDiscoveryListener(BluetoothServiceDiscoveryListener)}.
+ * <p>
+ * Several listeners can be registered simultaneously alas all listeners will be notified about
+ * the same services. If {@link #notifyAboutAllServices(boolean)} all sisters will be equally
+ * notified about all services.
  *
  * <p>
  * Sequence Example<br>
  * ------------------------------------------------------------<br>
  * <pre>
- *  ┌────┐                                           ┌───────────────────────────┐
- *  │Peer│                                           │SdpBluetoothDiscoveryEngine│
- *  └─┬──┘                                           └─────────────┬─────────────┘
- *   ┌┴┐                                                           |
- *   │ │                                                           │
- *   │ │                                                           │
- *   │ │              registerDiscoverListener(this)              ┌┴┐
- *   │ │ ────────────────────────────────────────────────────────>│ │
- *   │ │                                                          │ │
- *   │ │                                                          └┬┘
- *   │ │                                                           │
- *   │ │                         start()                          ┌┴┐
- *   │ │ ────────────────────────────────────────────────────────>│ │
- *   │ │                                                          │ │
- *   │ │                                                          └┬┘
- *   │ │                                                           │
- *   │ │          startSDPDiscoveryForService(description)        ┌┴┐
- *   │ │ ────────────────────────────────────────────────────────>│ │
- *   │ │                                                          │ │
- *   │ │                                                          └┬┘
- *   │ │                                                           │
- *   │ │                  startDeviceDiscovery()                  ┌┴┐
- *   │ │ ────────────────────────────────────────────────────────>│ │
- *   │ │                                                          │ │
- *   │ │            onPeerDiscovered(BluetoothDevice)             │ │
- *   │ │ <─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ │ │
- *   │ │                                                          │ │
- *   │ │            onPeerDiscovered(BluetoothDevice)             │ │
- *   │ │<─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│ │
- *   │ │                                                          │ │
- *   │ │         onServiceDiscovered(device, description)         │ │
- *   │ │<─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│ │
- *   │ │                                                          └┬┘
- *   │ │                                                           │
- *   │ │                          stop()                          ┌┴┐
- *   │ │ ────────────────────────────────────────────────────────>│ │
- *   │ │                                                          │ │
- *   └┬┘                                                          └┬┘
- *    │                                                            │
+ *  ┌───────────┐                           ┌───────────────────────────┐
+ *  │Application│                           │SdpBluetoothDiscoveryEngine│
+ *  └─┬─────────┘                           └──────────────────┬────────┘
+ *   ┌┴┐                                                       |
+ *   │ │                                                       │
+ *   │ │                                                       │
+ *   │ │             registerDiscoverListener(this)           ┌┴┐
+ *   │ │ ────────────────────────────────────────────────────>│ │
+ *   │ │                                                      │ │
+ *   │ │                                                      └┬┘
+ *   │ │                                                       │
+ *   │ │                       start()                        ┌┴┐
+ *   │ │ ────────────────────────────────────────────────────>│ │
+ *   │ │                                                      │ │
+ *   │ │                                                      └┬┘
+ *   │ │                                                       │
+ *   │ │         startSDPDiscoveryForService(description)     ┌┴┐
+ *   │ │ ────────────────────────────────────────────────────>│ │
+ *   │ │                                                      │ │
+ *   │ │                                                      └┬┘
+ *   │ │                                                       │
+ *   │ │                  startDeviceDiscovery()              ┌┴┐
+ *   │ │ ────────────────────────────────────────────────────>│ │
+ *   │ │                                                      │ │
+ *   │ │            onPeerDiscovered(BluetoothDevice)         │ │
+ *   │ │ <─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ │ │
+ *   │ │                                                      │ │
+ *   │ │           onPeerDiscovered(BluetoothDevice)          │ │
+ *   │ │<─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│ │
+ *   │ │                                                      │ │
+ *   │ │         onServiceDiscovered(device, description)     │ │
+ *   │ │<─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│ │
+ *   │ │                                                      └┬┘
+ *   │ │                                                       │
+ *   │ │                          stop()                      ┌┴┐
+ *   │ │ ────────────────────────────────────────────────────>│ │
+ *   └┬┘                                                      └┬┘
+ *    │                                                        │
  * ------------------------------------------------------------
  * </pre>
  *
  * @author WilliBoelke
  */
-public class BluetoothDiscoveryEngine extends DiscoveryEngine
+public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
 {
-    //
-    //  ---------- static members ----------
-    //
-    /**
-     * Instance of the class following the singleton pattern
-     */
-    private static BluetoothDiscoveryEngine instance;
-
     //
     //  ----------  instance variables  ----------
     //
@@ -130,14 +165,14 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
      * The bluetooth adapter, will be set to
      * the default adapter at initialisation
      */
-    private BluetoothAdapter bluetoothAdapter;
+    protected BluetoothAdapter bluetoothAdapter;
 
     /**
      * This keeps track of all bluetooth devices which are discovered.
      * A bluetoothDevice will be added on ACTION_FOUND (if no yet on this list)
      * and removed on ACTION_ACL_DISCONNECTED.
      */
-    private final ArrayList<BluetoothDevice> discoveredDevices = new ArrayList<>();
+    protected final ArrayList<BluetoothDevice> discoveredDevices = new ArrayList<>();
 
     /**
      * BroadcastReceiver listening at discovered devices intent
@@ -198,25 +233,11 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
     //  ----------  initialisation and setup ----------
     //
 
-    /**
-     * Returns the singleton instance of the BluetoothDiscoveryEngine.
-     *
-     * @return The singleton instance of the discovery engine
-     */
-    public static BluetoothDiscoveryEngine getInstance()
-    {
-        if (instance == null)
-        {
-            instance = new BluetoothDiscoveryEngine();
-        }
-        return instance;
-    }
-
 
     /**
-     * Private constructor initializing the singleton {@link #instance}
+     * Private constructor initializing the singleton
      */
-    private BluetoothDiscoveryEngine()
+    protected BluetoothDiscoveryEngine()
     {
         this.foundDeviceReceiver = new DeviceFoundReceiver(this);
         this.fetchedUuidReceiver = new UUIDFetchedReceiver(this);
@@ -303,20 +324,6 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
         this.engineRunning = false;
     }
 
-
-    /**
-     * Stops the engine and resets the singleton instance to "null"
-     * this is mostly used for testing
-     */
-    protected void teardownEngine()
-    {
-        // yes im logging this as error, just to make it visible
-        Log.e(TAG, "teardownEngine: ---resetting engine---");
-        this.stop();
-        instance = null;
-    }
-
-
     private void unregisterReceivers()
     {
         try
@@ -385,6 +392,21 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
         }
         // resetting discovered devices
         this.discoveredDevices.clear();
+        this.onDeviceDiscoveryRestart();
+        return internalRestartDiscovery();
+    }
+
+    /**
+     * This just (re) starts the device discovery
+     * without clearing the device list
+     * publicly its used through {@link #startDeviceDiscovery()}
+     * though in some Internal cases the discovery may need to be restarted without clearing the list
+     *
+     * @return true if the discovery was started, else returns false
+     */
+    protected boolean internalRestartDiscovery()
+    {
+
         Log.d(TAG, "startDeviceDiscovery: start looking for other devices");
         if (bluetoothAdapter.isDiscovering())
         {
@@ -445,6 +467,13 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
         super.startDiscoveryForService(description);
     }
 
+    /**
+     * called when a new service was added to through
+     * {@link #startDiscoveryForService(ServiceDescription)}
+     *
+     * @param description
+     *         the description of the new service
+     */
     @Override
     protected void onNewServiceToDiscover(ServiceDescription description)
     {
@@ -513,14 +542,19 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
         }
         Log.d(TAG, "refreshNearbyServices: start refreshing");
         this.bluetoothAdapter.cancelDiscovery();
+        this.onRefreshStarted();
         requestServiceFromDiscoveredDevices();
     }
 
-    private void requestServiceFromDiscoveredDevices()
+    /**
+     * Iterates over {@link #discoveredDevices} and
+     * fetches the UUIDs of all devices.
+     */
+    protected void requestServiceFromDiscoveredDevices()
     {
         for (BluetoothDevice deviceInRange : this.discoveredDevices)
         {
-            Log.d(TAG, "refreshNearbyServices: for " + deviceInRange);
+            Log.d(TAG, "requestServiceFromDiscoveredDevices: for " + deviceInRange);
             deviceInRange.fetchUuidsWithSdp();
         }
     }
@@ -553,7 +587,6 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
         this.bluetoothDiscoveryListeners.add(listener);
     }
 
-
     public void unregisterDiscoveryListener(BluetoothServiceDiscoveryListener listener)
     {
         bluetoothDiscoveryListeners.remove(listener);
@@ -568,7 +601,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
      * @param description
      *         the description of the discovered service
      */
-    private void notifyOnServiceDiscovered(BluetoothDevice device, ServiceDescription description)
+    protected void notifyOnServiceDiscovered(BluetoothDevice device, ServiceDescription description)
     {
         for (BluetoothServiceDiscoveryListener lister : this.bluetoothDiscoveryListeners)
         {
@@ -584,7 +617,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
      * @param device
      *         the discovered device
      */
-    private void notifyOnPeerDiscovered(BluetoothDevice device)
+    protected void notifyOnPeerDiscovered(BluetoothDevice device)
     {
         for (BluetoothServiceDiscoveryListener lister : this.bluetoothDiscoveryListeners)
         {
@@ -608,39 +641,32 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
      *
      * @see DeviceFoundReceiver
      */
-    protected void onDeviceDiscovered(BluetoothDevice device)
-    {
-        // Adding the device to he discovered devices list
-        if (!discoveredDevices.contains(device))
-        {
-            discoveredDevices.add(device);
-            // Notifying client about newly found devices
-            this.notifyOnPeerDiscovered(device);
-        }
-    }
+    protected abstract void onDeviceDiscovered(BluetoothDevice device);
 
-    protected void onDeviceDiscoveryFinished()
-    {
-        //Starting SDP
-        requestServiceFromDiscoveredDevices();
-    }
+    /**
+     * This will be called when the device discovery stops,
+     * either because of a timeout (12 sec after started)
+     * or due to a manual stop.
+     */
+    protected abstract void onDeviceDiscoveryFinished();
 
-    protected void onUuidsFetched(BluetoothDevice device, Parcelable[] uuidExtra)
-    {
-        Log.d(TAG, "onUuidsFetched: received UUIDS fot " + device);
+    /**
+     * This will be called when UUIDs of a device were fetched.
+     *
+     * @param device
+     *         The host device
+     * @param uuidExtra
+     *         The service UUIDs
+     */
+    protected abstract void onUuidsFetched(BluetoothDevice device, Parcelable[] uuidExtra);
 
-        if (uuidExtra != null)
-        {
-            if (this.notifyAboutAllServices)
-            {
-                notifyListenersAboutServices(device, uuidExtra);
-            }
-            else
-            {
-                notifyListenersIfServiceIsAvailable(device, uuidExtra);
-            }
-        }
-    }
+    /**
+     * This will be calle whenever the device discovery was started
+     * through {@link #startDeviceDiscovery()}
+     */
+    protected abstract void onDeviceDiscoveryRestart();
+
+    protected abstract void onRefreshStarted();
 
     /**
      * Notifies listeners about every discovered service
@@ -650,7 +676,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
      * @param uuidExtra
      *         the discovered service UUIDs
      */
-    private void notifyListenersAboutServices(BluetoothDevice device, Parcelable[] uuidExtra)
+    protected void notifyListenersAboutServices(BluetoothDevice device, Parcelable[] uuidExtra)
     {
         for (Parcelable pUuid : uuidExtra)
         {
@@ -684,7 +710,7 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
      * @param uuidExtra
      *         the service uuids on the given device
      */
-    private void notifyListenersIfServiceIsAvailable(BluetoothDevice device, Parcelable[] uuidExtra)
+    protected void notifyListenersIfServiceIsAvailable(BluetoothDevice device, Parcelable[] uuidExtra)
     {
         for (Parcelable pUuid : uuidExtra)
         {
@@ -754,5 +780,6 @@ public class BluetoothDiscoveryEngine extends DiscoveryEngine
     {
         this.checkLittleEndianUuids = checkLittleEndianUuids;
     }
-}
 
+
+}

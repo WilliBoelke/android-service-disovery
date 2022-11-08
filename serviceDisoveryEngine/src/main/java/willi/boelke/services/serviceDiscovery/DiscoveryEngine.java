@@ -5,10 +5,15 @@ import android.util.Log;
 
 import java.util.ArrayList;
 
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
+import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
+
 
 /**
- * Abstract class for {@link willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine}
- * and  {@link willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine}
+ * Abstract class for {@link WifiDirectDiscoveryEngine}
+ * and  {@link BluetoothDiscoveryVOne}
+ *
+ * Allows the
  */
 public abstract class DiscoveryEngine
 {

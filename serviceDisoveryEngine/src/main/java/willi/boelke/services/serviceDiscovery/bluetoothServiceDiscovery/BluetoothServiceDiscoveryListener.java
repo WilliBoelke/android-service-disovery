@@ -3,11 +3,10 @@ package willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery;
 import android.bluetooth.BluetoothDevice;
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
 
 /**
  * Listener interface to get notified when
- * the {@link BluetoothDiscoveryEngine} found a
+ * the {@link BluetoothDiscoveryVOne} found a
  * new device or service on a device.
  *
  * @author WilliBolke
@@ -16,14 +15,14 @@ public interface BluetoothServiceDiscoveryListener
 {
     /**
      * Called whenever a service was discovered which has been looked for
-     * through {@link BluetoothDiscoveryEngine#startDiscoveryForService(ServiceDescription)}
+     * through {@link BluetoothDiscoveryVOne#startDiscoveryForService(ServiceDescription)}
      * <p>
      * Provides the remote host device and the service description to identify the service
      *
      * @param host
      *         The BluetoothDevice hosting / advertising the service
      * @param description
-     *         The service description as provided in {@link BluetoothDiscoveryEngine#startDiscoveryForService(ServiceDescription)}
+     *         The service description as provided in {@link BluetoothDiscoveryVOne#startDiscoveryForService(ServiceDescription)}
      *         which was resolved through matching UUIDs
      */
     void onServiceDiscovered(BluetoothDevice host, ServiceDescription description);

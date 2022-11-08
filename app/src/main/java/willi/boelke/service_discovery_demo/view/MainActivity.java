@@ -23,6 +23,8 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.ActivityMainBinding;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVTwo;
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
 
 
@@ -35,11 +37,6 @@ public class MainActivity extends AppCompatActivity
     private static final int REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS = 124;
 
     private ActivityMainBinding binding;
-
-    private ServiceDescription descriptionForServiceOne;
-
-    private ServiceDescription descriptionForServiceTwo;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -61,15 +58,6 @@ public class MainActivity extends AppCompatActivity
         NavigationUI.setupWithNavController(binding.navView, navController);
 
         askForPermissions();
-        
-        //--- init demo service descriptions ---//
-
-        HashMap<String, String> serviceAttributesOne = new HashMap<>();
-        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
-        serviceAttributesOne.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        descriptionForServiceOne = new ServiceDescription("Counting Service One", serviceAttributesOne);
-        descriptionForServiceTwo = new ServiceDescription("Counting Service Two", serviceAttributesTwo);
     }
 
 
@@ -97,13 +85,14 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    public ServiceDescription getDescriptionForServiceOne()
+    @Override
+    protected void onDestroy()
     {
-        return descriptionForServiceOne;
-    }
-
-    public ServiceDescription getDescriptionForServiceTwo()
-    {
-        return descriptionForServiceTwo;
+        super.onDestroy();
+        WifiDirectDiscoveryEngine.getInstance().stop();
+        WifiDirectConnectionEngine.getInstance().stop();
+        BluetoothDiscoveryVOne.getInstance().stop();
+        BluetoothDiscoveryVTwo.getInstance().stop();
+        BluetoothServiceConnectionEngine.getInstance().stop();
     }
 }

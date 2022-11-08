@@ -14,7 +14,6 @@ import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager
 
 import android.Manifest;
 import android.arch.core.executor.testing.CountingTaskExecutorRule;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -35,12 +34,12 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
  * The tests aim to test {@link BluetoothServiceConnectionEngine} and
- * {@link BluetoothDiscoveryEngine}
+ * {@link BluetoothDiscoveryVOne}
  * on actual hardware.
  * <p>---------------------------------------------<p>
  * This is more experimental, and i aim to improve on
@@ -132,9 +131,9 @@ public class BluetoothServiceConnectionEngineLiveTest
     {
         BluetoothServiceConnectionEngine.getInstance().teardownEngine();
         // tearing down discovery engine with reflections
-        Method teardown = BluetoothDiscoveryEngine.getInstance().getClass().getDeclaredMethod("teardownEngine");
+        Method teardown = BluetoothDiscoveryVOne.getInstance().getClass().getDeclaredMethod("teardownEngine");
         teardown.setAccessible(true);
-        teardown.invoke(BluetoothDiscoveryEngine.getInstance());
+        teardown.invoke(BluetoothDiscoveryVOne.getInstance());
     }
 
 

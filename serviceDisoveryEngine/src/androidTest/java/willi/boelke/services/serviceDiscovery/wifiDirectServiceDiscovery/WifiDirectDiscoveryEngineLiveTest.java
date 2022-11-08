@@ -33,13 +33,13 @@ import org.junit.runners.MethodSorters;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
  * The tests aim to test the
- * {@link BluetoothDiscoveryEngine}
+ * {@link BluetoothDiscoveryVOne}
  * on actual hardware.
  * <p>---------------------------------------------<p>
  * This is more experimental, and i aim to improve on

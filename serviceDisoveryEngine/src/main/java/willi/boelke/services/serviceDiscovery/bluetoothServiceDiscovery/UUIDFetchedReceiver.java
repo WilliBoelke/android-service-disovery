@@ -25,7 +25,7 @@ class UUIDFetchedReceiver extends BroadcastReceiver
     private final String TAG = this.getClass().getSimpleName();
 
     /**
-     * The SdpBluetoothDiscoveryEngine to be notified
+     * The SdpBtDiscoveryEngine to be notified
      */
     private final BluetoothDiscoveryEngine discoveryEngine;
 
@@ -38,7 +38,7 @@ class UUIDFetchedReceiver extends BroadcastReceiver
      * Public constructor
      *
      * @param discoveryEngine
-     *         The SdpBluetoothDiscoveryEngine to be notified
+     *         The SdpBtDiscoveryEngine to be notified
      */
     public UUIDFetchedReceiver(BluetoothDiscoveryEngine discoveryEngine)
     {

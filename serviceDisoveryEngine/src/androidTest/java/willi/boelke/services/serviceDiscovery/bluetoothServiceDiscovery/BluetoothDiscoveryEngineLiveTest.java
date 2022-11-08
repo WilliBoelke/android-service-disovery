@@ -38,11 +38,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
- * The tests aim to test {@link BluetoothDiscoveryEngine}
+ * The tests aim to test {@link BluetoothDiscoveryVOne}
  * on actual hardware.
  * <p>---------------------------------------------<p>
  * This is more experimental, and i aim to improve on
@@ -132,14 +131,14 @@ public class BluetoothDiscoveryEngineLiveTest
         serviceAttributesTwo.put("service-info", "This is another test service description");
         descriptionForServiceOne = new ServiceDescription("test service one", serviceAttributesOne);
         descriptionForServiceTwo = new ServiceDescription("test service two", serviceAttributesTwo);
-        BluetoothDiscoveryEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
+        BluetoothDiscoveryVOne.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
         adapter = BluetoothAdapter.getDefaultAdapter();
     }
 
     @After
     public void teardown() throws NullPointerException
     {
-        BluetoothDiscoveryEngine.getInstance().teardownEngine();
+        BluetoothDiscoveryVOne.getInstance().teardownEngine();
     }
 
 
@@ -191,7 +190,7 @@ public class BluetoothDiscoveryEngineLiveTest
         }
 
         ArrayList<BluetoothDevice> discoveredDevices = new ArrayList<>();
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryVOne.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
 
             @Override
@@ -206,7 +205,7 @@ public class BluetoothDiscoveryEngineLiveTest
                 discoveredDevices.add(device);
             }
         });
-        BluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
+        BluetoothDiscoveryVOne.getInstance().startDeviceDiscovery();
         synchronized (this)
         {
             this.wait(13000); // device discovery takes about 12s
@@ -273,7 +272,7 @@ public class BluetoothDiscoveryEngineLiveTest
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryVOne.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -292,8 +291,8 @@ public class BluetoothDiscoveryEngineLiveTest
             }
         });
 
-        BluetoothDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
-        BluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
+        BluetoothDiscoveryVOne.getInstance().startDiscoveryForService(descriptionForServiceOne);
+        BluetoothDiscoveryVOne.getInstance().startDeviceDiscovery();
 
         synchronized (this){
             this.wait(30000); // give it a maximum of 30 seconds
@@ -356,7 +355,7 @@ public class BluetoothDiscoveryEngineLiveTest
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryVOne.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -375,9 +374,9 @@ public class BluetoothDiscoveryEngineLiveTest
             }
         });
 
-        BluetoothDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
-        BluetoothDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceTwo);
-        BluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
+        BluetoothDiscoveryVOne.getInstance().startDiscoveryForService(descriptionForServiceOne);
+        BluetoothDiscoveryVOne.getInstance().startDiscoveryForService(descriptionForServiceTwo);
+        BluetoothDiscoveryVOne.getInstance().startDeviceDiscovery();
 
         synchronized (this)
         {
@@ -450,7 +449,7 @@ public class BluetoothDiscoveryEngineLiveTest
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryVOne.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -469,9 +468,9 @@ public class BluetoothDiscoveryEngineLiveTest
             }
         });
 
-        BluetoothDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
-        BluetoothDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceTwo);
-        BluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
+        BluetoothDiscoveryVOne.getInstance().startDiscoveryForService(descriptionForServiceOne);
+        BluetoothDiscoveryVOne.getInstance().startDiscoveryForService(descriptionForServiceTwo);
+        BluetoothDiscoveryVOne.getInstance().startDeviceDiscovery();
 
         synchronized (this){
             this.wait(30000);
@@ -531,7 +530,7 @@ public class BluetoothDiscoveryEngineLiveTest
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
         ArrayList<ServiceDescription> services = new ArrayList<>();
 
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryVOne.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -547,7 +546,7 @@ public class BluetoothDiscoveryEngineLiveTest
             }
         });
 
-        BluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
+        BluetoothDiscoveryVOne.getInstance().startDeviceDiscovery();
 
         synchronized (this)
         {
@@ -556,7 +555,7 @@ public class BluetoothDiscoveryEngineLiveTest
 
         assertEquals(0, serviceHosts.size()); // should not notify yet
         // registering service for search
-        BluetoothDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
+        BluetoothDiscoveryVOne.getInstance().startDiscoveryForService(descriptionForServiceOne);
         synchronized (this)
         {
             this.wait(1000); // this should be pretty fast, one second is to much actually

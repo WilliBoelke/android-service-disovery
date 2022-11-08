@@ -17,12 +17,12 @@ import willi.boelke.services.serviceConnection.bluetoothServiceConnection.connec
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.connectorThreads.BluetoothConnectorThread;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.connectorThreads.BluetoothServiceConnector;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
 
 /**
  * Establishes connections between bluetooth devices.
- * It serves as a wrapper around the {@link BluetoothDiscoveryEngine}
+ * It serves as a wrapper around the {@link BluetoothDiscoveryVOne}
  * and grants access to its interface. Though enhances it by
  * being able to establish and manage connections {@link BluetoothConnection}
  * to discovered services.
@@ -192,8 +192,8 @@ public class BluetoothServiceConnectionEngine
 
         //--- starting the discovery engine ---//
 
-        BluetoothDiscoveryEngine.getInstance().start(context, adapter);
-        BluetoothDiscoveryEngine.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
+        BluetoothDiscoveryVOne.getInstance().start(context, adapter);
+        BluetoothDiscoveryVOne.getInstance().registerDiscoverListener(new BluetoothServiceDiscoveryListener()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -240,7 +240,7 @@ public class BluetoothServiceConnectionEngine
         stopAllClientConnectors();
         this.connectionManager.closeAllConnections();
         this.serviceClients = new HashMap<>();
-        BluetoothDiscoveryEngine.getInstance().stop();
+        BluetoothDiscoveryVOne.getInstance().stop();
         this.engineRunning = false;
     }
 
@@ -315,7 +315,7 @@ public class BluetoothServiceConnectionEngine
         }
         //  todo: actually it would probably appropriate to make a superclass here for this and the discovery engine
         // but that's for when the discovery is in ASAP Android
-        return BluetoothDiscoveryEngine.getInstance().startDeviceDiscovery();
+        return BluetoothDiscoveryVOne.getInstance().startDeviceDiscovery();
     }
 
     /**
@@ -331,7 +331,7 @@ public class BluetoothServiceConnectionEngine
             Log.e(TAG, "startDiscoverable: the engine was not initialized or bluetooth is not available");
             return;
         }
-        BluetoothDiscoveryEngine.getInstance().stopDeviceDiscovery();
+        BluetoothDiscoveryVOne.getInstance().stopDeviceDiscovery();
     }
 
     ////
@@ -361,7 +361,7 @@ public class BluetoothServiceConnectionEngine
     {
         // Adding the service client ot the list
         this.serviceClients.put(serviceDescription, serviceClient);
-        BluetoothDiscoveryEngine.getInstance().startDiscoveryForService(serviceDescription);
+        BluetoothDiscoveryVOne.getInstance().startDiscoveryForService(serviceDescription);
     }
 
     /**
@@ -388,7 +388,7 @@ public class BluetoothServiceConnectionEngine
             Log.e(TAG, "stopSDPDiscoveryForService: the engine is not running, wont stop");
         }
         Log.d(TAG, "End service discovery for " + description);
-        BluetoothDiscoveryEngine.getInstance().stopDiscoveryForService(description);
+        BluetoothDiscoveryVOne.getInstance().stopDiscoveryForService(description);
 
         // stopping all client connectors which may sill run and try to connect to this service
         ArrayList<BluetoothClientConnector> connectorsToClose = new ArrayList<>();
@@ -469,7 +469,7 @@ public class BluetoothServiceConnectionEngine
             Log.e(TAG, "refreshNearbyServices: the engine is not running - wont refresh");
             return;
         }
-        BluetoothDiscoveryEngine.getInstance().refreshNearbyServices();
+        BluetoothDiscoveryVOne.getInstance().refreshNearbyServices();
     }
 
 
@@ -676,7 +676,7 @@ public class BluetoothServiceConnectionEngine
      */
     public void shouldCheckLittleEndianUuids(boolean checkLittleEndianUuids)
     {
-        BluetoothDiscoveryEngine.getInstance().shouldCheckLittleEndianUuids(checkLittleEndianUuids);
+        BluetoothDiscoveryVOne.getInstance().shouldCheckLittleEndianUuids(checkLittleEndianUuids);
     }
 
     /**

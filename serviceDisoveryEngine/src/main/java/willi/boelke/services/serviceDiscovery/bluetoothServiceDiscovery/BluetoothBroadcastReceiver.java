@@ -49,7 +49,7 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
      * Public constructor
      *
      * @param engine
-     *         SdpBluetoothDiscoveryEngine, to be notified
+     *         SdpBtDiscoveryEngine, to be notified
      *         when certain intents are received.
      */
     public BluetoothBroadcastReceiver(BluetoothDiscoveryEngine engine)
@@ -116,14 +116,14 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
                 Log.d(TAG, "ACTION_BOND_STATE_CHANGED: BOND_NONE with" + device);
             }
         }
-        else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action))
+        if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action))
         {
             Log.e(TAG, "ACTION_DISCOVERY_STARTED: Start Discovery");
         }
         if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
         {
             discoveryEngine.onDeviceDiscoveryFinished();
-            Log.e(TAG, "ACTION_DISCOVERY_STARTED: Finished Discovery");
+            Log.e(TAG, "ACTION_DISCOVERY_FINISHED: Finished Discovery");
         }
     }
 }

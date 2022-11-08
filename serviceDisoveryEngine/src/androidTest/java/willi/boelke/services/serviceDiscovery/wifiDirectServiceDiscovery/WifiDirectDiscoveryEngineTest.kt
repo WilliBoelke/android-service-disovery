@@ -1,7 +1,6 @@
 package willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery
 
 import android.arch.core.executor.testing.CountingTaskExecutorRule
-import android.bluetooth.BluetoothDevice
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pManager
 import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner
@@ -16,8 +15,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import willi.boelke.services.serviceDiscovery.ServiceDescription
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener
 import willi.boelke.services.serviceDiscovery.testUtils.*
 
 @RunWith(AndroidJUnit4ClassRunner::class)

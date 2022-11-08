@@ -11,12 +11,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVTwo;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
 
 /**
  * This is the ViewModel for the BluetoothDiscoveryFragment.
- * It Serves as layer in between the {@link willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine},
+ * It Serves as layer in between the {@link BluetoothDiscoveryVOne},
  * and the View. It will store and keep view data during configuration changes.
  *
  * @author WilliBoelke
@@ -28,7 +29,7 @@ public class BluetoothDiscoveryViewModel extends ViewModel implements BluetoothS
      */
     private final String TAG = this.getClass().getSimpleName();
 
-    private final BluetoothDiscoveryEngine engine;
+    private final BluetoothDiscoveryVOne engine;
     private final MutableLiveData<ArrayList<ServiceDescription>> discoveredServices = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<String> notification = new MutableLiveData<>();
     private final ServiceDescription descriptionForServiceOne;
@@ -38,7 +39,7 @@ public class BluetoothDiscoveryViewModel extends ViewModel implements BluetoothS
     public BluetoothDiscoveryViewModel()
     {
         // Should be initialized and started in view bc of context
-        engine = BluetoothDiscoveryEngine.getInstance();
+        engine = BluetoothDiscoveryVOne.getInstance();
         HashMap<String, String> serviceAttributesOne = new HashMap<>();
         HashMap<String, String> serviceAttributesTwo = new HashMap<>();
         serviceAttributesOne.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
@@ -81,6 +82,7 @@ public class BluetoothDiscoveryViewModel extends ViewModel implements BluetoothS
 
     protected void refreshServices()
     {
+        this.discoveredServices.postValue(new ArrayList<>());
         engine.refreshNearbyServices();
     }
 
