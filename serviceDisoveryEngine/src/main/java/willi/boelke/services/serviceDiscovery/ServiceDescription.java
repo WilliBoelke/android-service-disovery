@@ -56,6 +56,12 @@ public class ServiceDescription
      */
     private final Map<String, String> attributes;
 
+    /**
+     * The name of the service
+     * This will be used to register it
+     * either when creating the bluetooth server socket
+     * or registering the wifi direct service.
+     */
     private final String serviceName;
 
     /**
@@ -103,7 +109,7 @@ public class ServiceDescription
         // it should be worth it to make wifi direct exchanging the UUID
         // when a custom UUID has been set, the custom UUID though should stay, so Bluetooth service
         // which don't use a UUID based on these service records can be found.
-        // For now - its here in the comment, hope this wil be seen
+        // For now - its here in the comment.
         this.serviceUuid = uuid;
     }
 
@@ -139,7 +145,7 @@ public class ServiceDescription
     }
 
     /**
-     * Generates a deterministic UUID from a Map (service records)
+     * Generates a name based (type 3) UUID from a Map (service records) and the service name
      *
      * @param serviceRecord
      *         A Map containing key value pairs, describing a service

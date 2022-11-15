@@ -12,18 +12,18 @@ import willi.boelke.services.serviceConnection.ServiceConnection;
 /**
  * Generic reader for a number of {@link ServiceConnection}s T
  * as provided through the connections List<T> connections.
- *
- * Means this works with Bluetooth Connections aas well as with Wifi Connections.
- *
+ * <p>
+ * Means this works with Bluetooth Connections as well as with Wifi Connections.
+ * <p>
  * This thread will alter the contents of the provided connections List.
  * Thus the list should be a thread save collection. 
- * 
+ * <p>
  * This thread will call the methods {@link ControllerListener#onConnectionLost(ServiceConnection)}
  * when one of the connections was closed and  {@link ControllerListener#onMessageChange(String)}
  * when a new message came through the Socket.
- *
+ * <p>
  * The thread can be stopped by calling its {@link #cancel()} method.
- *
+ * <p>
  * @param <T>
  *     The used implementation of the {@link ServiceConnection} interface.
  * @param <D>
@@ -59,8 +59,7 @@ public class ReadThread<T extends ServiceConnection, D> extends Thread
             for (int i = 0; i < connections.size(); i++)
             {
                 T connection = connections.get(i);
-
-                if (connection.isConnected())
+                if (connection.isConnected() && !connection.isClosed())
                 {
                     try
                     {
@@ -72,6 +71,7 @@ public class ReadThread<T extends ServiceConnection, D> extends Thread
                     }
                     catch (IOException e)
                     {
+                        Log.e(TAG, "run: IOException while reading from InputStream, closing connection");
                         disconnectedConnections.add(connection);
                     }
                     catch (StringIndexOutOfBoundsException e)
@@ -79,7 +79,8 @@ public class ReadThread<T extends ServiceConnection, D> extends Thread
                         // this may happen (happened once in all testing) on disconnect
                         // though maybe also in other cases.
                         // so lets just go one here
-                        Log.e(TAG, "run: StringIndexOutOfBoundsException while reading from InputStream, probably disconnected");
+                        Log.e(TAG, "run: StringIndexOutOfBoundsException while reading from InputStream, closing connection");
+                        disconnectedConnections.add(connection);
                     }
                 }
                 else
@@ -87,13 +88,18 @@ public class ReadThread<T extends ServiceConnection, D> extends Thread
                     disconnectedConnections.add(connection);
                 }
             }
-            for (int i = 0; i < disconnectedConnections.size(); i++)
-            {
-                T connection = disconnectedConnections.get(i);
-                connection.close();
-                connections.remove(connection);
-                listener.onConnectionLost(connection);
-            }
+            closeAndRemove(disconnectedConnections);
+        }
+    }
+
+    private void closeAndRemove(ArrayList<T> disconnectedConnections)
+    {
+        for (int i = 0; i < disconnectedConnections.size(); i++)
+        {
+            T connection = disconnectedConnections.get(i);
+            connection.close();
+            connections.remove(connection);
+            listener.onConnectionLost(connection);
         }
     }
 

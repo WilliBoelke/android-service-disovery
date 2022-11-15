@@ -23,6 +23,7 @@ import willi.boelke.service_discovery_demo.view.listAdapters.ConnectionListAdapt
 import willi.boelke.service_discovery_demo.view.listAdapters.DeviceListAdapter;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVTwo;
 
 
 /**
@@ -70,7 +71,7 @@ public class BluetoothConnectionFragment extends Fragment
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
         {
             engine = BluetoothServiceConnectionEngine.getInstance();
-            engine.start(this.getActivity().getApplicationContext());
+            engine.start(this.getActivity().getApplicationContext(), BluetoothServiceDiscoveryVTwo.getInstance());
         }
 
         //--- setup views ---//
@@ -103,7 +104,7 @@ public class BluetoothConnectionFragment extends Fragment
         connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, openConnections);
         binding.connectionListView.setAdapter(connectionListAdapter);
 
-        //--- descovered devices ListView ---//
+        //--- discovered devices ListView ---//
         deviceLisAdapter = new DeviceListAdapter(getContext(), R.layout.recycler_card_device, devicesInRange);
         binding.devicesInRange.setAdapter(deviceLisAdapter);
     }
@@ -142,7 +143,6 @@ public class BluetoothConnectionFragment extends Fragment
     {
         if (!engine.isRunning())
         {
-
             return;
         }
         if (binding.discoverableButton.equals(view))
@@ -151,7 +151,7 @@ public class BluetoothConnectionFragment extends Fragment
         }
         if (binding.startDiscoveryButton.equals(view))
         {
-            engine.startDeviceDiscovery();
+            model.starDiscovery();
         }
         else if (binding.startServiceOneButton.equals(view))
         {
@@ -187,7 +187,7 @@ public class BluetoothConnectionFragment extends Fragment
         }
         else if (binding.refreshButton.equals(view))
         {
-            engine.refreshNearbyServices();
+            model.refreshServices();
         }
     }
 

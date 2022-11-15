@@ -1,16 +1,15 @@
 package willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery;
 
-import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.DEVICE_A;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.DEVICE_B;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.DEVICE_C;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.MAC_B_WIFI;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.MAC_C_WIFI;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.determineTestRunner;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.getTestRunner;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.printDeviceInfo;
+import static willi.boelke.services.testUtils.DeviceRoleManager.DEVICE_A;
+import static willi.boelke.services.testUtils.DeviceRoleManager.DEVICE_B;
+import static willi.boelke.services.testUtils.DeviceRoleManager.DEVICE_C;
+import static willi.boelke.services.testUtils.DeviceRoleManager.MAC_B_WIFI;
+import static willi.boelke.services.testUtils.DeviceRoleManager.MAC_C_WIFI;
+import static willi.boelke.services.testUtils.DeviceRoleManager.determineTestRunner;
+import static willi.boelke.services.testUtils.DeviceRoleManager.getTestRunner;
+import static willi.boelke.services.testUtils.DeviceRoleManager.printDeviceInfo;
 
 import android.Manifest;
 import android.arch.core.executor.testing.CountingTaskExecutorRule;
@@ -33,24 +32,49 @@ import org.junit.runners.MethodSorters;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
-
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVOne;
 
 /**
  * The tests aim to test the
- * {@link BluetoothDiscoveryVOne}
+ * {@link BluetoothServiceDiscoveryVOne}
  * on actual hardware.
- * <p>---------------------------------------------<p>
- * This is more experimental, and i aim to improve on
- * that in the future, but i could find another good way
- * to make this kind of tests, though...i cant be the only one needing this.
  * <p>
- * The tests can fail, they are performed on actual hardware
- * it comes to timing issues between the devices.
- * Sometimes a discovery just does not find the service or device in
- * the specified amount of time.
+ * <h2>General idea of the test </h2>
+ * This test set is build to run on 3 different android and bluetooth
+ * enabled devices. During the test run the devices will take different
+ * roles - executing different code and expecting different results.
+ * For each device to know what to do at runtime they need to be
+ * specified beforehand.
  * <p>
+ * A device will either advertise one or more services or perform a
+ * service discovery.
+ * <p>
+ * <h2>Limitations and problems</h2>
+ * The most severe problem of this test set is a timing issue.
+ * The tests need to run in sync on all three devices, though the only
+ * moment to establish synchronicity is when the tests are started.
+ * After that they can easily fall out of sync though, depending on the devices
+ * performance and especially due do the quality of the ADB connection (usb cable etc).
+ * <p>
+ * To minimize the impact of that the test rely on waiting a few seconds.
+ * This though elongates the runtime of the tests.
+ * <p>
+ * Another issue is that to make a device (bluetooth) discoverable a user
+ * input on the device is required and it seems like there
+ * is no way to circumvent that even for testing reasons.
+ * This means the tests can only work if they are monitored and a user input
+ * allows the discoverability each time.
+ * <p>
+ * I experimented with different lengths of discoverability. The maximum is
+ * 300 seconds <a href="https://developer.android.com/reference/android/bluetooth/BluetoothAdapter#EXTRA_DISCOVERABLE_DURATION">
+ * Android Documentation</a> this isn't long enough to run all tests at once.
+ * <p>
+ * Several sources pointed out that setting the discoverable time to 0 will
+ * give it an indefinite discoverable time alas my test devices defaulted to 120
+ * seconds when using a discoverable time of 0. (This probably worked on older android versions)
+ * <p>
+ * <h2>Troubleshooting</h2>
  * If all test fail check the following :
  * * device names specified ? <br>
  * * wifi / bluetooth available and on ?<br>
@@ -58,45 +82,37 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * exchanged when a device is low on battery<br>
  * * in case of bluetooth make sure to press the alter dialogue
  * to allow discoverability (sorry cant change that apparently)<br>
- * * check if the tests get out of sync, maybe one adb connection is
+ * * check if the tests get out of sync, maybe one ADB connection is
  * much slower then the others ?<br>
  * <p>
- * <p>
- * The tests need to run in sync on 3
- * different devices, depending on the adb connection to each
- * and the speed of the devices themself it can fall out of sync.
- * I will try to find a better solution in the future.
- * <p>
  * Also regarding the timing issues- it helps to not run all the tests
- * sequentially, but each test alone - because when running all tests
- * delays add up.
- * I know that's not really automated (but since the alter dialogue pops up always
- * there need to be someone managing it either way).
- * For that also keep an eye on this:
- * https://stackoverflow.com/questions/73418555/disable-system-alertdialog-in-android-instrumented-tests
+ * sequentially, because then delays add up. maybe run tests one at a time
+ * i know that's not really automated (but since the alert dialogue pops up always
+ * there needs to be someone managing it either way).
+ * For that also keep an eye on this
+ * <a href="https://stackoverflow.com/questions/73418555/disable-system-alertdialog-in-android-instrumented-tests">
+ * Stack Overflow Question</a>
  * maybe there will be an answer.
- * <p>---------------------------------------------<p>
+ *
+ * <p>
+ * <h2>Usage</h2>
  * These tests are to be performed on 3
  * physical devices.
  * The devices are required to have Wifi Direct  set to on.
  * The devices all need to run the tests simultaneously.
+ * Android Studio allows to select several devices to run
+ * the tests.
  * <p>
  * To run the test a few configurations are needed, to differentiate
  * their names need to be specified beforehand. Same goes for
- * their bluetooth and wifi mac addresses.
- * For that refer to the {@link willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager}
- * ad specify them there.
- * <p>---------------------------------------------<p>
- * General premise - each test will be split into 3 different roles
- * which will execute a different code. Those are defined in additional methods
- * right below the test method itself, following the naming pattern
- * "testCaseName_roleSpecificName"
+ * their bluetooth and wifi mac addresses. For that refer to the
+ * {@link willi.boelke.services.testUtils.DeviceRoleManager}:
  *
  * @author WilliBoelke
  */
 @RunWith(AndroidJUnit4.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class WifiDirectDiscoveryEngineLiveTest
+public class WifiDirectServiceDiscoveryEngineLiveTest
 {
 
     /**
@@ -142,14 +158,14 @@ public class WifiDirectDiscoveryEngineLiveTest
         descriptionForServiceOne = new ServiceDescription("test service one", serviceAttributesOne);
         descriptionForServiceTwo = new ServiceDescription("test service two", serviceAttributesTwo);
         printDeviceInfo(InstrumentationRegistry.getInstrumentation().getTargetContext());
-        WifiDirectDiscoveryEngine.getInstance();
-        WifiDirectDiscoveryEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
+        WifiDirectServiceDiscoveryEngine.getInstance();
+        WifiDirectServiceDiscoveryEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
     }
 
     @After
     public void teardown() throws NullPointerException
     {
-        WifiDirectDiscoveryEngine.getInstance().teardownEngine();
+        WifiDirectServiceDiscoveryEngine.getInstance().teardownEngine();
     }
 
 
@@ -163,8 +179,8 @@ public class WifiDirectDiscoveryEngineLiveTest
      */
     public void advertise_ServiceOne() throws InterruptedException
     {
-        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
+        WifiDirectServiceDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery();
         synchronized (this)
         {
             this.wait(20000);
@@ -177,9 +193,9 @@ public class WifiDirectDiscoveryEngineLiveTest
      */
     public void advertise_twoServices() throws InterruptedException
     {
-        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceTwo);
-        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
+        WifiDirectServiceDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
+        WifiDirectServiceDiscoveryEngine.getInstance().startService(descriptionForServiceTwo);
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery();
         synchronized (this)
         {
             this.wait(20000); // wait for test to finish
@@ -219,9 +235,9 @@ public class WifiDirectDiscoveryEngineLiveTest
     {
 
         final ServiceDescription[] foundServiceDescription = new ServiceDescription[1];
-        WifiDirectDiscoveryEngine.getInstance().registerDiscoverListener((host, description) -> foundServiceDescription[0] = description);
-        WifiDirectDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
+        WifiDirectServiceDiscoveryEngine.getInstance().registerDiscoverListener((host, description) -> foundServiceDescription[0] = description);
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery();
 
         synchronized (this)
         {
@@ -240,7 +256,7 @@ public class WifiDirectDiscoveryEngineLiveTest
      * Discovers two services advertised by one remote device
      */
     @Test
-    public void itShouldFindTwoNearbyService() throws InterruptedException
+    public void itShouldFindTwoNearbyServices() throws InterruptedException
     {
         switch (getTestRunner())
         {
@@ -268,7 +284,7 @@ public class WifiDirectDiscoveryEngineLiveTest
         }
 
         ArrayList<ServiceDescription> foundServiceDescriptions = new ArrayList<>();
-        WifiDirectDiscoveryEngine.getInstance().registerDiscoverListener((host, description) ->
+        WifiDirectServiceDiscoveryEngine.getInstance().registerDiscoverListener((host, description) ->
         {
             Log.e(TAG, "Discovered service");
             if ((description.equals(descriptionForServiceOne) || description.equals(descriptionForServiceTwo))
@@ -277,9 +293,9 @@ public class WifiDirectDiscoveryEngineLiveTest
                 foundServiceDescriptions.add(description);
             }
         });
-        WifiDirectDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceTwo);
-        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceTwo);
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery();
 
         synchronized (this)
         {
@@ -324,7 +340,7 @@ public class WifiDirectDiscoveryEngineLiveTest
         }
         ArrayList<ServiceDescription> foundServiceDescriptions = new ArrayList<>();
         ArrayList<WifiP2pDevice> foundHosts = new ArrayList<>();
-        WifiDirectDiscoveryEngine.getInstance().registerDiscoverListener((host, description) ->
+        WifiDirectServiceDiscoveryEngine.getInstance().registerDiscoverListener((host, description) ->
         {
             Log.e(TAG, "itShouldFindTwoNearbyServiceOnTwoDevices_discover: --- " + host.deviceAddress);
             if (description.equals(descriptionForServiceOne) &&
@@ -335,8 +351,8 @@ public class WifiDirectDiscoveryEngineLiveTest
             }
         });
 
-        WifiDirectDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery();
 
         synchronized (this)
         {
@@ -383,10 +399,10 @@ public class WifiDirectDiscoveryEngineLiveTest
 
         ArrayList<ServiceDescription> foundServiceDescriptions = new ArrayList<>();
         ArrayList<WifiP2pDevice> foundHosts = new ArrayList<>();
-        WifiDirectDiscoveryEngine.getInstance().registerDiscoverListener((host, description) ->
+        WifiDirectServiceDiscoveryEngine.getInstance().registerDiscoverListener((host, description) ->
         {
             Log.e(TAG, "itShouldFindTwoNearbyServiceOnTwoDevices_discover: --- " + host.deviceAddress);
-            if ( (description.equals(descriptionForServiceOne) || description.equals(descriptionForServiceTwo)) &&
+            if ((description.equals(descriptionForServiceOne) || description.equals(descriptionForServiceTwo)) &&
                     (host.deviceAddress.equals(MAC_C_WIFI) || host.deviceAddress.equals(MAC_B_WIFI)))
             {
                 foundServiceDescriptions.add(description);
@@ -394,8 +410,8 @@ public class WifiDirectDiscoveryEngineLiveTest
             }
         });
 
-        WifiDirectDiscoveryEngine.getInstance().notifyAboutAllServices(true);
-        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
+        WifiDirectServiceDiscoveryEngine.getInstance().notifyAboutAllServices(true);
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery();
 
         synchronized (this)
         {

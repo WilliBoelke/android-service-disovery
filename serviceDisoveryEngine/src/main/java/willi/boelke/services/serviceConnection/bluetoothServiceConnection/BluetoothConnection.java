@@ -4,9 +4,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
-
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -90,6 +87,18 @@ public class BluetoothConnection implements ServiceConnection
     public boolean isConnected()
     {
         return this.connectionSocket.isConnected();
+    }
+
+    /**
+     * This just returns the same as {@link #isConnected()} but in reverse
+     * it is just here to fulfill the interface requirement.
+     *
+     * @return true if the socket is not connected else returns false
+     */
+    @Override
+    public boolean isClosed()
+    {
+        return !this.connectionSocket.isConnected();
     }
 
     @Override

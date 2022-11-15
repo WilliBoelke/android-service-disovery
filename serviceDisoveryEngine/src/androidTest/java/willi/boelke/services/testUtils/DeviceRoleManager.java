@@ -1,4 +1,4 @@
-package willi.boelke.services.serviceDiscovery.testUtils;
+package willi.boelke.services.testUtils;
 
 
 import android.bluetooth.BluetoothAdapter;
@@ -7,16 +7,33 @@ import android.net.wifi.WifiManager;
 import android.util.Log;
 
 /**
- * Differentiates between 3 defined devices at runtime
- * which allows to execute different code on them.
- *
- * This is used in the "live" test, where 3 devices
- * take on different roles to test the service discovery
- *
+ * <h1>DeviceRoleManager</h1>
  * The devices need to be defined {@link #getCurrentDeviceName()}
  * can be used to obtain the device names.
  * Also the Wifi and Bluetooth MAC addresses need to be specified
  * there is no way do get those in code (since Android 6)
+ * <p>
+ * This allows to execute different code / tests cases on 3 different devices
+ * to test network functionalities and the behavior on actual android
+ * android implementation and hardware.
+ * It is used to test the service discovery for wifi direct and bluetooth
+ * as well as the establishment on connections between the 3 devices.
+ * <p>
+ * <h2>Usage</h2>
+ * The devices need to be specified here, the are distinct by their
+ * 'device name' following the pattern [device] [manufacturer], this is not flawless
+ * since it is not always unique. Though it is not possible to obtain
+ * other unique device identifiers like the MAc addresses anymore.
+ * <a href="https://developer.android.com/about/versions/marshmallow/android-6.0-changes#behavior-hardware-id">
+ * Access to Hardware Identifier</a>
+ * The names need to be given through the variables {@link #DEVICE_A}, {@link #DEVICE_B} and
+ * {@link #DEVICE_C}.
+ * <p>
+ * This is also the reason why the MAC addresses (of wifi and bluetooth hardware) are
+ * required to be specified manually in the variables {@link #MAC_A_BT}, {@link #MAC_B_BT},
+ * {@link #MAC_C_BT}, {@link #MAC_A_WIFI}, {@link #MAC_B_WIFI} and {@link #MAC_C_WIFI}.
+ * <p>
+ * At runtime the current device name can be obtained by calling {@link }
  *
  * @author WilliBoelke
  */
@@ -30,6 +47,7 @@ public class DeviceRoleManager
     public static final String DEVICE_A = "samsungSM-T580";
     public static final String DEVICE_B = "LENOVOLenovo TB-X304L";
     public static final String DEVICE_C = "DOOGEEY8";
+    public static final String NOT_CONFIGURED = "NOT_CONFIGURED";
 
 
     //
@@ -44,7 +62,9 @@ public class DeviceRoleManager
     public static final String MAC_B_WIFI = "d2:f8:8c:32:19:9f";
     public static final String MAC_C_WIFI = "02:27:15:ba:be:40";
 
-
+    /**
+     * This golds the device name at runtime.
+     */
     private static String runningDevice;
 
     /**
@@ -81,7 +101,7 @@ public class DeviceRoleManager
                 runningDevice = DEVICE_C;
                 break;
             default:
-                System.out.println("device not specified " + getCurrentDeviceName());
+                runningDevice = NOT_CONFIGURED;
         }
     }
 
@@ -97,7 +117,7 @@ public class DeviceRoleManager
 
     public static void printDeviceInfo(Context context)
     {
-        // https://developer.android.com/about/versions/marshmallow/android-6.0-changes#behavior-hardware-id
+        //
         WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         Log.d("", "-------------------\n" +
                 "device name = " + getCurrentDeviceName() + "\n" +

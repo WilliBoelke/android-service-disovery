@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.FragmentBluetoothDiscoverBinding;
 import willi.boelke.service_discovery_demo.view.listAdapters.ServiceListAdapter;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVTwo;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscovery;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVTwo;
 
 public class BluetoothDiscoveryFragment extends Fragment
 {
@@ -35,7 +35,7 @@ public class BluetoothDiscoveryFragment extends Fragment
 
     private FragmentBluetoothDiscoverBinding binding;
 
-    private BluetoothDiscoveryVOne engine;
+    private BluetoothServiceDiscovery engine;
 
     private boolean notifyAboutAll = false;
 
@@ -54,7 +54,7 @@ public class BluetoothDiscoveryFragment extends Fragment
     {
         binding = FragmentBluetoothDiscoverBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-        engine = BluetoothDiscoveryVOne.getInstance();
+        engine = BluetoothServiceDiscoveryVTwo.getInstance();
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
         {
             Log.d(TAG, "onCreateView: starting engine");

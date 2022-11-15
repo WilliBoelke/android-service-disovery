@@ -9,7 +9,7 @@ import android.util.Log;
 
 /**
  * Listens on {@link BluetoothDevice#ACTION_UUID}, notifies the
- * engine by calling {@link BluetoothDiscoveryEngine#onUuidsFetched(BluetoothDevice, Parcelable[])}
+ * engine by calling {@link BluetoothServiceDiscoveryEngine#onUuidsFetched(BluetoothDevice, Parcelable[])}
  * when UUIDs where fetched.
  */
 class UUIDFetchedReceiver extends BroadcastReceiver
@@ -27,7 +27,7 @@ class UUIDFetchedReceiver extends BroadcastReceiver
     /**
      * The SdpBtDiscoveryEngine to be notified
      */
-    private final BluetoothDiscoveryEngine discoveryEngine;
+    private final BluetoothServiceDiscoveryEngine discoveryEngine;
 
 
     //
@@ -40,7 +40,7 @@ class UUIDFetchedReceiver extends BroadcastReceiver
      * @param discoveryEngine
      *         The SdpBtDiscoveryEngine to be notified
      */
-    public UUIDFetchedReceiver(BluetoothDiscoveryEngine discoveryEngine)
+    public UUIDFetchedReceiver(BluetoothServiceDiscoveryEngine discoveryEngine)
     {
         this.discoveryEngine = discoveryEngine;
     }

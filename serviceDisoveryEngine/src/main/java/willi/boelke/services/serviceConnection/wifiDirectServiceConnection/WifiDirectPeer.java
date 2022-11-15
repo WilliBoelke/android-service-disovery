@@ -60,8 +60,8 @@ public interface WifiDirectPeer
      * Needs to return true if connection should be made.
      * else needs to return false.
      *
-     * @param address
-     *         the address of the remote device
+     * @param device
+     *         the the remote device
      * @param description
      *         the description of the service
      *

@@ -13,7 +13,7 @@ import android.util.Log;
  * bluetooth api.
  * <p>
  * The only broadcasts used here is the {@link BluetoothAdapter#ACTION_DISCOVERY_FINISHED}
- * which will cause {@link BluetoothDiscoveryEngine#onDeviceDiscoveryFinished()}
+ * which will cause {@link BluetoothServiceDiscoveryEngine#onDeviceDiscoveryFinished()}
  * to be called, this will start the UUID fetching process.
  * <p>
  * -------
@@ -38,7 +38,7 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
     /*
      * Reference to the engine
      */
-    private final BluetoothDiscoveryEngine discoveryEngine;
+    private final BluetoothServiceDiscoveryEngine discoveryEngine;
 
 
     //
@@ -52,7 +52,7 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver
      *         SdpBtDiscoveryEngine, to be notified
      *         when certain intents are received.
      */
-    public BluetoothBroadcastReceiver(BluetoothDiscoveryEngine engine)
+    public BluetoothBroadcastReceiver(BluetoothServiceDiscoveryEngine engine)
     {
         this.discoveryEngine = engine;
     }

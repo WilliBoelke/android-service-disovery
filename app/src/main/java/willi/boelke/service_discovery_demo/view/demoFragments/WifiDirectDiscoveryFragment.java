@@ -16,7 +16,7 @@ import androidx.lifecycle.ViewModelProvider;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.FragmentWifiDirectDiscoverBinding;
 import willi.boelke.service_discovery_demo.view.listAdapters.ServiceListAdapter;
-import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscoveryEngine;
 
 public class WifiDirectDiscoveryFragment extends Fragment
 {
@@ -27,7 +27,7 @@ public class WifiDirectDiscoveryFragment extends Fragment
 
     private FragmentWifiDirectDiscoverBinding binding;
 
-    private WifiDirectDiscoveryEngine engine;
+    private WifiDirectServiceDiscoveryEngine engine;
 
     private WifiDirectDiscoveryViewModel model;
 
@@ -46,7 +46,7 @@ public class WifiDirectDiscoveryFragment extends Fragment
         }
         else
         {
-            this.engine = WifiDirectDiscoveryEngine.getInstance();
+            this.engine = WifiDirectServiceDiscoveryEngine.getInstance();
             this.engine.start(this.getActivity().getApplicationContext());
         }
 

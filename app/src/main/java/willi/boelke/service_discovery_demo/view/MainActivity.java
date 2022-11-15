@@ -14,18 +14,15 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine;
-import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.ActivityMainBinding;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryEngine;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVTwo;
-import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVOne;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVTwo;
+import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscoveryEngine;
 
 
 public class MainActivity extends AppCompatActivity
@@ -89,10 +86,10 @@ public class MainActivity extends AppCompatActivity
     protected void onDestroy()
     {
         super.onDestroy();
-        WifiDirectDiscoveryEngine.getInstance().stop();
+        WifiDirectServiceDiscoveryEngine.getInstance().stop();
         WifiDirectConnectionEngine.getInstance().stop();
-        BluetoothDiscoveryVOne.getInstance().stop();
-        BluetoothDiscoveryVTwo.getInstance().stop();
+        BluetoothServiceDiscoveryVOne.getInstance().stop();
+        BluetoothServiceDiscoveryVTwo.getInstance().stop();
         BluetoothServiceConnectionEngine.getInstance().stop();
     }
 }

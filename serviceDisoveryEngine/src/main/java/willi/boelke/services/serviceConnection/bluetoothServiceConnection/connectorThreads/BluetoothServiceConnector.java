@@ -129,7 +129,11 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
             {
                 Log.e(TAG, "acceptConnections: could not close the socket");
             }
-            this.connectionEvenListener.onConnectionFailed(this.description.getServiceUuid(), this);
+            if (this.running)
+            {
+                /// notify that failed -- only if it should run
+                this.connectionEvenListener.onConnectionFailed(this.description.getServiceUuid(), this);
+            }
         }
         catch (Exception ie)
         {

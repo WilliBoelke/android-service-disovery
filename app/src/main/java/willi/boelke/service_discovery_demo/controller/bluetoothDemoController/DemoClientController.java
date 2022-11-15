@@ -56,7 +56,7 @@ public class DemoClientController implements BluetoothServiceClient
     //
 
     @Override
-    public void onServiceDiscovered(String address, ServiceDescription description)
+    public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
     {
         this.listener.onNewNotification("Discovered service " + description.getServiceUuid());
         Log.d(TAG, "onServiceDiscovered: a service with the UUID " + description + " has been discovered");
@@ -71,7 +71,7 @@ public class DemoClientController implements BluetoothServiceClient
     }
 
     @Override
-    public boolean shouldConnectTo(String address, ServiceDescription description)
+    public boolean shouldConnectTo(BluetoothDevice host, ServiceDescription description)
     {
         return true;
     }

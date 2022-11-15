@@ -13,11 +13,11 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne
 import willi.boelke.services.serviceDiscovery.ServiceDescription
-import willi.boelke.services.serviceDiscovery.testUtils.*
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVTwo
+import willi.boelke.services.testUtils.*
 import java.io.IOException
-
 
 /**
  *
@@ -78,7 +78,7 @@ import java.io.IOException
  * @author WilliBoelke
  */
 @RunWith(AndroidJUnit4ClassRunner::class)
-class BluetoothServiceConnectionEngineMockTest {
+class UnitBluetoothServiceConnectionEngine {
 
     /**
      * Executing sequentially
@@ -86,14 +86,25 @@ class BluetoothServiceConnectionEngineMockTest {
     @get:Rule
     val instantTaskExecutorRule = CountingTaskExecutorRule()
 
-    lateinit var mockedBtAdapter: BluetoothAdapter
-    lateinit var mockedContext: Context
+    private lateinit var mockedBtAdapter: BluetoothAdapter
+    private lateinit var mockedContext: Context
+    private lateinit var mockedDiscoveryVTwo: BluetoothServiceDiscoveryVTwo
+
+    private var discoveryListsner = CapturingSlot<BluetoothServiceDiscoveryListener>()
 
     @Before
     fun setup() {
         //Setup
         mockedContext = mockk<Context>(relaxed = true)
         mockedBtAdapter = mockk<BluetoothAdapter>()
+        mockedDiscoveryVTwo = mockk<BluetoothServiceDiscoveryVTwo>(relaxed = true)
+
+
+        justRun {
+            mockedDiscoveryVTwo.registerDiscoverListener(
+                capture(discoveryListsner)
+            )
+        }
 
         every { mockedBtAdapter.isEnabled } returns true
         every { mockedBtAdapter.isDiscovering } returns false
@@ -102,8 +113,8 @@ class BluetoothServiceConnectionEngineMockTest {
         every { mockedBtAdapter.startDiscovery() } returns true
 
         //Run
-        BluetoothServiceConnectionEngine.getInstance().start(mockedContext, mockedBtAdapter)
-        BluetoothServiceConnectionEngine.getInstance().startDeviceDiscovery()
+        BluetoothServiceConnectionEngine.getInstance()
+            .start(mockedContext, mockedBtAdapter, mockedDiscoveryVTwo)
 
         initTestMocks()
     }
@@ -111,129 +122,113 @@ class BluetoothServiceConnectionEngineMockTest {
     @After
     fun teardown() {
         BluetoothServiceConnectionEngine.getInstance().callPrivateFunc("teardownEngine")
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("teardownEngine")
+    }
+
+    //
+    //------------  utils ---------------
+    //
+
+    /**
+     * This implementation shall serve as mock implementation
+     * of a bluetooth service client, to verify the engines responses
+     */
+    private class TestClientPeer : BluetoothServiceClient {
+
+        var shouldConnect = false
+        val foundDevices: ArrayList<BluetoothDevice> = ArrayList()
+        val foundServices: ArrayList<ServiceDescription> = ArrayList()
+        val foundServiceHosts: ArrayList<BluetoothDevice> = ArrayList()
+        val establishedConnections: ArrayList<BluetoothConnection> = ArrayList()
+
+        constructor() {//empty constructor wont - no connection
+        }
+
+        constructor(connect: Boolean) {
+            shouldConnect = connect
+        }
+
+        override fun onServiceDiscovered(host: BluetoothDevice, description: ServiceDescription) {
+            foundServices.add(description)
+            foundServiceHosts.add(host)
+        }
+
+        override fun onPeerDiscovered(peer: BluetoothDevice) {
+            foundDevices.add(peer)
+        }
+
+        override fun onConnectedToService(connection: BluetoothConnection) {
+            establishedConnections.add(connection)
+        }
+
+        override fun shouldConnectTo(
+            host: BluetoothDevice,
+            description: ServiceDescription
+        ): Boolean {
+            return shouldConnect
+        }
+    }
+
+    //
+    //------------  tests ---------------
+    //
+
+    @Test
+    fun itShouldStartDiscoveryEngine() {
+        verify { mockedDiscoveryVTwo.start(mockedContext, mockedBtAdapter) }
+        verify { mockedDiscoveryVTwo.registerDiscoverListener(any()) }
     }
 
     @Test
-    fun itShouldStart() {
-        //Check
-        verify(exactly = 3) {mockedContext.registerReceiver(any(), any())}
+    fun itShouldRegisterServiceForDiscovery() {
+        BluetoothServiceConnectionEngine.getInstance()
+            .startSDPDiscoveryForService(testDescriptionOne, TestClientPeer())
+        verify { mockedDiscoveryVTwo.startDiscoveryForService(testDescriptionOne) }
+
+    }
+
+    @Test
+    fun itShouldUnregisterServiceFromDiscovery() {
+        BluetoothServiceConnectionEngine.getInstance()
+            .startSDPDiscoveryForService(testDescriptionOne, TestClientPeer())
+        BluetoothServiceConnectionEngine.getInstance()
+            .stopSDPDiscoveryForService(testDescriptionOne)
+        verify { mockedDiscoveryVTwo.stopDiscoveryForService(testDescriptionOne) }
     }
 
     /**
-     * Clients  who registered for service search should
-     * be notified about discovered peers
+     * When a peer was discovered clients will be notified
      */
     @Test
-    fun itShouldNotifyClientAboutDiscoveredDevices() {
-
-        val foundDevices: ArrayList<BluetoothDevice> = ArrayList();
-
+    fun itShouldNotifyWhenAPeerWasFound() {
+        val client = TestClientPeer()
+        val testDevice = getTestDeviceOne()
         BluetoothServiceConnectionEngine.getInstance()
-            .startDeviceDiscovery()
-        BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionOne, object : BluetoothServiceClient {
-                override fun onServiceDiscovered(
-                    address: String?,
-                    description: ServiceDescription?
-                ) {
-                    // not tested here
-                }
-
-                override fun onPeerDiscovered(peer: BluetoothDevice) {
-                    foundDevices.add(peer)
-                }
-
-                override fun onConnectedToService(connection: BluetoothConnection?) {
-                    // not tested here
-                }
-
-                override fun shouldConnectTo(
-                    address: String?,
-                    description: ServiceDescription?
-                ): Boolean {
-                    return false
-                }
-            })
-        // discovered device with
-        val testDeviceOne = getTestDeviceOne()
-
-        // Discovery happens in the wrapped SdpBluetoothDiscoveryEngine
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
-
-        assertTrue(foundDevices.size == 1)
-        assertEquals(testDeviceOne, foundDevices[0])
+            .startSDPDiscoveryForService(testDescriptionOne, client)
+        discoveryListsner.captured.onPeerDiscovered(testDevice)
+        assertEquals(testDevice, client.foundDevices[0])
     }
 
     /**
-     * Several clients should be  notified about discovered peers
+     * Several clients can be registered at the connection engine,
+     * each of the should be notified about discovered peers
      */
     @Test
     fun itShouldNotifySeveralClientsAboutDiscoveredDevices() {
-
-        val foundDevices: ArrayList<BluetoothDevice> = ArrayList()
-
-        BluetoothServiceConnectionEngine.getInstance()
-            .startDeviceDiscovery()
+        val clientOne = TestClientPeer()
+        val clientTwo = TestClientPeer()
 
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionOne, object : BluetoothServiceClient {
-                override fun onServiceDiscovered(
-                    address: String?,
-                    description: ServiceDescription?
-                ) {
-                    // not tested here
-                }
-
-                override fun onPeerDiscovered(peer: BluetoothDevice) {
-                    foundDevices.add(peer)
-                }
-
-                override fun onConnectedToService(connection: BluetoothConnection?) {
-                    // not tested here
-                }
-
-                override fun shouldConnectTo(
-                    address: String?,
-                    description: ServiceDescription?
-                ): Boolean {
-                    return false
-                }
-            })
+            .startSDPDiscoveryForService(testDescriptionOne, clientOne)
 
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionFour, object : BluetoothServiceClient {
-                override fun onServiceDiscovered(
-                    address: String?,
-                    description: ServiceDescription?
-                ) {
-                    // not tested here
-                }
+            .startSDPDiscoveryForService(testDescriptionFour, clientTwo)
 
-                override fun onPeerDiscovered(peer: BluetoothDevice) {
-                    foundDevices.add(peer)
-                }
-
-                override fun onConnectedToService(connection: BluetoothConnection?) {
-                    // not tested here
-                }
-
-                override fun shouldConnectTo(
-                    address: String?,
-                    description: ServiceDescription?
-                ): Boolean {
-                    return false
-                }
-            })
-        // discovered device with
         val testDeviceOne = getTestDeviceOne()
 
-        // Discovery happens in the wrapped SdpBluetoothDiscoveryEngine
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
+        discoveryListsner.captured.onPeerDiscovered(testDeviceOne)
 
-        assertTrue(foundDevices.size == 2)
-        assertEquals(testDeviceOne, foundDevices[0])
-        assertEquals(testDeviceOne, foundDevices[1])
+        assertEquals(testDeviceOne, clientOne.foundDevices[0])
+        assertEquals(testDeviceOne, clientTwo.foundDevices[0])
     }
 
     /**
@@ -241,47 +236,20 @@ class BluetoothServiceConnectionEngineMockTest {
      */
     @Test
     fun itShouldNotifyAboutAServiceDiscovery() {
-        val foundDevices: ArrayList<String> = ArrayList()
-        val foundServices: ArrayList<ServiceDescription> = ArrayList()
+
+        val client = TestClientPeer()
 
         //Start client looking for uuid four, which is part of test array two
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionTwo, object :
-                BluetoothServiceClient {
-                override fun onServiceDiscovered(
-                    address: String,
-                    description: ServiceDescription
-                ) {
-                    foundDevices.add(address)
-                    foundServices.add(description)
-                }
-
-                override fun onPeerDiscovered(peer: BluetoothDevice?) {
-                    // not under test
-                }
-
-                override fun onConnectedToService(connection: BluetoothConnection?) {
-                    // not under test
-                }
-
-                override fun shouldConnectTo(
-                    address: String?,
-                    description: ServiceDescription?
-                ): Boolean {
-                    return false
-                }
-
-            })
+            .startSDPDiscoveryForService(testDescriptionTwo, client)
 
         // discovered device with
         val testDeviceOne = getTestDeviceOne()
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
-        verify(exactly = 1) { testDeviceOne.fetchUuidsWithSdp()}
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
+        discoveryListsner.captured.onPeerDiscovered(testDeviceOne)
+        discoveryListsner.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
 
-        assertEquals(testDeviceOne.address, foundDevices[0])
-        assertEquals(testDescriptionTwo, foundServices[0])
+        assertEquals(testDeviceOne, client.foundServiceHosts[0])
+        assertEquals(testDescriptionTwo, client.foundServices[0])
     }
 
     /**
@@ -290,217 +258,143 @@ class BluetoothServiceConnectionEngineMockTest {
      */
     @Test
     fun itShouldOnlyNotifyTheRightClientAboutItsServices() {
-
-        val foundDevicesOne: ArrayList<String> = ArrayList()
-        val foundServicesOne: ArrayList<ServiceDescription> = ArrayList()
-        val foundDevicesTwo: ArrayList<String> = ArrayList()
-        val foundServicesTwo: ArrayList<ServiceDescription> = ArrayList()
-
-        //Start client looking for uuid four, which is part of test array two
-        BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionTwo, object :
-                BluetoothServiceClient {
-                override fun onServiceDiscovered(
-                    address: String,
-                    description: ServiceDescription
-                ) {
-                    foundDevicesOne.add(address)
-                    foundServicesOne.add(description)
-                }
-
-                override fun onPeerDiscovered(peer: BluetoothDevice?) {
-                    // not under test
-                }
-
-                override fun onConnectedToService(connection: BluetoothConnection?) {
-                    // not under test
-                }
-
-                override fun shouldConnectTo(
-                    address: String?,
-                    description: ServiceDescription?
-                ): Boolean {
-                    return false
-                }
-            })
+        val clientOne = TestClientPeer()
+        val clientTwo = TestClientPeer()
 
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionFour, object :
-                BluetoothServiceClient {
-                override fun onServiceDiscovered(
-                    address: String,
-                    description: ServiceDescription
-                ) {
-                    foundDevicesTwo.add(address)
-                    foundServicesTwo.add(description)
-                }
+            .startSDPDiscoveryForService(testDescriptionTwo, clientTwo)
 
-                override fun onPeerDiscovered(peer: BluetoothDevice?) {
-                    // not under test
-                }
-
-                override fun onConnectedToService(connection: BluetoothConnection?) {
-                    // not under test
-                }
-
-                override fun shouldConnectTo(
-                    address: String?,
-                    description: ServiceDescription?
-                ): Boolean {
-                    return false
-                }
-
-            })
-
-        // discovered device with
+        BluetoothServiceConnectionEngine.getInstance()
+            .startSDPDiscoveryForService(testDescriptionFour, clientOne)
         val testDeviceOne = getTestDeviceOne()
         val testDeviceTwo = getTestDeviceTwo()
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceTwo)
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
-        verify(exactly = 1) { testDeviceOne.fetchUuidsWithSdp()}
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onUuidsFetched", testDeviceTwo, getTestUuidArrayTwo())
 
-        assertEquals(1, foundDevicesOne.size)
-        assertEquals(1, foundDevicesTwo.size)
-        assertEquals(testDeviceOne.address, foundDevicesOne[0])
-        assertEquals(testDescriptionTwo, foundServicesOne[0])
-        assertEquals(testDeviceTwo.address, foundDevicesTwo[0])
-        assertEquals(testDescriptionFour, foundServicesTwo[0])
+        discoveryListsner.captured.onPeerDiscovered(testDeviceOne)
+        discoveryListsner.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
+        discoveryListsner.captured.onPeerDiscovered(testDeviceTwo)
+        discoveryListsner.captured.onServiceDiscovered(testDeviceTwo, testDescriptionFour)
+
+        assertTrue(clientOne.foundServiceHosts.contains(testDeviceTwo))
+        assertFalse(clientOne.foundServiceHosts.contains(testDeviceOne))
+
+        assertTrue(clientTwo.foundServiceHosts.contains(testDeviceOne))
+        assertFalse(clientTwo.foundServiceHosts.contains(testDeviceTwo))
+
+        assertTrue(clientOne.foundServices.contains(testDescriptionFour))
+        assertFalse(clientOne.foundServices.contains(testDescriptionTwo))
+
+        assertTrue(clientTwo.foundServices.contains(testDescriptionTwo))
+        assertFalse(clientTwo.foundServices.contains(testDescriptionFour))
     }
 
     /**
-     * A service can be discovered in a discovery process
-     * after that a service discover for even that service can be started.
-     *
-     * All discovered services should be cashed, so an immediate connection can be attempted
-     * without starting another device / service discovery
+     * If a service is discovered and the client callback `shouldConnect`
+     * returns true, a connection attempt should be started.
      */
     @Test
-    fun itShouldCacheDiscoveredServices() {
-        var openedConnection: BluetoothConnection? = null
-        BluetoothServiceConnectionEngine.getInstance()
-
-            .startSDPDiscoveryForService(testDescriptionTwo, object :
-                BluetoothServiceClient {
-                override fun onServiceDiscovered(
-                    address: String?,
-                    description: ServiceDescription?
-                ) {
-                }
-
-                override fun onPeerDiscovered(peer: BluetoothDevice?) {
-                }
-
-                override fun onConnectedToService(connection: BluetoothConnection?) {
-                    openedConnection = connection
-                }
-
-                override fun shouldConnectTo(
-                    address: String?,
-                    description: ServiceDescription?
-                ): Boolean {
-                return true
-                }
-
-            })
-
-        // mocked objects
+    fun itShouldTryToConnectToService() {
         val testDeviceOne = getTestDeviceOne()
         val mockedSocket = getSocketToTestDevice(getTestDeviceTwo())
-
-        // some further methods need tto be mocked
-        every { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) } returns  mockedSocket
+        // some further methods need to be mocked :
+        every { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) } returns mockedSocket
         justRun { mockedSocket.connect() }
 
-        // Discovery and SDP process
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
+        val client = TestClientPeer(true)
 
-        assertEquals(getTestDeviceTwo().name, openedConnection?.remoteDevice?.name) // the remote device (testDeviceTwo)
-        assert(openedConnection?.isServerPeer == false) // connected as client
+        BluetoothServiceConnectionEngine.getInstance()
+            .startSDPDiscoveryForService(testDescriptionTwo, client)
+
+        discoveryListsner.captured.onPeerDiscovered(testDeviceOne)
+        discoveryListsner.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
+
+        assertEquals(getTestDeviceTwo().name, client.establishedConnections[0].remoteDevice.name)
+        assertFalse(client.establishedConnections[0].isServerPeer) // connected as client
     }
 
     /**
-     * The engine can advertise services and search services
-     * at the same time
+     * If a service is discovered and the client callback `shouldConnect`
+     * returns true, a connection attempt should be started.
+     * This also should notify about more connections
      */
     @Test
-    fun aServiceCanBeAdvertisedWhileAnotherIsSearched(){
-        // TODO
+    fun itShouldTryToConnectToSeveralServices() {
+        val testDeviceOne = getTestDeviceOne()
+        val testDeviceTwo = getTestDeviceTwo()
+        val mockedSocketOne = getSocketToTestDevice(testDeviceOne)
+        val mockedSocketTwo = getSocketToTestDevice(testDeviceTwo)
+
+        // some further methods need to be mocked :
+        every { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) } returns mockedSocketOne
+        every { testDeviceTwo.createRfcommSocketToServiceRecord(testUUIDTwo) } returns mockedSocketTwo
+        justRun { mockedSocketOne.connect() }
+        justRun { mockedSocketTwo.connect() }
+
+        val client = TestClientPeer(true)
+
+        BluetoothServiceConnectionEngine.getInstance()
+            .startSDPDiscoveryForService(testDescriptionTwo, client)
+
+        discoveryListsner.captured.onPeerDiscovered(testDeviceTwo)
+        discoveryListsner.captured.onServiceDiscovered(testDeviceTwo, testDescriptionTwo)
+        discoveryListsner.captured.onPeerDiscovered(testDeviceOne)
+        discoveryListsner.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
+        Thread.sleep(1000) // waiting for connect thread
+        assertTrue(
+            client.establishedConnections[0].remoteDevice.equals(testDeviceOne) ||
+                    client.establishedConnections[1].remoteDevice.equals(testDeviceOne)
+        )
+
+        assertTrue(
+            client.establishedConnections[0].remoteDevice.equals(testDeviceTwo) ||
+                    client.establishedConnections[1].remoteDevice.equals(testDeviceTwo)
+        )
+
+        assertFalse(client.establishedConnections[0].isServerPeer) // connected as client
+        assertFalse(client.establishedConnections[1].isServerPeer) // connected as client
     }
 
     /**
-     * When connection the sockets an IO Exception can occur
+     * When connecting the socket an IO Exception can occur
      * this should be handled
      */
     @Test
-    fun  itShouldHandleIoExceptionsWhenTryingToConnect(){
+    fun  itShouldHandleIoExceptionsWhenTryingToConnect() {
 
-        BluetoothServiceConnectionEngine.getInstance()
-
-            .startSDPDiscoveryForService(testDescriptionTwo, object :
-                BluetoothServiceClient {
-                override fun onServiceDiscovered(
-                    address: String?,
-                    description: ServiceDescription?
-                ) {
-                }
-
-                override fun onPeerDiscovered(peer: BluetoothDevice?) {
-                }
-
-                override fun onConnectedToService(connection: BluetoothConnection?) {
-                }
-
-                override fun shouldConnectTo(
-                    address: String?,
-                    description: ServiceDescription?
-                ): Boolean {
-                    return true
-                }
-
-            })
-
-        // mocked objects
         val testDeviceOne = getTestDeviceOne()
-        val mockedSocket = getSocketToTestDevice(getTestDeviceTwo())
+        val mockedSocket = getSocketToTestDevice(testDeviceOne)
 
-        // some further methods need tto be mocked
-        every { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) } returns  mockedSocket
+        every { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) } returns mockedSocket
         every { mockedSocket.connect() } throws IOException()
 
-        // Discovery and SDP process
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscovered", testDeviceOne)
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onDeviceDiscoveryFinished")
-        BluetoothDiscoveryVOne.getInstance().callPrivateFunc("onUuidsFetched", testDeviceOne, getTestUuidArrayOne())
+        val client = TestClientPeer(true)
+        BluetoothServiceConnectionEngine.getInstance()
+            .startSDPDiscoveryForService(testDescriptionTwo, client)
 
-        // checking the result and verifying some method calls
-        verify (exactly = 1){ testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) }
-        verify (exactly = 1){ mockedSocket.connect() }
-        // When IO Exception is thrown
-        verify (exactly = 1){ mockedSocket.close() }
+        discoveryListsner.captured.onPeerDiscovered(testDeviceOne)
+        discoveryListsner.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
+
+        verify(exactly = 1) { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) }
+        verify(exactly = 1) { mockedSocket.connect() }
+        verify(exactly = 2) { mockedSocket.close() }
     }
 
     /**
-     * When a Service was started clients connections should be accepted and
-     * the service should get notified
+     * When a Service was started client connections should be accepted
+     * after a connection was accepted the server socket should be reopened
+     * and further connections should be accepted.
      */
     @Test
     fun itShouldAcceptConnectionsWhenServiceStarted() {
+
         val mockedServerSocket = mockk<BluetoothServerSocket>()
         val mockedSocket = getSocketToTestDevice(getTestDeviceOne())
-
         val answerF = FunctionAnswer { Thread.sleep(2000); mockedSocket }
         every { mockedServerSocket.accept() } .answers(answerF)
         justRun { mockedServerSocket.close() }
 
         every { mockedBtAdapter.listenUsingRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
 
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {
-        }
+        BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {}
 
         Thread.sleep(3000)
         // In the given time exactly one connection should be accepted
@@ -524,18 +418,16 @@ class BluetoothServiceConnectionEngineMockTest {
     fun itShouldNotStartTheSameServiceTwice(){
         val mockedServerSocket = mockk<BluetoothServerSocket>()
         val mockedSocket = getSocketToTestDevice(getTestDeviceOne())
-
         val answerF = FunctionAnswer { Thread.sleep(2000); mockedSocket }
         every { mockedServerSocket.accept() } .answers(answerF)
         justRun { mockedServerSocket.close() }
-
         every { mockedBtAdapter.listenUsingRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
 
-        val createdFirst = BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {
-        }
+        val createdFirst =
+            BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {}
 
-        val createdSecond = BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {
-        }
+        val createdSecond =
+            BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {}
 
         // This should all stay he same, there is no second service created =
         Thread.sleep(3000)
@@ -613,7 +505,6 @@ class BluetoothServiceConnectionEngineMockTest {
 
         val createdSecond = BluetoothServiceConnectionEngine.getInstance().startSDPService( testDescriptionTwo
         ) { connection -> openedConnectionTwo = connection; }
-
 
         Thread.sleep(3000)
         // In the given time exactly one connection should be accepted
@@ -695,5 +586,4 @@ class BluetoothServiceConnectionEngineMockTest {
         Thread.sleep(1000)
         verify(exactly = 1) { mockedServerSocket.close()}
     }
-
 }

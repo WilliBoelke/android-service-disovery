@@ -5,24 +5,47 @@ import android.util.Log;
 
 import java.util.ArrayList;
 
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
-import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVOne;
+import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscoveryEngine;
 
 
 /**
- * Abstract class for {@link WifiDirectDiscoveryEngine}
- * and  {@link BluetoothDiscoveryVOne}
- *
+ * Abstract class for {@link WifiDirectServiceDiscoveryEngine}
+ * and  {@link BluetoothServiceDiscoveryVOne}
+ * <p>
  * Allows the
  */
-public abstract class DiscoveryEngine
+public abstract class ServiceDiscoveryEngine implements IServiceDiscoveryEngine
 {
+
+
+    //
+    //  ----------  instance variables ----------
+    //
+
+    /**
+     * Classname for logging
+     */
     private final String TAG = this.getClass().getSimpleName();
 
+    /**
+     * List containing the services (ServiceDescriptions)
+     * of the services registered through {@link #startDiscoveryForService(ServiceDescription)}
+     */
     protected ArrayList<ServiceDescription> servicesToLookFor = new ArrayList<>();
 
+    /**
+     * Gives information about the state of the engine, will
+     * set to true if the engine was started {@link  #start(Context)}
+     * and false when its stopped {@link #stop()}
+     *
+     * can be accessed through {@link #isRunning()}
+     */
     protected boolean engineRunning = false;
 
+    /**
+     * If this is true all listeners
+     */
     protected boolean notifyAboutAllServices = false;
 
     protected boolean engineIsNotRunning()
@@ -36,29 +59,34 @@ public abstract class DiscoveryEngine
      *
      * @return running state of the engine
      */
+    @Override
     public boolean isRunning()
     {
         return engineRunning;
     }
 
+    @Override
     public abstract void start(Context context);
 
+    @Override
     public abstract void stop();
+
     //
     //  ----------  add service for discovery ----------
     //
 
+    @Override
     public void startDiscoveryForService(ServiceDescription description)
     {
         if (engineIsNotRunning())
         {
-            Log.e(TAG, "startSDPDiscoveryForService: engine is not running - wont start");
+            Log.e(TAG, "startDiscoveryForService: engine is not running - wont start");
         }
         Log.d(TAG, "Starting service discovery");
         // Are we already looking for he service?
         if (this.isServiceAlreadyInDiscovery(description))
         {
-            Log.d(TAG, "startSDPDiscoveryForServiceWithUUID: Service discovery already running ");
+            Log.d(TAG, "startDiscoveryForService: Service discovery already running ");
             return;
         }
         // Adding the service to  be found in the future
@@ -81,19 +109,21 @@ public abstract class DiscoveryEngine
     //  ----------  remove service from discovery ----------
     //
 
+    @Override
     public void stopDiscoveryForService(ServiceDescription description)
     {
         if (engineIsNotRunning())
         {
-            Log.e(TAG, "stopSDPDiscoveryForService: engine is not running - wont start");
+            Log.e(TAG, "startDiscoveryForService: engine is not running - wont start");
         }
-        Log.d(TAG, "End service discovery for service with UUID " + description.toString());
+        Log.d(TAG, "startDiscoveryForService: End service discovery for service with UUID " + description.toString());
         // removing from list of services
         this.servicesToLookFor.remove(description);
 
         // subclasses call
         onServiceRemoveFromDiscovery(description);
     }
+
 
     /**
      * called whenever a  service was removed to the discovery
@@ -103,7 +133,6 @@ public abstract class DiscoveryEngine
      *         the description of the service
      */
     protected abstract void onServiceRemoveFromDiscovery(ServiceDescription description);
-
 
     /**
      * Checks if the service description is already in {@link #servicesToLookFor} list
@@ -117,7 +146,6 @@ public abstract class DiscoveryEngine
     {
         return servicesToLookFor.contains(description);
     }
-
 
     /**
      * Setting this to true will notify all receivers about all
@@ -133,6 +161,7 @@ public abstract class DiscoveryEngine
      *         boolean - true to notify about all services, false to just notify about the ones
      *         given through {@link #startDiscoveryForService(ServiceDescription)}
      */
+    @Override
     public void notifyAboutAllServices(boolean all)
     {
         Log.d(TAG, "notifyAboutAllServices: notifying about all service = " + all);

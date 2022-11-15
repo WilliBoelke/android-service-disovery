@@ -10,7 +10,7 @@ import android.util.Log;
 /**
  * While a bluetooth device discovery is running, this
  * broadcast receiver will notify the SdpBluetooth engine
- * about discovered devices using {@link BluetoothDiscoveryVOne#onDeviceDiscovered(BluetoothDevice)}
+ * about discovered devices using {@link BluetoothServiceDiscoveryVOne#onDeviceDiscovered(BluetoothDevice)}
  *
  * @author WilliBoelke
  */
@@ -28,7 +28,7 @@ class DeviceFoundReceiver extends BroadcastReceiver
     /**
      * SdpBluetooth engine to notify
      */
-    private final BluetoothDiscoveryEngine discoveryEngine;
+    private final BluetoothServiceDiscoveryEngine discoveryEngine;
 
 
     //
@@ -41,7 +41,7 @@ class DeviceFoundReceiver extends BroadcastReceiver
      * @param discoveryEngine
      *         The discovery engine to be notified about discovered devices
      */
-    public DeviceFoundReceiver(BluetoothDiscoveryEngine discoveryEngine)
+    public DeviceFoundReceiver(BluetoothServiceDiscoveryEngine discoveryEngine)
     {
         Log.d(TAG, "DeviceFoundReceiver: initialised receiver");
         this.discoveryEngine = discoveryEngine;

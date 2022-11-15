@@ -11,6 +11,7 @@ import android.content.Context;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
+import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 import android.net.wifi.p2p.nsd.WifiP2pServiceInfo;
 import android.util.Log;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
@@ -21,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import willi.boelke.services.serviceDiscovery.DiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.ServiceDiscoveryEngine;
 
 
 /**
@@ -78,7 +79,7 @@ import willi.boelke.services.serviceDiscovery.DiscoveryEngine;
  * To stop the engine call {@link #stop()}
  */
 @SuppressLint("MissingPermission")
-public class WifiDirectDiscoveryEngine extends DiscoveryEngine
+public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
 {
 
     //
@@ -88,7 +89,7 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
     /**
      * The singleton instance
      */
-    private static WifiDirectDiscoveryEngine instance;
+    private static WifiDirectServiceDiscoveryEngine instance;
 
     //
     //  ----------  instance members ----------
@@ -155,11 +156,11 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
      *
      * @return instance
      */
-    public static WifiDirectDiscoveryEngine getInstance()
+    public static WifiDirectServiceDiscoveryEngine getInstance()
     {
         if (instance == null)
         {
-            instance = new WifiDirectDiscoveryEngine();
+            instance = new WifiDirectServiceDiscoveryEngine();
         }
         return instance;
     }
@@ -167,7 +168,7 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
     /**
      * Private singleton constructor
      */
-    private WifiDirectDiscoveryEngine()
+    private WifiDirectServiceDiscoveryEngine()
     {
         // empty private constructor
     }
@@ -644,5 +645,55 @@ public class WifiDirectDiscoveryEngine extends DiscoveryEngine
         }
 
         Log.e(tag, msg + " reason : " + reason);
+    }
+
+
+    private void discoverService() {
+
+        /*
+         * Register listeners for DNS-SD services. These are callbacks invoked
+         * by the system when a service is actually discovered.
+         */
+
+        manager.setDnsSdResponseListeners(channel,
+
+                (instanceName, registrationType, srcDevice) ->
+                {
+
+                },
+                (fullDomainName, record, device) ->
+                {
+
+                });
+
+        // After attaching listeners, create a service request and initiate
+        // discovery.
+        WifiP2pDnsSdServiceRequest serviceRequest = WifiP2pDnsSdServiceRequest.newInstance();
+        manager.addServiceRequest(channel, serviceRequest,
+                new WifiP2pManager.ActionListener() {
+
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "onSuccess: successfully set service requests ");
+                    }
+
+                    @Override
+                    public void onFailure(int arg0) {
+                        Log.e(TAG, "error settings service requests " + arg0) ;
+                    }
+                });
+
+        manager.discoverServices(channel, new WifiP2pManager.ActionListener() {
+
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "onSuccess: successfully set service requests ");
+            }
+
+            @Override
+            public void onFailure(int arg0) {
+                Log.e(TAG, "error settings service requests " + arg0) ;
+            }
+        });
     }
 }

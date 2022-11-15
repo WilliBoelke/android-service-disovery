@@ -14,10 +14,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
 
-import willi.boelke.services.serviceDiscovery.DiscoveryEngine;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
+import willi.boelke.services.serviceDiscovery.ServiceDiscoveryEngine;
 
 /**
+ * <h1>BluetoothServiceDiscoveryEngine</h1>
  * The BluetoothDiscoveryEngine is the parent class for a bluetooth service
  * discovery. This implements several methods to started and execute a
  * discovery and enables listeners to subscribe to get notified about
@@ -29,24 +30,22 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * The premise here is :
  * -The device discovery will be started.<br>
  * -A service discovery will be conducted on all discovered devices
- * depending on the implementation in the subclasses {@link BluetoothDiscoveryVTwo}
- * and/or {@link BluetoothDiscoveryVOne}.<br>
+ * depending on the implementation in the subclasses {@link BluetoothServiceDiscoveryVTwo}
+ * and/or {@link BluetoothServiceDiscoveryVOne}.<br>
  * -Listeners will be notified about discovered services and devices/peers.<br>
  * -Methods are provided to register a number (0-n) specific services to get notified about.<br>
  * -Methods are provided to get notified about each and every service which is discovered.<br>
  * -The above methods can be combined.<br>
  *
- * <p><p>
- * Starting the engine<br>
- * ------------------------------------------------------------<br>
+ * <p>
+ * <h2>Starting the engine</h2>
  * The engine needs to be started by calling {@link #start(Context)}
  * or {@link #start(Context, BluetoothAdapter)} this will also enable bluetooth
  * on the device.
  * Call {@link #stop()} to stop the engine and all running discoveries.
  *
- * <p><p>
- * Discover Services<br>
- * ------------------------------------------------------------<br>
+ * <p>
+ * <h2>Discover Services</h2>
  * Services can be discovered using
  * {@link #startDiscoveryForService(ServiceDescription)}. For a service
  * to be found it is mandatory to run a device discovery using
@@ -59,15 +58,14 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * discovery was started. as long as a service discovery runs and
  * was not ended via {@link #stopDiscoveryForService(ServiceDescription)}}
  * services will be discovered on all subsequently and previously d
- * iscovered devices.
+ * is covered devices.
  * <p>
  * If a general service discovery is required and no specific
  * UUIDs / ServiceDescriptions are known
  * {@link #notifyAboutAllServices(boolean)} can be used.
  *
- * <p><p>
- * UUIDs and Service descriptions<br>
- * ------------------------------------------------------------<br>
+ * <p>
+ * <h2>UUIDs and Service descriptions</h2>
  * For registering specific services {@link ServiceDescription}s are used.
  * Service descriptions will generate a UUID. For services which are
  * registered and a description is known the fitting description will be
@@ -76,9 +74,8 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * The engine then will return a description only containing the UUID
  * without any further information.
  *
- * <p><p>
- * Caching of devices and Services<br>
- * ------------------------------------------------------------<br>
+ * <p>
+ * <h2>Caching of devices and Services</h2>
  * Note: other bluetooth devices and their services will be cashed, it is possible
  * that a service will be found on a bluetooth devices which either moved out of
  * range or stopped accepting clients. This can happen when a Service is added after
@@ -86,9 +83,8 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * the cached services. {@link #startDeviceDiscovery()} will refresh
  * both cached devices and services.
  *
- * <p><p>
- * Listener<br>
- * ------------------------------------------------------------<br>
+ * <p>
+ * <h2>Listener</h2>
  * To get notified about discovered services and their host devices a
  * {@link BluetoothServiceDiscoveryListener} needs to be registered using
  * {@link #registerDiscoverListener(BluetoothServiceDiscoveryListener)}.
@@ -99,8 +95,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * notified about all services.
  *
  * <p>
- * Sequence Example<br>
- * ------------------------------------------------------------<br>
+ * <h2>Sequence Example</h2>
  * <pre>
  *  ┌───────────┐                           ┌───────────────────────────┐
  *  │Application│                           │SdpBluetoothDiscoveryEngine│
@@ -145,7 +140,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  *
  * @author WilliBoelke
  */
-public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
+public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEngine implements BluetoothServiceDiscovery
 {
     //
     //  ----------  instance variables  ----------
@@ -213,10 +208,10 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
      * <p>
      * // Todo find a better solution
      *
-     * @see BluetoothDiscoveryEngine#shouldCheckLittleEndianUuids(boolean)
+     * @see BluetoothServiceDiscoveryEngine#shouldCheckLittleEndianUuids(boolean)
      * @see ServiceDescription#getBytewiseReverseUuid()
-     * @see BluetoothDiscoveryEngine#notifyListenersIfServiceIsAvailable(BluetoothDevice, Parcelable[])
-     * @see BluetoothDiscoveryEngine#notifyListenersAboutServices(BluetoothDevice, Parcelable[])
+     * @see BluetoothServiceDiscoveryEngine#notifyListenersIfServiceIsAvailable(BluetoothDevice, Parcelable[])
+     * @see BluetoothServiceDiscoveryEngine#notifyListenersAboutServices(BluetoothDevice, Parcelable[])
      */
     private boolean checkLittleEndianUuids = true;
 
@@ -237,7 +232,7 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
     /**
      * Private constructor initializing the singleton
      */
-    protected BluetoothDiscoveryEngine()
+    protected BluetoothServiceDiscoveryEngine()
     {
         this.foundDeviceReceiver = new DeviceFoundReceiver(this);
         this.fetchedUuidReceiver = new UUIDFetchedReceiver(this);
@@ -263,6 +258,13 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
     }
 
     /**
+     * Stops the engine and resets the singleton instance to "null"
+     * this is mostly used for testing
+     */
+    protected abstract void teardownEngine();
+
+
+    /**
      * Starts the discovery engine
      * a context needs to be supplied
      * Optionally a bluetooth adapter can also be
@@ -286,11 +288,17 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
     /**
      * Starts the engine
      */
+    @Override
     public void start(Context context, BluetoothAdapter adapter)
     {
         if (adapter == null)
         {
             Log.e(TAG, "start: Bluetooth adapter was null, the device probably does not support bluetooth - engine wont start");
+            return;
+        }
+        if (!adapter.isEnabled())
+        {
+            Log.e(TAG, "start: Bluetooth not enabled");
             return;
         }
         Log.d(TAG, "start: starting engine");
@@ -383,6 +391,7 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
      * a listener may will be notified about a peer / client already
      * known to him again.
      */
+    @Override
     public boolean startDeviceDiscovery()
     {
         if (engineIsNotRunning())
@@ -431,6 +440,7 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
      * Ends the bluetooth device
      * discovery
      */
+    @Override
     public void stopDeviceDiscovery()
     {
         if (engineIsNotRunning())
@@ -454,7 +464,7 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
      * Devices tha will be discovered from now on (given that the bluetooth discovery is enabled)
      * <p>
      * The service discovery will run till
-     * {@link BluetoothDiscoveryEngine#stopDiscoveryForService(ServiceDescription)
+     * {@link BluetoothServiceDiscoveryEngine#stopDiscoveryForService(ServiceDescription)
      * with the same UUID is called,  no matter hwo many devies will be disovered ill then.
      * (Or to make i short, this wont stop afer the first connecion was made)
      *
@@ -533,6 +543,7 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
      * <p>
      * Calling {@link #startDeviceDiscovery()} while this is running is not recommended.
      */
+    @Override
     public void refreshNearbyServices()
     {
         if (engineIsNotRunning())
@@ -571,8 +582,9 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
      * @param listener
      *         implementation of then listener interface
      *
-     * @see #unregisterReceivers()
+     * @see #unregisterDiscoveryListener(BluetoothServiceDiscoveryListener)
      */
+    @Override
     public void registerDiscoverListener(BluetoothServiceDiscoveryListener listener)
     {
         if (engineIsNotRunning())
@@ -582,11 +594,14 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
         }
         if (bluetoothDiscoveryListeners.contains(listener))
         {
+            Log.d(TAG, "registerDiscoverListener: listener already registered");
             return;
         }
+        Log.d(TAG, "registerDiscoverListener: new listener registered");
         this.bluetoothDiscoveryListeners.add(listener);
     }
 
+    @Override
     public void unregisterDiscoveryListener(BluetoothServiceDiscoveryListener listener)
     {
         bluetoothDiscoveryListeners.remove(listener);
@@ -681,12 +696,14 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
         for (Parcelable pUuid : uuidExtra)
         {
             UUID uuid = ((ParcelUuid) pUuid).getUuid();
+            Log.d(TAG, "notifyListenersAboutServices: checking uuid " + uuid);
             ServiceDescription description = new ServiceDescription("", new HashMap<>()); // empty description
             description.overrideUuidForBluetooth(uuid);
 
             // overriding with registered service description
             if (this.servicesToLookFor.contains(description))
             {
+                Log.d(TAG, "notifyListenersAboutServices: found uuid " + uuid);
                 description = servicesToLookFor.get(servicesToLookFor.indexOf(description));
             }
             else if (checkLittleEndianUuids)
@@ -694,6 +711,7 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
                 description.overrideUuidForBluetooth(description.getBytewiseReverseUuid());
                 if (this.servicesToLookFor.contains(description))
                 {
+                    Log.d(TAG, "notifyListenersAboutServices: found reversed uuid " + uuid);
                     description = servicesToLookFor.get(servicesToLookFor.indexOf(description));
                 }
             }
@@ -715,6 +733,7 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
         for (Parcelable pUuid : uuidExtra)
         {
             UUID uuid = ((ParcelUuid) pUuid).getUuid();
+            Log.d(TAG, "notifyListenersIfServiceIsAvailable: checking uuid " + uuid);
             for (ServiceDescription serviceToLookFor : this.servicesToLookFor)
             {
                 // this maybe should go into a separate method to make the if more readable
@@ -737,7 +756,7 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
      */
     private void tryToFindAlreadyDiscoveredServices(ServiceDescription description)
     {
-        Log.d(TAG, "tryToConnectToServiceAlreadyInRange: checking if " + description + " was discovered before ");
+        Log.d(TAG, "tryToFindAlreadyDiscoveredServices: checking if " + description + " was discovered before ");
 
         // iterating through devices already discovered
         for (BluetoothDevice device : this.discoveredDevices)
@@ -776,6 +795,7 @@ public abstract class BluetoothDiscoveryEngine extends DiscoveryEngine
      * @param checkLittleEndianUuids
      *         determines whether little endian UUIDs should be checked or not
      */
+    @Override
     public void shouldCheckLittleEndianUuids(boolean checkLittleEndianUuids)
     {
         this.checkLittleEndianUuids = checkLittleEndianUuids;

@@ -168,6 +168,7 @@ public class BluetoothConnectionViewModel extends ViewModel
 
     protected void starDiscovery()
     {
+        this.discoveredPeers.postValue(new ArrayList<>());
         engine.startDeviceDiscovery();
     }
 

@@ -2,22 +2,21 @@ package willi.boelke.services.serviceConnection.bluetoothServiceConnection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.DEVICE_A;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.DEVICE_B;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.DEVICE_C;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.MAC_A_BT;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.MAC_B_BT;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.MAC_C_BT;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.determineTestRunner;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.getCurrentDeviceName;
-import static willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager.getTestRunner;
+import static willi.boelke.services.testUtils.DeviceRoleManager.DEVICE_A;
+import static willi.boelke.services.testUtils.DeviceRoleManager.DEVICE_B;
+import static willi.boelke.services.testUtils.DeviceRoleManager.DEVICE_C;
+import static willi.boelke.services.testUtils.DeviceRoleManager.MAC_A_BT;
+import static willi.boelke.services.testUtils.DeviceRoleManager.MAC_B_BT;
+import static willi.boelke.services.testUtils.DeviceRoleManager.MAC_C_BT;
+import static willi.boelke.services.testUtils.DeviceRoleManager.determineTestRunner;
+import static willi.boelke.services.testUtils.DeviceRoleManager.getCurrentDeviceName;
+import static willi.boelke.services.testUtils.DeviceRoleManager.getTestRunner;
 
 import android.Manifest;
 import android.arch.core.executor.testing.CountingTaskExecutorRule;
 import android.bluetooth.BluetoothDevice;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.GrantPermissionRule;
 
 import org.junit.After;
@@ -30,27 +29,54 @@ import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVTwo;
 
 /**
- * The tests aim to test {@link BluetoothServiceConnectionEngine} and
- * {@link BluetoothDiscoveryVOne}
- * on actual hardware.
- * <p>---------------------------------------------<p>
- * This is more experimental, and i aim to improve on
- * that in the future, but i could find another good way
- * to make this kind of tests, though...i cant be the only one needing this.
+ * These tests {@link BluetoothServiceConnectionEngine}
+ * on actual hardware and with real connections.
+ * As a discovery engine {@link BluetoothServiceDiscoveryVTwo}
+ * wil be used.
  * <p>
- * The tests can fail, they are performed on actual hardware
- * it comes to timing issues between the devices.
- * Sometimes a discovery just does not find the service or device in
- * the specified amount of time.
+ * <h2>General idea of the test </h2>
+ * This test set is build to run on 3 different android and bluetooth
+ * enabled devices. During the test run the devices will take different
+ * roles - executing different code and expecting different results.
+ * For each device to know what to do at runtime they need to be
+ * specified beforehand.
  * <p>
+ * A device will either advertise one or more services or perform a
+ * service discovery.
+ * <p>
+ * <h2>Limitations and problems</h2>
+ * The most severe problem of this test set is a timing issue.
+ * The tests need to run in sync on all three devices, though the only
+ * moment to establish synchronicity is when the tests are started.
+ * After that they can easily fall out of sync though, depending on the devices
+ * performance and especially due do the quality of the ADB connection (usb cable etc).
+ * <p>
+ * To minimize the impact of that the test rely on waiting a few seconds.
+ * This though elongates the runtime of the tests.
+ * <p>
+ * Another issue is that to make a device (bluetooth) discoverable a user
+ * input on the device is required and it seems like there
+ * is no way to circumvent that even for testing reasons.
+ * This means the tests can only work if they are monitored and a user input
+ * allows the discoverability each time.
+ * <p>
+ * I experimented with different lengths of discoverability. The maximum is
+ * 300 seconds <a href="https://developer.android.com/reference/android/bluetooth/BluetoothAdapter#EXTRA_DISCOVERABLE_DURATION">
+ * Android Documentation</a> this isn't long enough to run all tests at once.
+ * <p>
+ * Several sources pointed out that setting the discoverable time to 0 will
+ * give it an indefinite discoverable time alas my test devices defaulted to 120
+ * seconds when using a discoverable time of 0. (This probably worked on older android versions)
+ * <p>
+ * <h2>Troubleshooting</h2>
  * If all test fail check the following :
  * * device names specified ? <br>
  * * wifi / bluetooth available and on ?<br>
@@ -58,47 +84,40 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * exchanged when a device is low on battery<br>
  * * in case of bluetooth make sure to press the alter dialogue
  * to allow discoverability (sorry cant change that apparently)<br>
- * * check if the tests get out of sync, maybe one adb connection is
+ * * check if the tests get out of sync, maybe one ADB connection is
  * much slower then the others ?<br>
  * <p>
- * <p>
- * The tests need to run in sync on 3
- * different devices, depending on the adb connection to each
- * and the speed of the devices themself it can fall out of sync.
- * I will try to find a better solution in the future.
- * <p>
  * Also regarding the timing issues- it helps to not run all the tests
- * sequentially, because then delays add up.- maybe run tests one at a time
- * i know that's not really automated (but since the alter dialogue pops up always
- * there need to be someone managing it either way).
- * For that also keep an eye on this:
- * https://stackoverflow.com/questions/73418555/disable-system-alertdialog-in-android-instrumented-tests
+ * sequentially, because then delays add up. maybe run tests one at a time
+ * i know that's not really automated (but since the alert dialogue pops up always
+ * there needs to be someone managing it either way).
+ * For that also keep an eye on this
+ * <a href="https://stackoverflow.com/questions/73418555/disable-system-alertdialog-in-android-instrumented-tests">
+ * Stack Overflow Question</a>
  * maybe there will be an answer.
- * <p>---------------------------------------------<p>
+ *
+ * <p>
+ * <h2>Usage</h2>
  * These tests are to be performed on 3
  * physical devices.
  * The devices are required to have Wifi Direct  set to on.
  * The devices all need to run the tests simultaneously.
+ * Android Studio allows to select several devices to run
+ * the tests.
  * <p>
  * To run the test a few configurations are needed, to differentiate
  * their names need to be specified beforehand. Same goes for
- * their bluetooth and wifi mac addresses.
- * For that refer to the {@link willi.boelke.services.serviceDiscovery.testUtils.DeviceRoleManager}
- * ad specify them there.
- * <p>---------------------------------------------<p>
- * General premise - each test will be split into 3 different roles
- * which will execute a different code. Those are defined in additional methods
- * right below the test method itself, following the naming pattern
- * "testCaseName_roleSpecificName"
+ * their bluetooth and wifi mac addresses. For that refer to the
+ * {@link willi.boelke.services.testUtils.DeviceRoleManager}:
  *
  * @author WilliBoelke
  */
 @RunWith(AndroidJUnit4.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class BluetoothServiceConnectionEngineLiveTest
+public abstract class IntegrationBluetoothServiceConnectionEngine
 {
-    ServiceDescription descriptionForServiceOne;
-    ServiceDescription descriptionForServiceTwo;
+    private ServiceDescription descriptionForServiceOne;
+    private ServiceDescription descriptionForServiceTwo;
 
     @Rule
     public GrantPermissionRule fineLocationPermissionRule = GrantPermissionRule.grant(Manifest.permission.ACCESS_FINE_LOCATION);
@@ -111,7 +130,6 @@ public class BluetoothServiceConnectionEngineLiveTest
         determineTestRunner();
     }
 
-
     @Before
     public void setup()
     {
@@ -123,17 +141,21 @@ public class BluetoothServiceConnectionEngineLiveTest
         serviceAttributesTwo.put("service-info", "This is another test service description");
         descriptionForServiceOne = new ServiceDescription("test service one", serviceAttributesOne);
         descriptionForServiceTwo = new ServiceDescription("test service two", serviceAttributesTwo);
-        BluetoothServiceConnectionEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
     }
+
+    /**
+     * To be implement in subclasses to provide a connection engine with
+     * a {@link BluetoothServiceDiscoveryEngine}
+     *
+     * @return the {@link BluetoothServiceConnectionEngine} under test.
+     */
+    protected abstract BluetoothServiceConnectionEngine getConnectionEngine();
+
 
     @After
     public void teardown() throws NullPointerException, InvocationTargetException, IllegalAccessException, NoSuchMethodException
     {
-        BluetoothServiceConnectionEngine.getInstance().teardownEngine();
-        // tearing down discovery engine with reflections
-        Method teardown = BluetoothDiscoveryVOne.getInstance().getClass().getDeclaredMethod("teardownEngine");
-        teardown.setAccessible(true);
-        teardown.invoke(BluetoothDiscoveryVOne.getInstance());
+        getConnectionEngine().teardownEngine();
     }
 
 
@@ -168,8 +190,8 @@ public class BluetoothServiceConnectionEngineLiveTest
     public void itShouldConnectToOneNearbyService_advertiseServiceAndAccept() throws InterruptedException
     {
         ArrayList<BluetoothConnection> acceptedConnections = new ArrayList<>();
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(descriptionForServiceOne, acceptedConnections::add);
-        BluetoothServiceConnectionEngine.getInstance().startDiscoverable();
+        getConnectionEngine().startSDPService(descriptionForServiceOne, acceptedConnections::add);
+        getConnectionEngine().startDiscoverable();
         synchronized (this)
         {
             this.wait(40000); // wait for test to finish
@@ -183,10 +205,10 @@ public class BluetoothServiceConnectionEngineLiveTest
     {
         ArrayList<BluetoothConnection> connections = new ArrayList<>();
 
-        BluetoothServiceConnectionEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
+        getConnectionEngine().startSDPDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
         {
             @Override
-            public void onServiceDiscovered(String address, ServiceDescription description)
+            public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
             {
                 // not under test here
             }
@@ -204,13 +226,13 @@ public class BluetoothServiceConnectionEngineLiveTest
             }
 
             @Override
-            public boolean shouldConnectTo(String address, ServiceDescription description)
+            public boolean shouldConnectTo(BluetoothDevice host, ServiceDescription description)
             {
-                // making shure it only connects to device be, in case other devices are advertising the some service here
-                return address.equals(MAC_B_BT); // it should connect7
+                // making sure it only connects to device be, in case other devices are advertising the some service here
+                return host.getAddress().equals(MAC_B_BT); // it should connect7
             }
         });
-        BluetoothServiceConnectionEngine.getInstance().startDeviceDiscovery();
+        getConnectionEngine().startDeviceDiscovery();
 
         synchronized (this)
         {
@@ -250,9 +272,9 @@ public class BluetoothServiceConnectionEngineLiveTest
     {
 
         ArrayList<BluetoothConnection> acceptedConnections = new ArrayList<>();
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(descriptionForServiceOne, acceptedConnections::add);
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(descriptionForServiceTwo, acceptedConnections::add);
-        BluetoothServiceConnectionEngine.getInstance().startDiscoverable();
+        getConnectionEngine().startSDPService(descriptionForServiceOne, acceptedConnections::add);
+        getConnectionEngine().startSDPService(descriptionForServiceTwo, acceptedConnections::add);
+        getConnectionEngine().startDiscoverable();
         synchronized (this)
         {
             this.wait(40000); // wait for test to finish
@@ -268,10 +290,10 @@ public class BluetoothServiceConnectionEngineLiveTest
 
         ArrayList<ServiceDescription> connectedServices = new ArrayList<>();
 
-        BluetoothServiceConnectionEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
+        getConnectionEngine().startSDPDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
         {
             @Override
-            public void onServiceDiscovered(String address, ServiceDescription description)
+            public void onServiceDiscovered(BluetoothDevice address, ServiceDescription description)
             {
                 // not under test here
             }
@@ -289,17 +311,17 @@ public class BluetoothServiceConnectionEngineLiveTest
             }
 
             @Override
-            public boolean shouldConnectTo(String address, ServiceDescription description)
+            public boolean shouldConnectTo(BluetoothDevice host, ServiceDescription description)
             {
                 // making sure it only connects to device be, in case other devices are advertising the some service here
-                return address.equals(MAC_B_BT); // it should connect7
+                return host.getAddress().equals(MAC_B_BT); // it should connect7
             }
         });
 
-        BluetoothServiceConnectionEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceTwo, new BluetoothServiceClient()
+        getConnectionEngine().startSDPDiscoveryForService(descriptionForServiceTwo, new BluetoothServiceClient()
         {
             @Override
-            public void onServiceDiscovered(String address, ServiceDescription description)
+            public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
             {
                 // not under test here
             }
@@ -317,13 +339,13 @@ public class BluetoothServiceConnectionEngineLiveTest
             }
 
             @Override
-            public boolean shouldConnectTo(String address, ServiceDescription description)
+            public boolean shouldConnectTo(BluetoothDevice host, ServiceDescription description)
             {
                 // making sure it only connects to device be, in case other devices are advertising the some service here
-                return address.equals(MAC_B_BT); // it should connect7
+                return host.getAddress().equals(MAC_B_BT); // it should connect7
             }
         });
-        BluetoothServiceConnectionEngine.getInstance().startDeviceDiscovery();
+        getConnectionEngine().startDeviceDiscovery();
 
         synchronized (this)
         {
@@ -360,12 +382,12 @@ public class BluetoothServiceConnectionEngineLiveTest
 
         ArrayList<ServiceDescription> connectedServices = new ArrayList<>();
         ArrayList<String> connectedClients = new ArrayList<>();
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(descriptionForServiceOne, connection ->
+        getConnectionEngine().startSDPService(descriptionForServiceOne, connection ->
         {
             connectedServices.add(connection.getServiceDescription());
             connectedClients.add(connection.getRemoteDeviceAddress());
         });
-        BluetoothServiceConnectionEngine.getInstance().startDiscoverable();
+        getConnectionEngine().startDiscoverable();
         synchronized (this)
         {
             this.wait(40000); // wait for test to finish
@@ -381,10 +403,10 @@ public class BluetoothServiceConnectionEngineLiveTest
     {
 
         ArrayList<ServiceDescription> connectedServices = new ArrayList<>();
-        BluetoothServiceConnectionEngine.getInstance().startSDPDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
+        getConnectionEngine().startSDPDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
         {
             @Override
-            public void onServiceDiscovered(String address, ServiceDescription description)
+            public void onServiceDiscovered(BluetoothDevice address, ServiceDescription description)
             {
                 // not under test here
             }
@@ -402,12 +424,12 @@ public class BluetoothServiceConnectionEngineLiveTest
             }
 
             @Override
-            public boolean shouldConnectTo(String address, ServiceDescription description)
+            public boolean shouldConnectTo(BluetoothDevice host, ServiceDescription description)
             {
-               return true;
+                return true;
             }
         });
-        BluetoothServiceConnectionEngine.getInstance().startDeviceDiscovery();
+        getConnectionEngine().startDeviceDiscovery();
 
         synchronized (this)
         {

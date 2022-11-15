@@ -187,7 +187,7 @@ class BluetoothConnectionManager
         ArrayList<BluetoothConnection> zombies = new ArrayList<>();
         for (BluetoothConnection connection : this.openConnections)
         {
-            if (!connection.isConnected())
+            if (!connection.isConnected() || connection.isClosed())
             {
                 zombies.add(connection);
             }

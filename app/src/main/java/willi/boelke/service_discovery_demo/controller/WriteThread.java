@@ -13,16 +13,16 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
 /**
  * Ths thread writes continuously messages to an InputStream
  * provided by a {@link ServiceConnection}.
- *
+ * <p>
  * This works hand in hand with the demo controllers and the {@link ControllerListener}
  * which will be required by this class.
- *
+ * <p>
  * This Thread iterates over the given list of connections and writes a message to
  * them containing a placeholder string and a counter to differentiate messages.
- *
+ * <p>
  * If a connection was closed/disconnected the thread will close this side of the connection (the socket)
  * as well as the Streams provided by that socket. The connection will then e removed from the list.
- *
+ * <p>
  * The given {@link ControllerListener} will be notified about closed connections.
  *
  * @param <T>
@@ -67,7 +67,7 @@ public class WriteThread <T extends ServiceConnection, D> extends Thread
             ArrayList<T> disconnectedConnections = new ArrayList<>();
             for (T connection : connections)
             {
-                if (connection.isConnected())
+                if (connection.isConnected() && !connection.isClosed())
                 {
                     try
                     {

@@ -15,7 +15,8 @@ import android.util.Log;
 
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.tcp.TCPChannelMaker;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
-import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
+import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscoveryEngine;
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiServiceDiscoveryListener;
 
 /**
@@ -130,7 +131,7 @@ public class WifiDirectConnectionEngine
     /**
      * The discovery engine
      */
-    private WifiDirectDiscoveryEngine discoveryEngine;
+    private WifiDirectServiceDiscoveryEngine discoveryEngine;
 
     /**
      * The service the engine tries to find
@@ -191,7 +192,7 @@ public class WifiDirectConnectionEngine
 
         //--- setting up discovery engine ---//
 
-        this.discoveryEngine = WifiDirectDiscoveryEngine.getInstance();
+        this.discoveryEngine = WifiDirectServiceDiscoveryEngine.getInstance();
         this.discoveryEngine.start(manager, channel);
         this.discoveryEngine.registerDiscoverListener(serviceDiscoveryListener);
 
@@ -460,6 +461,7 @@ public class WifiDirectConnectionEngine
             Log.d(TAG, "tryToConnect: peer decided not to connect");
         }
     }
+
 
     //
     //  ----------  on connection events ----------

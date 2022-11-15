@@ -1,4 +1,4 @@
-package willi.boelke.services.serviceDiscovery.testUtils
+package willi.boelke.services.testUtils
 
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
@@ -116,7 +116,8 @@ fun getSocketToTestDevice(device: BluetoothDevice): BluetoothSocket {
     justRun { inputStream.close() }
     every {mockedSocket.inputStream} returns  inputStream
     every {mockedSocket.outputStream} returns  outputStream
-    every {mockedSocket.remoteDevice} returns  device
+    every { mockedSocket.remoteDevice } returns device
+    every { mockedSocket.isConnected } returns true
     justRun {mockedSocket.close()}
     return mockedSocket
 }

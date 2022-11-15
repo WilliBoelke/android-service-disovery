@@ -14,11 +14,11 @@ import willi.boelke.service_discovery_demo.controller.wifiDemoController.WifiDem
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiConnection;
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVOne;
 
 /**
  * This is the ViewModel for the BluetoothDiscoveryFragment.
- * It Serves as layer in between the {@link BluetoothDiscoveryVOne},
+ * It Serves as layer in between the {@link BluetoothServiceDiscoveryVOne},
  * and the View. It will store and keep view data during configuration changes.
  *
  * @author WilliBoelke

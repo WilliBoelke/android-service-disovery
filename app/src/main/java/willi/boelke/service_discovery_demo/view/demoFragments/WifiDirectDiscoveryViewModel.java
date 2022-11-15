@@ -10,12 +10,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
-import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscoveryEngine;
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiServiceDiscoveryListener;
 
 /**
  * This is the ViewModel for the WifiDiscoveryFragment.
- * It Serves as layer in between the {@link WifiDirectDiscoveryEngine},
+ * It Serves as layer in between the {@link WifiDirectServiceDiscoveryEngine},
  * and the View. It will store and keep view data during configuration changes.
  * <p>
  * The Engine as a singleton will (and should be)
@@ -46,7 +46,7 @@ public class WifiDirectDiscoveryViewModel extends ViewModel implements WifiServi
         serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
         descriptionForServiceOne = new ServiceDescription("Counting Service One", serviceAttributesOne);
         descriptionForServiceTwo = new ServiceDescription("Counting Service Two", serviceAttributesTwo);
-        WifiDirectDiscoveryEngine.getInstance().registerDiscoverListener(this);
+        WifiDirectServiceDiscoveryEngine.getInstance().registerDiscoverListener(this);
     }
 
 
@@ -58,36 +58,36 @@ public class WifiDirectDiscoveryViewModel extends ViewModel implements WifiServi
     {
         this.discoveredServices.postValue(new ArrayList<>());
         this.latestNotification.postValue("Start Discovery");
-        WifiDirectDiscoveryEngine.getInstance().startDiscovery();
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery();
     }
 
     protected void startSearchServiceOne()
     {
         this.latestNotification.postValue("Start service 1");
-        WifiDirectDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceOne);
+        WifiDirectServiceDiscoveryEngine.getInstance().startService(descriptionForServiceOne);
     }
 
     protected void startSearchServiceTwo()
     {
         this.latestNotification.postValue("Start service 2");
-        WifiDirectDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceTwo);
-        WifiDirectDiscoveryEngine.getInstance().startService(descriptionForServiceTwo);
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceTwo);
+        WifiDirectServiceDiscoveryEngine.getInstance().startService(descriptionForServiceTwo);
 
     }
 
     protected void stopSearchServiceOne()
     {
         this.latestNotification.postValue("Stop service 1");
-        WifiDirectDiscoveryEngine.getInstance().stopDiscoveryForService(descriptionForServiceOne);
-        WifiDirectDiscoveryEngine.getInstance().stopService(descriptionForServiceOne);
+        WifiDirectServiceDiscoveryEngine.getInstance().stopDiscoveryForService(descriptionForServiceOne);
+        WifiDirectServiceDiscoveryEngine.getInstance().stopService(descriptionForServiceOne);
     }
 
     protected void stopSearchServiceTwo()
     {
         this.latestNotification.postValue("Stop service 2");
-        WifiDirectDiscoveryEngine.getInstance().stopDiscoveryForService(descriptionForServiceTwo);
-        WifiDirectDiscoveryEngine.getInstance().stopService(descriptionForServiceTwo);
+        WifiDirectServiceDiscoveryEngine.getInstance().stopDiscoveryForService(descriptionForServiceTwo);
+        WifiDirectServiceDiscoveryEngine.getInstance().stopService(descriptionForServiceTwo);
     }
 
     protected void notifyAboutAllServices()
@@ -95,14 +95,14 @@ public class WifiDirectDiscoveryViewModel extends ViewModel implements WifiServi
         this.notifyAboutAllServices = !this.notifyAboutAllServices;
         String msg = this.notifyAboutAllServices ? "Looking for aöö services" : "Only specified services";
         this.latestNotification.postValue(msg);
-        WifiDirectDiscoveryEngine.getInstance().notifyAboutAllServices(this.notifyAboutAllServices);
+        WifiDirectServiceDiscoveryEngine.getInstance().notifyAboutAllServices(this.notifyAboutAllServices);
     }
 
 
     protected void stopDiscovery()
     {
         this.latestNotification.postValue("Stopped discovery");
-        WifiDirectDiscoveryEngine.getInstance().stopDiscovery();
+        WifiDirectServiceDiscoveryEngine.getInstance().stopDiscovery();
     }
 
     //

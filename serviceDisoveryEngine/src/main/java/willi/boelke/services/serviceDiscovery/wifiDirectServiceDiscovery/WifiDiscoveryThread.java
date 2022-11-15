@@ -47,7 +47,7 @@ import java.util.Map;
  * SdpWifiDiscoveryEngine<br>
  * ------------------------------------------------------------<br>
  * Every discovered service will be passed to
- * {@link WifiDirectDiscoveryEngine#onServiceDiscovered(WifiP2pDevice, Map, String, String)}
+ * {@link WifiDirectServiceDiscoveryEngine#onServiceDiscovered(WifiP2pDevice, Map, String, String)}
  * only there the service records will be evaluated.
  *
  * @author WilliBoelke
@@ -64,7 +64,7 @@ class WifiDiscoveryThread extends Thread
 
     private int runningTries = 0;
 
-    private final WifiDirectDiscoveryEngine engine;
+    private final WifiDirectServiceDiscoveryEngine engine;
 
     private boolean isDiscovering;
 
@@ -75,6 +75,7 @@ class WifiDiscoveryThread extends Thread
     private Thread thread;
 
     private final HashMap<String, Map<String, String>> tmpRecordCache = new HashMap<>();
+
     //
     //  ---------- constructor and initialisation ----------
     //
@@ -89,7 +90,7 @@ class WifiDiscoveryThread extends Thread
      * @param engine
      *         The WifiDirectDiscoveryEngine to callback
      */
-    public WifiDiscoveryThread(WifiP2pManager manager, WifiP2pManager.Channel channel, WifiDirectDiscoveryEngine engine)
+    public WifiDiscoveryThread(WifiP2pManager manager, WifiP2pManager.Channel channel, WifiDirectServiceDiscoveryEngine engine)
     {
         this.manager = manager;
         this.channel = channel;
@@ -124,7 +125,7 @@ class WifiDiscoveryThread extends Thread
             {
                 try
                 {
-                    this.wait(10000);
+                    this.wait(6000);
                 }
                 catch (InterruptedException e)
                 {
@@ -158,23 +159,19 @@ class WifiDiscoveryThread extends Thread
         //----------------------------------
         // NOTE : Well its a little bit weird i think
         // that the TXT record and the DnsService response
-        // come in separate callbacks.
-        // It seems so that the always come in teh same order
-        // To i can match both using the device address.
+        // come in separate callbacks. It seems so that
+        // the always come in the same order so i can match
+        // both using the device address.
         // https://developer.android.com/training/connect-devices-wirelessly/nsd-wifi-direct
         // does it similar, though in their example
-        // there just is one single service.
-        // I am sure there is some reason for it.. which i
-        // cant quite understand. I think both should come in teh same callback
-        // because i am sure google could make a more reliable matching between the two
-        // then i can do here.
+        // there just is one single service. I am sure there
+        // is some reason for it.. which i cant quite
+        // understand. I think both should come in the same callback
+        // because i am sure google could make a more reliable
+        // matching between the two then i can do here.
         //----------------------------------
 
         //--- TXT Record listener ---//
-
-        //
-        //
-        //
 
         WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, txtRecord, device) ->
         {
@@ -189,6 +186,7 @@ class WifiDiscoveryThread extends Thread
         {
             Map<String, String> record = tmpRecordCache.get(device.deviceAddress);
             engine.onServiceDiscovered(device, record, registrationType, instanceName);
+            this.interrupt();
         };
 
         //--- setting the listeners ---//
@@ -282,7 +280,7 @@ class WifiDiscoveryThread extends Thread
             @Override
             public void onFailure(int reason)
             {
-                WifiDirectDiscoveryEngine.logReason(TAG, "DiscoveryThread: cancel: could not clear service requests ", reason);
+                WifiDirectServiceDiscoveryEngine.logReason(TAG, "DiscoveryThread: cancel: could not clear service requests ", reason);
             }
         });
         Log.d(TAG, "cancel: canceled service discovery");
@@ -294,7 +292,11 @@ class WifiDiscoveryThread extends Thread
     }
 
     /**
-     * If the discovery fails
+     * If the Service discovery fails it mostly
+     * happens through a "busy" error, Which means
+     * that Wifi P2P is Currently doing some other things.
+     * Maybe because a service was registered or
+     * something else happened.
      */
     private void onServiceDiscoveryFailure()
     {
@@ -306,8 +308,8 @@ class WifiDiscoveryThread extends Thread
         {
             synchronized (this)
             {
-                this.wait(5000); // wait an additional 5 seconds so other processes can
-                // (hopefully) finish
+                // wait an additional 2 seconds so other processes can (hopefully) finish
+                this.wait(2000);
             }
         }
         catch (InterruptedException e){

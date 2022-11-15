@@ -52,10 +52,27 @@ public class WifiConnection implements ServiceConnection
         return connectionSocket.getOutputStream();
     }
 
+    /**
+     * Returns the connection state of the socket.
+     * Note: Closing a socket doesn't clear its connection state, which
+     * means this method will return true for a closed socket (see isClosed())
+     * if it was successfuly connected prior to being closed.
+     */
     @Override
     public boolean isConnected()
     {
         return connectionSocket.isConnected();
+    }
+
+    /**
+     * Returns the closed state of the socket.
+     *
+     * @return true if the socket has been closed
+     */
+    @Override
+    public boolean isClosed()
+    {
+        return connectionSocket.isClosed();
     }
 
     @NonNull
@@ -68,6 +85,10 @@ public class WifiConnection implements ServiceConnection
                 '}';
     }
 
+    /**
+     * Closes the sockets Input- and OutputStream
+     * as well as the socket itself.
+     */
     @Override
     public void close()
     {

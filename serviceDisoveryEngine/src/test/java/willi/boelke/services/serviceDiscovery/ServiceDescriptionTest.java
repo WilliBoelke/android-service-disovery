@@ -23,7 +23,6 @@ public class ServiceDescriptionTest
         HashMap<String, String> serviceAttributesOne = new HashMap<>();
         serviceAttributesOne.put("service-name", "Test Service One");
         serviceAttributesOne.put("service-info", "This is a test service description");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
     }
 
     @Test

@@ -11,13 +11,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVOne;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothDiscoveryVTwo;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscovery;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVOne;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVTwo;
 
 /**
  * This is the ViewModel for the BluetoothDiscoveryFragment.
- * It Serves as layer in between the {@link BluetoothDiscoveryVOne},
+ * It Serves as layer in between the {@link BluetoothServiceDiscoveryVOne},
  * and the View. It will store and keep view data during configuration changes.
  *
  * @author WilliBoelke
@@ -29,7 +30,7 @@ public class BluetoothDiscoveryViewModel extends ViewModel implements BluetoothS
      */
     private final String TAG = this.getClass().getSimpleName();
 
-    private final BluetoothDiscoveryVOne engine;
+    private final BluetoothServiceDiscovery engine;
     private final MutableLiveData<ArrayList<ServiceDescription>> discoveredServices = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<String> notification = new MutableLiveData<>();
     private final ServiceDescription descriptionForServiceOne;
@@ -39,7 +40,7 @@ public class BluetoothDiscoveryViewModel extends ViewModel implements BluetoothS
     public BluetoothDiscoveryViewModel()
     {
         // Should be initialized and started in view bc of context
-        engine = BluetoothDiscoveryVOne.getInstance();
+        engine = BluetoothServiceDiscoveryVTwo.getInstance();
         HashMap<String, String> serviceAttributesOne = new HashMap<>();
         HashMap<String, String> serviceAttributesTwo = new HashMap<>();
         serviceAttributesOne.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
