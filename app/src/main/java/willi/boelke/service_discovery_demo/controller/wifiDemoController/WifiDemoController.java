@@ -1,7 +1,10 @@
 package willi.boelke.service_discovery_demo.controller.wifiDemoController;
 
+import android.Manifest;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.util.Log;
+
+import androidx.annotation.RequiresPermission;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -79,6 +82,7 @@ public class WifiDemoController implements WifiDirectPeer
         WifiDirectConnectionEngine.getInstance().registerService(this.description, this);
     }
 
+    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     public void stop()
     {
         WifiDirectConnectionEngine.getInstance().unregisterService();
@@ -101,6 +105,10 @@ public class WifiDemoController implements WifiDirectPeer
         }
         this.readThread = null;
         this.writeThread = null;
+        for (WifiConnection connection:this.connections)
+        {
+            this.listener.onConnectionLost(connection);
+        }
         this.connections.clear();
         this.gotRoleAssigned = false;
         this.listener.onMessageChange("");

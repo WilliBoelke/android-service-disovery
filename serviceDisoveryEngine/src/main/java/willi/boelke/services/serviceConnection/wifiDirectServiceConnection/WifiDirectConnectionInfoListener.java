@@ -22,17 +22,17 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
     private final WifiDirectConnectionEngine wifiDirectConnectionEngine;
 
     private TCPChannelMaker serverChannelCreator = null;
-    private boolean establishConnection;
 
+    private boolean establishConnection;
 
     //
     //  ----------  constructor and initialisation ----------
     //
+
     public WifiDirectConnectionInfoListener(WifiDirectConnectionEngine wifiDirectConnectionEngine)
     {
         this.wifiDirectConnectionEngine = wifiDirectConnectionEngine;
     }
-
 
     //
     //  ----------  connection info listener ----------
@@ -56,7 +56,7 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
         Log.d(TAG, "onConnectionInfoAvailable: received connection info");
         Log.d(TAG, "onConnectionInfoAvailable: " + info);
 
-        if (!this.establishConnection)
+        if (!establishConnection)
         {
             Log.e(TAG, "onConnectionInfoAvailable: should not establish connections");
             return;
@@ -70,7 +70,7 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
             if (this.serverChannelCreator == null)
             {
                 Log.d(TAG, "onConnectionInfoAvailable: start server channel");
-                this.serverChannelCreator = TCPChannelMaker.getTCPServerCreator(wifiDirectConnectionEngine.getPortNumber(), true);
+                this.serverChannelCreator = TCPChannelMaker.getTCPServerCreator(wifiDirectConnectionEngine.getPort(), true);
             }
             else
             {
@@ -84,15 +84,24 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
 
             String hostAddress = info.groupOwnerAddress.getHostAddress();
             Log.d(TAG, "onConnectionInfoAvailable: local peer client, group owner = " + hostAddress);
-            channelCreator = TCPChannelMaker.getTCPClientCreator(hostAddress, wifiDirectConnectionEngine.getPortNumber());
+            channelCreator = TCPChannelMaker.getTCPClientCreator(hostAddress, wifiDirectConnectionEngine.getPort());
             wifiDirectConnectionEngine.onBecameClient();
         }
         Log.e(TAG, "onConnectionInfoAvailable: channel creator is null = " + (channelCreator == null));
         this.wifiDirectConnectionEngine.onSocketConnectionStarted(channelCreator);
     }
 
+    /**
+     * This can be used to prevent the listener from establish connections as soon as
+     * the are received.
+     *
+     * In many cases this behavior isn't (for example when connections are already established)
+     * @param shouldEstablish
+     *
+     */
     protected void establishConnections(boolean shouldEstablish)
     {
+        Log.e(TAG, "establishConnections: SHOULD CONNECT = " + shouldEstablish);
         this.establishConnection = shouldEstablish;
     }
 }

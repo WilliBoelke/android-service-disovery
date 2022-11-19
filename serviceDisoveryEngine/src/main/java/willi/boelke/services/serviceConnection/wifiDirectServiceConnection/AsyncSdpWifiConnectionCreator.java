@@ -65,6 +65,7 @@ class AsyncSdpWifiConnectionCreator extends Thread
 
             // Creating the connection
             WifiConnection connection = new WifiConnection(this.socket, this.serviceDescription);
+            Log.d(TAG, "run: socked to " + socket.getInetAddress() + " with " + serviceDescription + " has been connected");
             this.engine.onSocketConnected(connection);
         }
         catch (IOException e)

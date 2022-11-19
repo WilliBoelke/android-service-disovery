@@ -51,7 +51,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDiscoveryEngine;
  * the service will stay advertised until {@link #stopService(ServiceDescription)}
  * or {@link #stop()} is called.
  * For a service to be Discoverable the device also needs to run the discovery.
- * (TODO this is weird behavior look into that more...could not find much in documenatation)
+ * (TODO this is weird behavior look into that more...could not find much in documentation)
  * <p>
  * Discovery<br>
  * ------------------------------------------------------------<br>
@@ -217,7 +217,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
         engineRunning = true;
     }
 
-
     /**
      * This stops the engine and disconnects from the group
      * the singleton instance will be reset to null.
@@ -228,7 +227,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
         this.stop();
         instance = null;
     }
-
 
     /**
      * This stops the engine, the discovery will be stopped
@@ -246,7 +244,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
         this.stopAllServices();
         channel.close();
     }
-
 
     //
     //  ----------  service discovery start/stop----------
@@ -290,7 +287,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
         this.discoveryThread = null;
     }
 
-
     //
     //  ----------  "client" side ----------
     //
@@ -310,7 +306,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
     @Override
     protected void onNewServiceToDiscover(ServiceDescription description)
     {
-        // checkIfServiceAlreadyHasBeenDiscovered(description);
+        //checkIfServiceAlreadyHasBeenDiscovered(description);
     }
 
     /**
@@ -330,7 +326,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
     @Override
     protected void onServiceRemoveFromDiscovery(ServiceDescription description)
     {
-        // nothing to do here s
+        // nothing to do here
     }
 
     /**
@@ -393,7 +389,10 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
             return;
         }
         Log.d(TAG, "startSdpService: starting service : " + description);
-        WifiP2pServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(description.getServiceName(), SERVICE_TYPE, description.getServiceRecord());
+        WifiP2pServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(
+                description.getServiceName(),
+                SERVICE_TYPE,
+                description.getServiceRecord());
         manager.addLocalService(channel, serviceInfo, new WifiP2pManager.ActionListener()
         {
             @Override

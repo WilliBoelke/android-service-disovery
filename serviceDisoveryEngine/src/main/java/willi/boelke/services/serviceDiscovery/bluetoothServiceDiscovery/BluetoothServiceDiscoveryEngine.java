@@ -206,7 +206,6 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      * It is true by default, to ensure everything working correctly.
      * But can be disabled be the user.
      * <p>
-     * // Todo find a better solution
      *
      * @see BluetoothServiceDiscoveryEngine#shouldCheckLittleEndianUuids(boolean)
      * @see ServiceDescription#getBytewiseReverseUuid()

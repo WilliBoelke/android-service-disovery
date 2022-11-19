@@ -97,8 +97,8 @@ public abstract class ServiceDiscoveryEngine implements IServiceDiscoveryEngine
     }
 
     /**
-     * called whenever a new service was added to the discovery
-     * can be implemented in subclasses
+     * Called whenever a new service was added to be discovery
+     * though {@link #startDiscoveryForService(ServiceDescription)}
      *
      * @param description
      *         the description of the service
