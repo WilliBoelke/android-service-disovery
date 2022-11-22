@@ -52,7 +52,8 @@ public class BluetoothConnectionTest
     }
 
     @Test
-    public void givesCorrectConnectionInfo(){
+    public void givesCorrectConnectionInfo()
+    {
         when(testSocketOne.isConnected()).thenReturn(true);
         when(testSocketTwo.isConnected()).thenReturn(false);
 
@@ -61,13 +62,15 @@ public class BluetoothConnectionTest
     }
 
     @Test
-    public void correctlyGivesPeerStatus(){
+    public void correctlyGivesPeerStatus()
+    {
         assertTrue(testConnectionTwo.isServerPeer());
         assertFalse(testConnectionOne.isServerPeer());
     }
 
     @Test
-    public void givesTheCorrectRemoteDeviceAddress(){
+    public void givesTheCorrectRemoteDeviceAddress()
+    {
         String testAddress = "This is not a real address";
         BluetoothDevice testRemoteDevice = Mockito.mock(BluetoothDevice.class);
         when(testRemoteDevice.getAddress()).thenReturn(testAddress);
@@ -77,7 +80,8 @@ public class BluetoothConnectionTest
     }
 
     @Test
-    public void givesTTheCorrectRemoteDevice(){
+    public void givesTTheCorrectRemoteDevice()
+    {
         BluetoothDevice testRemoteDevice = Mockito.mock(BluetoothDevice.class);
         when(testSocketOne.getRemoteDevice()).thenReturn(testRemoteDevice);
 
@@ -106,7 +110,8 @@ public class BluetoothConnectionTest
     }
 
     @Test
-    public void equalConnections(){
+    public void equalConnections()
+    {
         //----------------------------------
         // NOTE : As stated in the requirements
         // a connection equal when {address, uuid}
@@ -126,6 +131,4 @@ public class BluetoothConnectionTest
         when(testSocketTwo.getRemoteDevice()).thenReturn(testRemoteDeviceTwo);
         assertNotEquals(testConnectionOne, testConnectionTwo);
     }
-
-
 }

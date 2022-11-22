@@ -2,7 +2,6 @@ package android.util;
 
 /**
  * Mocking android Log methods while testing
- *
  */
 public class Log
 {

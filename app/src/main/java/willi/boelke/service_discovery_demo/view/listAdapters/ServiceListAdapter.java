@@ -9,16 +9,16 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
-import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.service_discovery_demo.R;
+import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 
 public class ServiceListAdapter extends ArrayAdapter<ServiceDescription>
 {
 
-    private LayoutInflater mLayoutInflater;
-    private ArrayList<ServiceDescription> services;
-    private int mViewResourceId;
+    private final LayoutInflater mLayoutInflater;
+    private final ArrayList<ServiceDescription> services;
+    private final int mViewResourceId;
 
     public ServiceListAdapter(Context context, int tvResourceId, ArrayList<ServiceDescription> devices)
     {
@@ -28,6 +28,7 @@ public class ServiceListAdapter extends ArrayAdapter<ServiceDescription>
         mViewResourceId = tvResourceId;
     }
 
+    @Override
     public View getView(int position, View convertView, ViewGroup parent)
     {
         convertView = mLayoutInflater.inflate(mViewResourceId, null);
@@ -37,14 +38,15 @@ public class ServiceListAdapter extends ArrayAdapter<ServiceDescription>
         //Setup the name TextView
         TextView name = convertView.findViewById(R.id.service_name_tv);
         TextView description = convertView.findViewById(R.id.description_tv);
-        String nameString = service.getServiceName() +" / "+service.getServiceUuid().toString();
+        String nameString = service.getServiceName() + " / " + service.getServiceUuid().toString();
         name.setText(nameString);
 
-        if(service.getServiceRecord().size() > 0)
+        if (service.getServiceRecord().size() > 0)
         {
             description.setText(service.getServiceRecord().toString());
         }
-        else{
+        else
+        {
             description.setText("No record resolved");
         }
 

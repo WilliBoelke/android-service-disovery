@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscovery;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVOne;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVTwo;
 
@@ -25,16 +25,12 @@ import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.Bluetoot
  */
 public class BluetoothDiscoveryViewModel extends ViewModel implements BluetoothServiceDiscoveryListener
 {
-    /**
-     * Classname for logging
-     */
-    private final String TAG = this.getClass().getSimpleName();
-
     private final BluetoothServiceDiscovery engine;
     private final MutableLiveData<ArrayList<ServiceDescription>> discoveredServices = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<String> notification = new MutableLiveData<>();
     private final ServiceDescription descriptionForServiceOne;
     private final ServiceDescription descriptionForServiceTwo;
+    private final MutableLiveData<Boolean> notifyAboutAll = new MutableLiveData<>(Boolean.FALSE);
 
 
     public BluetoothDiscoveryViewModel()
@@ -87,6 +83,13 @@ public class BluetoothDiscoveryViewModel extends ViewModel implements BluetoothS
         engine.refreshNearbyServices();
     }
 
+    protected void notifyAboutAllServices()
+    {
+        boolean notifyAll = Boolean.FALSE.equals(this.notifyAboutAll.getValue());
+        this.engine.notifyAboutAllServices(notifyAll);
+        this.notifyAboutAll.postValue(notifyAll);
+    }
+
 
     //
     //  ---------- LiveData getter ----------
@@ -123,5 +126,24 @@ public class BluetoothDiscoveryViewModel extends ViewModel implements BluetoothS
         this.notification.postValue("New Peer discovered  { " +
                 device.getName() + ", " +
                 device.getAddress() + " }");
+    }
+
+    public void goInactive()
+    {
+        stopSearchServiceTwo();
+        stopSearchServiceOne();
+        engine.unregisterDiscoveryListener(this);
+        engine.notifyAboutAllServices(false);
+    }
+
+    public void goActive()
+    {
+        engine.registerDiscoverListener(this);
+        engine.notifyAboutAllServices(Boolean.TRUE.equals(this.notifyAboutAll.getValue()));
+    }
+
+    protected LiveData<Boolean> getDiscoverAllState()
+    {
+        return this.notifyAboutAll;
     }
 }

@@ -8,13 +8,15 @@ import static android.net.wifi.p2p.WifiP2pManager.P2P_UNSUPPORTED;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 import android.net.wifi.p2p.nsd.WifiP2pServiceInfo;
 import android.util.Log;
-import willi.boelke.services.serviceDiscovery.ServiceDescription;
+
 import androidx.annotation.RequiresPermission;
 
 import java.util.ArrayList;
@@ -22,47 +24,42 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.services.serviceDiscovery.ServiceDiscoveryEngine;
 
 
 /**
  * Discover nearby Wifi Direct / Bonjour Services.
  * <p>
- * Searching for services<br>
- * ------------------------------------------------------------<br>
- * Services are advertised as "_presence._tcp", so it is expected to use TCP as transport.
- * The Service discovery currently doesn't support other protocols
- * to connect to other kinds of services like network printers.
- * This may be added in a future release.
+ * <h2>Searching for services</h2>
  * <p>
- * Searching for services<br>
- * ------------------------------------------------------------<br>
- * To Search for a specific Service a {@link ServiceDescription}
- * can be registered through
- * {@link #startDiscoveryForService(ServiceDescription)}.
- * Several serves can be searched simultaneously by calling there methods with different
+ * <h3>Service Type / Protocol</h3>
+ * By default are advertised as <b>_presence._tcp</b>
+ * If needed a different type can be specified by calling {@link #setServiceType(String)}
+ * Services which arent of the specified type will be ignored.
+ * <p>
+ * <h3>Service Descriptions</h3>
+ * To further specify the searched service a {@link ServiceDescription}
+ * needs to be registered through {@link #startDiscoveryForService(ServiceDescription)}.
+ * Several services can be searched simultaneously by  with different
  * ServiceDescription`s. {@link #startDiscoveryForService(ServiceDescription)}
- * wont return any services immediately.
- * To stop the search for a service call {@link #stopDiscoveryForService(ServiceDescription)}
+ * wont return any services immediately. To stop the search for a
+ * service call {@link #stopDiscoveryForService(ServiceDescription)}
  * <p>
- * Service advertisement<br>
- * ------------------------------------------------------------<br>
+ * <h2>Service advertisement</h2>
  * Services can be advertised using {@link #startService(ServiceDescription)}
  * the service will stay advertised until {@link #stopService(ServiceDescription)}
  * or {@link #stop()} is called.
  * For a service to be Discoverable the device also needs to run the discovery.
- * (TODO this is weird behavior look into that more...could not find much in documentation)
  * <p>
- * Discovery<br>
- * ------------------------------------------------------------<br>
+ * <h2>Discovery</h2>
  * After the services where registered the actual discovery process can be started by
  * calling {@link #startDiscovery()}, only after this point services will be discovered.
  * The discovery can be stopped {@link #stopDiscovery()} or started again as needed.
  * A Service discovery will run for 2.5 Minutes (that's no official number - i found that through
  * a number of test and it may be different on other devices).
  * <p>
- * Listener / Observer<br>
- * ------------------------------------------------------------<br>
+ * <h2>Listener</h2>
  * To get notified about discoveries a listener needs to be registered.
  * {@link #registerDiscoverListener(WifiServiceDiscoveryListener)} thi allows
  * to asynchronous notify about discovered Services.
@@ -74,12 +71,15 @@ import willi.boelke.services.serviceDiscovery.ServiceDiscoveryEngine;
  * from that moment on until it was called with `false` the engine will notify about
  * every discovered service even if it was not registered through {@link #startService(ServiceDescription)}
  * <p>
- * Stop the engine<br>
- * ------------------------------------------------------------<br>
+ * <h2>Starting and stopping the engine</h2>
+ * To use the engine {@link #start(Context)} or {@link #start(Context, WifiP2pManager, WifiP2pManager.Channel)}
+ * are needed to be called. The engine will then start and check if necessary hard- and software
+ * are available. To verify that the engine started {@link #isRunning()} can be called and should return true.
  * To stop the engine call {@link #stop()}
+ * The engine wont react to any other calls as long as it hasn't been successfully started.
  */
 @SuppressLint("MissingPermission")
-public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
+public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine implements WifiDirectServiceDiscovery
 {
 
     //
@@ -100,7 +100,23 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
      */
     private final String TAG = this.getClass().getSimpleName();
 
-    private final String SERVICE_TYPE = "_presence._tcp";
+    /**
+     * THis will be used as default service type
+     * for advertising and discovering
+     * Though different service tapes and protocols may be 
+     * used {@link #setServiceType(String)}.
+     *
+     * A list of service types can e found here
+     * <a href="http://www.dns-sd.org/ServiceTypes.html">Service Types</a>
+     * though any name can e used
+     */
+    private final String DEFAULT_SERVICE_TYPE = "_presence._tcp";
+
+    /**
+     * That the "TLD" established by Bonjour/mDNS for link local
+     * mDNS domain names.
+     */
+    private final String LOCAL_TLD = ".local.";
 
     /**
      * Wifi direct channel
@@ -115,19 +131,11 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
      * This stores all devices where a service was discovered on
      * by the service description.
      * It is used to not notify listeners about the same service twice
-     * Also it is intended to serve as a cache, to be able to connect to services
-     * without having to run the service discovery again.
-     * for that see {@link #checkIfServiceAlreadyHasBeenDiscovered(ServiceDescription)}
      * <p>
      * It will be reset whenever the discovery is started again, to not keep
      * devices that are not in range anymore
      */
-    private HashMap<ServiceDescription, ArrayList<WifiP2pDevice>> discoveredServices = new HashMap<>();
-
-    /**
-     * Reverence to the currently running discovery thread
-     */
-    private WifiDiscoveryThread discoveryThread;
+    private final HashMap<ServiceDescription, ArrayList<WifiP2pDevice>> discoveredServices = new HashMap<>();
 
     /**
      * Keeps all started services (WifiP2pServiceInfo)
@@ -147,14 +155,19 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
      */
     private final ArrayList<WifiServiceDiscoveryListener> discoveryListeners = new ArrayList<>();
 
+    /**
+     * The used service type, ber default set to
+     * {@link #DEFAULT_SERVICE_TYPE}
+     */
+    private String usedServiceType = DEFAULT_SERVICE_TYPE;
 
     //  ----------  constructor and initialization ----------
     //
 
     /**
-     * Returns the singleton instance of the engine
+     * Returns the singleton instance of the WifiDirectServiceDiscoveryEngine.
      *
-     * @return instance
+     * @return The singleton instance of the discovery engine
      */
     public static WifiDirectServiceDiscoveryEngine getInstance()
     {
@@ -181,14 +194,16 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
      * @param context
      *         the application context
      *
+     * @return
+     *
      * @see #stop()
      */
     @Override
-    public void start(Context context)
+    public boolean start(Context context)
     {
         WifiP2pManager tempManager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
         WifiP2pManager.Channel tempChannel = tempManager.initialize(context, context.getMainLooper(), null);
-        start(tempManager, tempChannel);
+        return start(context, tempManager, tempChannel);
     }
 
     /**
@@ -205,16 +220,45 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
      *
      * @see #stop()
      */
+    @Override
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    public void start(WifiP2pManager manager, WifiP2pManager.Channel channel)
+    public boolean start(Context context, WifiP2pManager manager, WifiP2pManager.Channel channel)
     {
         if (isRunning())
         {
             Log.e(TAG, "start: engine already started");
+            return true;
+        }
+        if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_DIRECT))
+        {
+            Log.e(TAG, "start: Wifi Direct not supported");
+            return false;
+        }
+        WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if (wifiManager == null)
+        {
+            Log.e(TAG, "start: Wifi Service not available");
+            return false;
+        }
+        if (!wifiManager.isP2pSupported())
+        {
+            Log.e(TAG, "start: Wifi turned off or not available");
+            return false;
+        }
+        if (manager == null)
+        {
+            Log.e(TAG, "start:Wifi Service not available");
+            return false;
+        }
+        if (channel == null)
+        {
+            Log.e(TAG, "start: cant init WiFi direct");
+            return false;
         }
         this.manager = manager;
         this.channel = channel;
         engineRunning = true;
+        return true;
     }
 
     /**
@@ -254,6 +298,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
      * this is just the discovery process, to get notified about a service
      * it needs to be specified in {@link #startDiscoveryForService(ServiceDescription)}
      */
+    @Override
     public void startDiscovery()
     {
         if (engineIsNotRunning())
@@ -264,13 +309,13 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
         this.discoveredServices.clear();
         this.stopDiscovery();
         Log.d(TAG, "startDiscovery: staring discovery");
-        this.discoveryThread = new WifiDiscoveryThread(manager, channel, this);
-        this.discoveryThread.start();
+        discoverService();
     }
 
     /**
      * Stops the discovery process
      */
+    @Override
     public void stopDiscovery()
     {
         if (engineIsNotRunning())
@@ -280,11 +325,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
         }
         //--- if the discovery thread is running -> cancel it ---//
         Log.d(TAG, "stopDiscovery: stopping discovery");
-        if (discoveryThread != null && discoveryThread.isDiscovering())
-        {
-            discoveryThread.cancel();
-        }
-        this.discoveryThread = null;
+        cancelServiceDiscovery();
     }
 
     //
@@ -306,7 +347,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
     @Override
     protected void onNewServiceToDiscover(ServiceDescription description)
     {
-        //checkIfServiceAlreadyHasBeenDiscovered(description);
+        // nothing to do here
     }
 
     /**
@@ -319,8 +360,10 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
     @Override
     public void stopDiscoveryForService(ServiceDescription description)
     {
-        if(!engineIsNotRunning())
+        if (!engineIsNotRunning())
+        {
             super.stopDiscoveryForService(description);
+        }
     }
 
     @Override
@@ -329,58 +372,14 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
         // nothing to do here
     }
 
-    /**
-     * Checks the Map of discovered services if it already contains the given service
-     * if that's the case notifies all listeners about the discovered service
-     * -----
-     * This does not seem to work, since connection attempts to cached devices always
-     * fail with an `error` code in the onFailure of WifiP2pManager#connect(),
-     * Maybe there is a solution -but i couldn't find one (Wifi Direct on Android
-     * sometimes is not documented very wel - especially in regards tro connecting several devices to one GO
-     * and closing connections again. Soo it may be the case that there is a way  to make that work )
-     * I would like to figure this one out, when there is some time at hand
-     * This may be helpful:
-     * https://stackoverflow.com/questions/23713176/what-can-fail-wifip2pmanager-connect
-     *
-     * @param description
-     *         The description of the given service
-     *
-     * @see #discoveredServices
-     * @deprecated because it does not work just yet
-     */
-    @Deprecated
-    private void checkIfServiceAlreadyHasBeenDiscovered(ServiceDescription description)
-    {
-        Log.d(TAG, "checkIfServiceAlreadyHasBeenDiscovered: looking if service has been discovere and cached");
-        for (ServiceDescription discoveredService : discoveredServices.keySet())
-        {
-            Log.d(TAG, "checkIfServiceAlreadyHasBeenDiscovered: comparing \n"
-                    + discoveredService + "\n"
-                    + description);
-            if (discoveredService.equals(description))
-            {
-                if (discoveredServices.get(description) == null)
-                {
-                    Log.e(TAG, "checkIfServiceAlreadyHasBeenDiscovered: no devices for the given description");
-                    break; // this should never be the case i think, but better be carefull
-                }
-                for (WifiP2pDevice device : discoveredServices.get(description))
-                {
-                    Log.d(TAG, "checkIfServiceAlreadyHasBeenDiscovered: found service host, notify listener");
-                    notifyOnServiceDiscovered(device, description);
-                }
-            }
-        }
-    }
-
     //
     //  ----------  "server" side ----------
     //
 
     /**
      * This registers a new service, making it visible to other devices running a service discovery
-     * // TODO maybe it would be useful to add make the service type changeable ?
      */
+    @Override
     public void startService(ServiceDescription description)
     {
         if (engineIsNotRunning())
@@ -391,7 +390,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
         Log.d(TAG, "startSdpService: starting service : " + description);
         WifiP2pServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(
                 description.getServiceName(),
-                SERVICE_TYPE,
+                usedServiceType,
                 description.getServiceRecord());
         manager.addLocalService(channel, serviceInfo, new WifiP2pManager.ActionListener()
         {
@@ -414,6 +413,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
      * This stops the advertisement of the service,
      * other peers who are running a service discovery wont
      */
+    @Override
     public void stopService(ServiceDescription description)
     {
         if (engineIsNotRunning())
@@ -481,13 +481,14 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
 
     /**
      * Registers a {@link WifiServiceDiscoveryListener} to be notified about
-     * discovered devices and services
+     * discovered devices and services.
      *
      * @param listener
      *         implementation of then listener interface
      *
      * @see #unregisterDiscoveryListener(WifiServiceDiscoveryListener)
      */
+    @Override
     public void registerDiscoverListener(WifiServiceDiscoveryListener listener)
     {
 
@@ -504,7 +505,10 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
      *
      * @param listener
      *         the listener to be removed
+     *
+     * @see #registerDiscoverListener(WifiServiceDiscoveryListener)
      */
+    @Override
     public void unregisterDiscoveryListener(WifiServiceDiscoveryListener listener)
     {
         discoveryListeners.remove(listener);
@@ -542,14 +546,9 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
         }
     }
 
-    //
-    //  ----------  SdpWifiServiceDiscoverListener interface ----------
-    //
 
     /**
-     * Called by the {@link WifiDiscoveryThread}
-     * Since the {@link WifiDiscoveryThread} may discover services 2 or more times
-     * this method checks the incoming services through a cache kept in {@link #discoveredServices}
+     * Checks the incoming services through a cache kept in {@link #discoveredServices}
      * which will be kept until a new discovery is started.
      * If the Pair {service, device} is not yet cached
      * {@link #onNewServiceDiscovered(WifiP2pDevice, ServiceDescription)} be called.
@@ -561,21 +560,22 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
      * @param registrationType
      *         The service type
      */
-    protected void onServiceDiscovered(WifiP2pDevice device, Map<String, String> serviceRecord, String registrationType, String instanceName)
+    protected synchronized void onServiceDiscovered(WifiP2pDevice device, Map<String, String> serviceRecord, String registrationType, String instanceName)
     {
         Log.d(TAG, "onServiceDiscovered: ----discovered a new Service on " + device + "----");
-        if (!registrationType.equals(SERVICE_TYPE + ".local."))
+        if (!notifyAboutAllServices && !registrationType.equals(usedServiceType + LOCAL_TLD))
         {
-            Log.e(TAG, "onServiceDiscovered: not a " + SERVICE_TYPE + " service - stop");
+            Log.e(TAG, "onServiceDiscovered: not a " + usedServiceType + " service - stop");
+            Log.e(TAG, "onServiceDiscovered: its a " + registrationType + " service - stop");
             return;
         }
         ServiceDescription description = new ServiceDescription(instanceName, serviceRecord);
+
         //--- updating discovered services list ---//
 
         boolean newService = false;
 
-        if (this.discoveredServices.containsKey(description)
-                && this.discoveredServices.get(description).contains(device))
+        if (this.discoveredServices.containsKey(description) && this.discoveredServices.get(description).contains(device))
         {
             //--- service already cached ---//
             Log.d(TAG, "onServiceDiscovered: already knew the service");
@@ -619,9 +619,19 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
             Log.d(TAG, "onNewServiceDiscovered: service is registered for search notify listeners");
             notifyOnServiceDiscovered(device, description);
         }
+        Log.d(TAG, "onNewServiceDiscovered: service not on search list, ignore");
     }
 
-
+    /**
+     * Just here to quickly log if an error occurred in the wifi api
+     *
+     * @param tag
+     *         The classes logging tag (since this method can be used in other classes of this package)
+     * @param msg
+     *         The log message
+     * @param arg0
+     *         The error code as provided by the onFailure callback
+     */
     protected static void logReason(String tag, String msg, int arg0)
     {
         String reason;
@@ -647,52 +657,162 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine
     }
 
 
-    private void discoverService() {
+    //
+    //  ---------- no threaded discovery (test) ----------
+    //
 
-        /*
-         * Register listeners for DNS-SD services. These are callbacks invoked
-         * by the system when a service is actually discovered.
-         */
+    private final HashMap<String, Map<String, String>> tmpRecordCache = new HashMap<>();
 
-        manager.setDnsSdResponseListeners(channel,
+    private void discoverService()
+    {
+        setupDiscoveryCallbacks();
+        runServiceDiscovery();
+    }
 
-                (instanceName, registrationType, srcDevice) ->
-                {
+    private void runServiceDiscovery()
+    {
 
-                },
-                (fullDomainName, record, device) ->
-                {
+        Log.d(TAG, "startDiscovery: started discovery");
 
-                });
+        //--- adding service requests (again) ---//
 
-        // After attaching listeners, create a service request and initiate
-        // discovery.
-        WifiP2pDnsSdServiceRequest serviceRequest = WifiP2pDnsSdServiceRequest.newInstance();
-        manager.addServiceRequest(channel, serviceRequest,
-                new WifiP2pManager.ActionListener() {
-
-                    @Override
-                    public void onSuccess() {
-                        Log.d(TAG, "onSuccess: successfully set service requests ");
-                    }
-
-                    @Override
-                    public void onFailure(int arg0) {
-                        Log.e(TAG, "error settings service requests " + arg0) ;
-                    }
-                });
-
-        manager.discoverServices(channel, new WifiP2pManager.ActionListener() {
-
+        //----------------------------------
+        // NOTE : Bonjour services are used,
+        // so WifiP2pDnsSdServiceRequests are
+        // used here.
+        //----------------------------------
+        manager.clearServiceRequests(this.channel, new WifiP2pManager.ActionListener()
+        {
             @Override
-            public void onSuccess() {
-                Log.d(TAG, "onSuccess: successfully set service requests ");
+            public void onSuccess()
+            {
+                manager.addServiceRequest(channel, WifiP2pDnsSdServiceRequest.newInstance(), new WifiP2pManager.ActionListener()
+                {
+                    @Override
+                    public void onSuccess()
+                    {
+                        //--- starting the service discovery (again) ---//
+                        manager.discoverServices(channel, new WifiP2pManager.ActionListener()
+                        {
+                            @Override
+                            public void onSuccess()
+                            {
+                                Log.d(TAG, "Started service discovery");
+                            }
+
+                            @Override
+                            public void onFailure(int code)
+                            {
+                                Log.d(TAG, "failed to start service discovery");
+                                onServiceDiscoveryFailure();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(int code)
+                    {
+                        Log.d(TAG, "failed to add service discovery request");
+                        onServiceDiscoveryFailure();
+                    }
+                });
             }
 
             @Override
-            public void onFailure(int arg0) {
-                Log.e(TAG, "error settings service requests " + arg0) ;
+            public void onFailure(int reason)
+            {
+                Log.d(TAG, "failed to add service discovery request");
+                onServiceDiscoveryFailure();
             }
         });
+    }
+
+    /**
+     * This interrupts the service thread
+     * and unregisters all service requests.
+     * the service discovery will stop.
+     */
+    protected void cancelServiceDiscovery()
+    {
+        Log.d(TAG, "cancel: canceling service discovery");
+        manager.clearServiceRequests(channel, new WifiP2pManager.ActionListener()
+        {
+            @Override
+            public void onSuccess()
+            {
+                // nothing to do here
+            }
+
+            @Override
+            public void onFailure(int reason)
+            {
+                WifiDirectServiceDiscoveryEngine.logReason(TAG, "DiscoveryThread: cancel: could not clear service requests ", reason);
+            }
+        });
+        Log.d(TAG, "cancel: canceled service discovery");
+    }
+
+    /**
+     * Setting up the callbacks which wil be called when
+     * a service was discovered, proving the TXT records and other
+     * service information.
+     * <p>
+     * This only needs to be set up once, at the Thread start.
+     * It shouldn't called while lopping (re-starting service discovery).
+     */
+    private void setupDiscoveryCallbacks()
+    {
+        tmpRecordCache.clear();
+        Log.d(TAG, "setupDiscoveryCallbacks: setting up callbacks");
+
+        //--- TXT Record listener ---//
+
+        WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, txtRecord, device) ->
+                tmpRecordCache.put(device.deviceAddress, txtRecord);
+
+        //--- Service response listener - gives additional service info ---//
+
+        WifiP2pManager.DnsSdServiceResponseListener servListener = (instanceName, registrationType, device) ->
+        {
+            Map<String, String> receivedTxtRecord = tmpRecordCache.get(device.deviceAddress);
+            onServiceDiscovered(device, receivedTxtRecord, registrationType, instanceName);
+        };
+
+        //--- setting the listeners ---//
+
+        manager.setDnsSdResponseListeners(channel, servListener, txtListener);
+    }
+
+    /**
+     * If the Service discovery fails it mostly
+     * happens through a "busy" error, Which means
+     * that Wifi P2P is Currently doing some other things.
+     * Maybe because a service was registered or
+     * something else happened.
+     */
+    private void onServiceDiscoveryFailure()
+    {
+        Log.e(TAG, "onServiceDiscoveryFailure: wait interrupted");
+    }
+
+    @Override
+    public void setServiceType(String serviceType)
+    {
+        this.usedServiceType = serviceType;
+    }
+
+    /**
+     * Set the engine to notify about every service, even though it
+     * doesn't match the descriptions set through {@link #startDiscoveryForService(ServiceDescription)}
+     * or the type set through {@link #setServiceType(String)}.
+     * This can be disabled and enabled at will and will apply to all future discoveries.
+     *
+     * @param all
+     *         boolean - true to notify about all services, false to just notify about the ones
+     */
+    @Override
+    public void notifyAboutAllServices(boolean all)
+    {
+        super.notifyAboutAllServices(all);
     }
 }

@@ -18,14 +18,6 @@ public class ServiceDescriptionTest
 {
 
     @Test
-    public void itShouldBeInitialized()
-    {
-        HashMap<String, String> serviceAttributesOne = new HashMap<>();
-        serviceAttributesOne.put("service-name", "Test Service One");
-        serviceAttributesOne.put("service-info", "This is a test service description");
-    }
-
-    @Test
     public void itShouldGenerateDifferentUuidsBasedOnServiceAttributes()
     {
         HashMap<String, String> serviceAttributesOne = new HashMap<>();
@@ -35,7 +27,7 @@ public class ServiceDescriptionTest
         serviceAttributesTwo.put("service-name", "Counting Service Two");
         serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
         ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service Two", serviceAttributesOne);
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service One", serviceAttributesOne);
         assertNotEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
     }
 
@@ -47,23 +39,21 @@ public class ServiceDescriptionTest
         serviceAttributesOne.put("service-name", "Test Service One");
         serviceAttributesOne.put("service-info", "This is a test service description");
         serviceAttributesTwo.put("serviceName", "Counting Service One");
-        serviceAttributesTwo.put("service-information", "This is a test service description");
+        serviceAttributesTwo.put("service-port", "This is a test service description");
         ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service Two", serviceAttributesOne);
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service One", serviceAttributesTwo);
         assertNotEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
     }
 
 
     @Test
-    public void itShouldIncludeTheServiceNameInTheUuidGeneration()
+    public void itShouldNotIncludeTheServiceNameInTheUuidGeneration()
     {
         HashMap<String, String> serviceAttributesOne = new HashMap<>();
-        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
         serviceAttributesOne.put("service-info", "This is a test service description");
-        serviceAttributesTwo.put("service-info", "This is a test service description");
         ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
         ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service Two", serviceAttributesOne);
-        assertNotEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
+        assertEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
     }
 
 
@@ -86,7 +76,8 @@ public class ServiceDescriptionTest
      * these should override the uuid generated from the attributes
      */
     @Test
-    public void itShouldOverwriteTheUuid(){
+    public void itShouldOverwriteTheUuid()
+    {
         HashMap<String, String> serviceAttributesOne = new HashMap<>();
         HashMap<String, String> serviceAttributesTwo = new HashMap<>();
         serviceAttributesOne.put("service-name", "Test Service One");

@@ -6,9 +6,6 @@ import android.util.Log;
 
 import androidx.annotation.RequiresPermission;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import willi.boelke.service_discovery_demo.controller.ControllerListener;
@@ -22,11 +19,11 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
  * Demo implementation of a SdpWifiPeer.
- *
+ * <p>
  * A peer can either be Group Owner or Client in a Wifi Direct Group.
  * In this demo implementation the GO will periodically write messages
  * tho the clients in the group.
- *
+ * <p>
  * other implementations may do it the other wa around or implement a
  * different protocol for communications.
  * Or even the GO routing messages between the clients.
@@ -48,7 +45,7 @@ public class WifiDemoController implements WifiDirectPeer
 
     /**
      * Indicating whether a role (Go or client) was assigned before or not.
-     *
+     * <p>
      * This will be flipped as soon as a role
      * was assigned through the callbacks in the WifiConnectionEngine.
      */
@@ -68,7 +65,7 @@ public class WifiDemoController implements WifiDirectPeer
      * Public constructor
      *
      * @param description
-     *   A service description to identify the service and prove additional information about it.
+     *         A service description to identify the service and prove additional information about it.
      */
     public WifiDemoController(ServiceDescription description)
     {
@@ -87,25 +84,30 @@ public class WifiDemoController implements WifiDirectPeer
     {
         WifiDirectConnectionEngine.getInstance().unregisterService();
         WifiDirectConnectionEngine.getInstance().stopDiscovery();
-        for (WifiConnection connection : connections){
+        for (WifiConnection connection : connections)
+        {
             connection.close();
         }
         WifiDirectConnectionEngine.getInstance().disconnectFromGroup();
-        try{
+        try
+        {
             this.writeThread.cancel();
         }
-        catch (NullPointerException e){
+        catch (NullPointerException e)
+        {
             Log.d(TAG, "stopService: -thread was not initialized");
         }
-        try{
+        try
+        {
             this.readThread.cancel();
         }
-        catch (NullPointerException e){
+        catch (NullPointerException e)
+        {
             Log.d(TAG, "stopService: thread was not initialized");
         }
         this.readThread = null;
         this.writeThread = null;
-        for (WifiConnection connection:this.connections)
+        for (WifiConnection connection : this.connections)
         {
             this.listener.onConnectionLost(connection);
         }
@@ -128,7 +130,7 @@ public class WifiDemoController implements WifiDirectPeer
     public void onBecameGroupOwner()
     {
         Log.d(TAG, "onBecameGroupOwner: became group owner");
-        if(!this.gotRoleAssigned) // just the first time
+        if (!this.gotRoleAssigned) // just the first time
         {
             Log.d(TAG, "onBecameGroupOwner: first time - starting write thread");
             // lets notify subscribers
@@ -144,7 +146,7 @@ public class WifiDemoController implements WifiDirectPeer
     public void onBecameGroupClient()
     {
         Log.d(TAG, "onBecameGroupClient: became group owner");
-        if(!this.gotRoleAssigned) // just the first time
+        if (!this.gotRoleAssigned) // just the first time
         {
             Log.d(TAG, "onBecameGroupClient: first time - starting read thread");
             // lets notify subscribers
@@ -158,10 +160,10 @@ public class WifiDemoController implements WifiDirectPeer
     @Override
     public void onConnectionEstablished(WifiConnection connection)
     {
-        Log.d(TAG, "onConnectionEstablished: got new connection : " + connection );
+        Log.d(TAG, "onConnectionEstablished: got new connection : " + connection);
         this.connections.add(connection);
         this.listener.onNewConnection(connection);
-        Log.e(TAG, "onConnectionEstablished: "  + connections);
+        Log.e(TAG, "onConnectionEstablished: " + connections);
     }
 
     @Override

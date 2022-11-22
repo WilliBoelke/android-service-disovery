@@ -243,13 +243,13 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
     }
 
 
-
     //
     //  ----------  two connections to one device ----------
     //
 
     @Test
-    public void itShouldMakeTwoConnectionsToTwoServicesOnTheSameDevice() throws InterruptedException{
+    public void itShouldMakeTwoConnectionsToTwoServicesOnTheSameDevice() throws InterruptedException
+    {
         switch (getTestRunner())
         {
             case DEVICE_A:
@@ -286,8 +286,6 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
 
     public void itShouldMakeTwoConnectionsToTwoServicesOnTheSameDevice_discoverAndConnect() throws InterruptedException
     {
-
-
         ArrayList<ServiceDescription> connectedServices = new ArrayList<>();
 
         getConnectionEngine().startSDPDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
@@ -362,7 +360,8 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
     //
 
     @Test
-    public void itShouldAcceptConnectionsFromSeveralClients() throws InterruptedException{
+    public void itShouldAcceptConnectionsFromSeveralClients() throws InterruptedException
+    {
         switch (getTestRunner())
         {
             case DEVICE_A:
@@ -401,7 +400,6 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
 
     public void itShouldAcceptConnectionsFromSeveralClients_discoverAndConnect() throws InterruptedException
     {
-
         ArrayList<ServiceDescription> connectedServices = new ArrayList<>();
         getConnectionEngine().startSDPDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
         {

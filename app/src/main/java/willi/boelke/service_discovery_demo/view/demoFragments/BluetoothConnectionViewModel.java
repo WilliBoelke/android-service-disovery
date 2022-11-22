@@ -29,10 +29,6 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  */
 public class BluetoothConnectionViewModel extends ViewModel
 {
-    /**
-     * Classname for logging
-     */
-    private final String TAG = this.getClass().getSimpleName();
     private DemoClientController clientControllerOne;
     private DemoServerController serverControllerOne;
     private DemoClientController clientControllerTwo;
@@ -259,8 +255,17 @@ public class BluetoothConnectionViewModel extends ViewModel
         return this.latestNotification;
     }
 
-    public void makeDiscoverable()
+    protected void makeDiscoverable()
     {
         engine.startDiscoverable();
+    }
+
+    protected void goInactive()
+    {
+        this.stopServiceOne();
+        this.stopServiceTwo();
+        this.stopClientOne();
+        this.stopClientTwo();
+        this.stopDiscovery();
     }
 }

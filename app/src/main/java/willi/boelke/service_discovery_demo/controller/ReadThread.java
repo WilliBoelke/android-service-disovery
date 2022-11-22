@@ -4,7 +4,6 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import willi.boelke.services.serviceConnection.ServiceConnection;
@@ -16,7 +15,7 @@ import willi.boelke.services.serviceConnection.ServiceConnection;
  * Means this works with Bluetooth Connections as well as with Wifi Connections.
  * <p>
  * This thread will alter the contents of the provided connections List.
- * Thus the list should be a thread save collection. 
+ * Thus the list should be a thread save collection.
  * <p>
  * This thread will call the methods {@link ControllerListener#onConnectionLost(ServiceConnection)}
  * when one of the connections was closed and  {@link ControllerListener#onMessageChange(String)}
@@ -24,10 +23,11 @@ import willi.boelke.services.serviceConnection.ServiceConnection;
  * <p>
  * The thread can be stopped by calling its {@link #cancel()} method.
  * <p>
+ *
  * @param <T>
- *     The used implementation of the {@link ServiceConnection} interface.
+ *         The used implementation of the {@link ServiceConnection} interface.
  * @param <D>
- *     The matching remote device class, this can be ether the BluetoothDevice or the WifiDirectDevice
+ *         The matching remote device class, this can be ether the BluetoothDevice or the WifiDirectDevice
  *
  * @author WilliBoelke
  */
@@ -43,9 +43,10 @@ public class ReadThread<T extends ServiceConnection, D> extends Thread
     private Thread thread;
     private final CopyOnWriteArrayList<T> connections;
 
-    public ReadThread(CopyOnWriteArrayList<T> connections, ControllerListener<T, D> listener){
+    public ReadThread(CopyOnWriteArrayList<T> connections, ControllerListener<T, D> listener)
+    {
         this.connections = connections;
-        this.listener = listener; 
+        this.listener = listener;
     }
 
     @Override
@@ -111,7 +112,8 @@ public class ReadThread<T extends ServiceConnection, D> extends Thread
             this.running = false;
             this.thread.interrupt();
         }
-        catch (NullPointerException e){
+        catch (NullPointerException e)
+        {
             // this.thread will be null if run wasn't yet called
             // this though should be checked before calling cancel as well
             Log.e(TAG, "cancel: thread was not started");

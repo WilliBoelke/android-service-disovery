@@ -7,6 +7,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -16,10 +17,10 @@ import androidx.navigation.ui.NavigationUI;
 import java.util.ArrayList;
 import java.util.List;
 
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
-import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.ActivityMainBinding;
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVOne;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVTwo;
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscoveryEngine;
@@ -53,8 +54,20 @@ public class MainActivity extends AppCompatActivity
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main);
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(binding.navView, navController);
-
         askForPermissions();
+
+        // Init the engine
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            Toast.makeText(this, "Missing permission", Toast.LENGTH_LONG).show();
+        }
+        else
+        {
+            WifiDirectServiceDiscoveryEngine.getInstance().start(this);
+            WifiDirectConnectionEngine.getInstance().start(this, WifiDirectServiceDiscoveryEngine.getInstance());
+            BluetoothServiceDiscoveryVTwo.getInstance().start(this);
+            BluetoothServiceConnectionEngine.getInstance().start(this, BluetoothServiceDiscoveryVTwo.getInstance());
+        }
     }
 
 
@@ -76,7 +89,8 @@ public class MainActivity extends AppCompatActivity
             String[] params = permissions.toArray(new String[permissions.size()]);
             requestPermissions(params, REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
         }
-        else{
+        else
+        {
             Log.d(TAG, "askForPermissions: has all permissions");
         }
     }

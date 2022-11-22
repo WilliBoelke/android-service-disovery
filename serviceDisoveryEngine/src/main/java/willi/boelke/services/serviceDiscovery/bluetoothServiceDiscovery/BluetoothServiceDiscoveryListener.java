@@ -4,7 +4,6 @@ import android.bluetooth.BluetoothDevice;
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.services.serviceDiscovery.ServiceDiscoveryEngine;
-import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscoveryEngine;
 
 /**
  * Listener to e registered at a {@link ServiceDiscoveryEngine}

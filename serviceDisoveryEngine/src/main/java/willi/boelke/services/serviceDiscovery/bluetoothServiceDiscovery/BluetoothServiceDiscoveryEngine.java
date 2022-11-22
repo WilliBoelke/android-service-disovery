@@ -271,34 +271,38 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      *
      * @param context
      *         the application context
+     *
+     * @return
      */
     @Override
-    public void start(Context context)
+    public boolean start(Context context)
     {
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         if (adapter == null)
         {
             Log.e(TAG, "Bluetooth adapter was null, the device probably does not support bluetooth - engine wont start");
-            return;
+            return false;
         }
-        start(context, adapter);
+        return start(context, adapter);
     }
 
     /**
      * Starts the engine
+     *
+     * @return
      */
     @Override
-    public void start(Context context, BluetoothAdapter adapter)
+    public boolean start(Context context, BluetoothAdapter adapter)
     {
         if (adapter == null)
         {
             Log.e(TAG, "start: Bluetooth adapter was null, the device probably does not support bluetooth - engine wont start");
-            return;
+            return false;
         }
         if (!adapter.isEnabled())
         {
             Log.e(TAG, "start: Bluetooth not enabled");
-            return;
+            return false;
         }
         Log.d(TAG, "start: starting engine");
         this.bluetoothAdapter = adapter;
@@ -306,6 +310,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
         this.enableBluetooth();
         this.registerReceivers();
         this.engineRunning = true;
+        return true;
     }
 
     //
@@ -450,7 +455,6 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
         bluetoothAdapter.cancelDiscovery();
     }
 
-
     //
     //  ----------  sdp specific methods ----------
     //
@@ -515,7 +519,6 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
         this.cancelDiscoveryIfNothingToLookFor();
     }
 
-
     /**
      * Checks if {@link #servicesToLookFor} is empty
      * and cancels the discovery in that case.
@@ -525,7 +528,8 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      */
     private void cancelDiscoveryIfNothingToLookFor()
     {
-        if(engineIsNotRunning()){
+        if (engineIsNotRunning())
+        {
             Log.d(TAG, "cancelDiscoveryIfNothingToLookFor: engine not running -- wont cancel discovery");
             return;
         }
@@ -641,7 +645,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
     }
 
     //
-    //  ----------  on bluetooth events ----------
+    //  ---------- abstract methods to be overwritten in subclasses ----------
     //
 
     /**
@@ -680,7 +684,16 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      */
     protected abstract void onDeviceDiscoveryRestart();
 
+    /**
+     * Called whenever the manual refresh is started through {@link #refreshNearbyServices()}
+     */
     protected abstract void onRefreshStarted();
+
+
+    //
+    //  ---------- notify listeners ----------
+    //
+
 
     /**
      * Notifies listeners about every discovered service
@@ -729,17 +742,23 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      */
     protected void notifyListenersIfServiceIsAvailable(BluetoothDevice device, Parcelable[] uuidExtra)
     {
+        if (this.notifyAboutAllServices)
+        {
+            Log.d(TAG, "notifyListenersIfServiceIsAvailable: notifying out all services:\n ---- Service found on " + device + "----");
+            this.notifyListenersAboutServices(device, uuidExtra);
+            return;
+        }
+
         for (Parcelable pUuid : uuidExtra)
         {
             UUID uuid = ((ParcelUuid) pUuid).getUuid();
             Log.d(TAG, "notifyListenersIfServiceIsAvailable: checking uuid " + uuid);
             for (ServiceDescription serviceToLookFor : this.servicesToLookFor)
             {
-                // this maybe should go into a separate method to make the if more readable
                 if ((uuid.equals(serviceToLookFor.getServiceUuid())) ||
                         (this.checkLittleEndianUuids && uuid.equals(serviceToLookFor.getBytewiseReverseUuid())))
                 {
-                    Log.d(TAG, "notifyListenersIfServiceIsAvailable: ---- Service found on " + device + "----");
+                    Log.d(TAG, "notifyListenersIfServiceIsAvailable: \n ---- Service found on " + device + "----");
                     this.notifyOnServiceDiscovered(device, serviceToLookFor);
                 }
             }
@@ -799,6 +818,4 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
     {
         this.checkLittleEndianUuids = checkLittleEndianUuids;
     }
-
-
 }

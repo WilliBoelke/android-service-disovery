@@ -11,10 +11,8 @@ import java.util.UUID;
 
 /**
  * Describes a service.
- *
  * <p>
- * Service Descriptions<br>
- * ------------------------------------------------------------<br>
+ * <h2>Service Descriptions</h2>
  * A service can be described through a number of attributes.
  * Attributes are in a key-value format.
  * <p>
@@ -24,17 +22,14 @@ import java.util.UUID;
  * This class combines both methods, attributes can be added
  * from the attributes either a map (serving as a record of the
  * service attributes) or a UUID can be generated.
- *
  * <p>
- * Custom UUID<br>
- * ------------------------------------------------------------<br>
+ * <h2>Custom UUID</h2>
  * A custom UUID can be set using {@link #overrideUuidForBluetooth(UUID)},
  * this is for the use with Bluetooth and cant be used for Wifi Direct.
  * Wifi-Direct will use the full Service Records and not the UUID.
  * Thus the UUID cant be resolved at the discovering side.
  * <p>
- * Equality<br>
- * ------------------------------------------------------------<br>
+ * <h2>Equality</h2>
  * For service descriptions to be equal the service UUID needs to be the same
  * This is the only attribute that will be compared in {@link #equals(Object)}
  *
@@ -47,11 +42,6 @@ public class ServiceDescription
     //
 
     /**
-     * Classname for logging
-     */
-    private final String TAG = this.getClass().getSimpleName();
-
-    /**
      * The Service attributes
      */
     private final Map<String, String> attributes;
@@ -60,7 +50,8 @@ public class ServiceDescription
      * The name of the service
      * This will be used to register it
      * either when creating the bluetooth server socket
-     * or registering the wifi direct service.
+     * or a bonjour / mDNS servers as instance name.
+     * It does not have to be the same on all service instances
      */
     private final String serviceName;
 
@@ -69,7 +60,6 @@ public class ServiceDescription
      * instead of a generated one
      */
     private UUID serviceUuid;
-
 
     //
     //  ---------- constructor and initialization ----------
@@ -92,10 +82,8 @@ public class ServiceDescription
      * A UUID set using this overrides the UUID generated from teh service records,
      * making it and the service records independent from each other.
      *
-     * <p>
-     * NOTE<br>
-     * ------------------------------------------------------------<br>
-     * ...that this only work for the BluetoothService discovery and wont
+     * <h3>NOTE</h3>
+     * ...that this only work for the Bluetooth service discovery and wont
      * work with WifiDirect
      * This is based on WiFi direct exchanging the service records,
      * while Bluetooth will exchange the UUID itself.
@@ -105,7 +93,6 @@ public class ServiceDescription
      */
     public void overrideUuidForBluetooth(UUID uuid)
     {
-        // Todo maybe a more elegant solution can be found,
         // it should be worth it to make wifi direct exchanging the UUID
         // when a custom UUID has been set, the custom UUID though should stay, so Bluetooth service
         // which don't use a UUID based on these service records can be found.
@@ -127,7 +114,7 @@ public class ServiceDescription
         if (this.serviceUuid == null)
         {
             //--- generating UUID from attributes ---//
-            this.serviceUuid = getUuidForService(this.serviceName, this.attributes);
+            this.serviceUuid = getUuidForService( this.attributes);
         }
 
         return this.serviceUuid;
@@ -145,7 +132,7 @@ public class ServiceDescription
     }
 
     /**
-     * Generates a name based (type 3) UUID from a Map (service records) and the service name
+     * Generates a name based (type 3) UUID from a Map (service records)
      *
      * @param serviceRecord
      *         A Map containing key value pairs, describing a service
@@ -155,18 +142,18 @@ public class ServiceDescription
      * @throws NullPointerException
      *         If the given Map was empty
      */
-    public static UUID getUuidForService(String serviceName, Map<String, String> serviceRecord) throws NullPointerException
+    public static UUID getUuidForService( Map<String, String> serviceRecord) throws NullPointerException
     {
         if (serviceRecord.size() == 0)
         {
             throw new NullPointerException("There are no service attributes specified");
         }
         StringBuilder sb = new StringBuilder();
-        sb.append(serviceName);
         for (Map.Entry<String, String> entry : serviceRecord.entrySet())
         {
             sb.append(entry.getKey());
             sb.append(entry.getValue());
+            System.out.println(sb);
         }
         return UUID.nameUUIDFromBytes(sb.toString().getBytes(StandardCharsets.UTF_8));
     }
@@ -185,12 +172,11 @@ public class ServiceDescription
      * SdpBluetoothEngine`s configuration, sine the problem cant be predetermined
      * by any means i found.
      * <p>
-     * References<br>
-     * ------------------------------------------------------------<br>
-     * This Problem is mentioned in the the google Issue tracker
-     * <a href="https://issuetracker.google.com/issues/37075233">...</a>
-     * The code used here to reverse the UUID is stolen from the issues comments and can be found here
-     * <a href="https://gist.github.com/masterjefferson/10922165432ec016a823e46c6eb382e6">...</a>
+     * <h2>References</h2>
+     * This Problem is mentioned in the the
+     * <a href="https://issuetracker.google.com/issues/37075233"> google Issue tracker</a>
+     * The code used here to reverse the UUID is stolen from the issues comments and can be found
+     * <a href="https://gist.github.com/masterjefferson/10922165432ec016a823e46c6eb382e6">here</a>
      *
      * @return the bytewise revered uuid
      */
@@ -234,6 +220,11 @@ public class ServiceDescription
                 this.getServiceName(), this.getServiceUuid(), this.getServiceRecord());
     }
 
+    /**
+     * Getter for the service name
+     *
+     * @return the service name
+     */
     public String getServiceName()
     {
         return this.serviceName;

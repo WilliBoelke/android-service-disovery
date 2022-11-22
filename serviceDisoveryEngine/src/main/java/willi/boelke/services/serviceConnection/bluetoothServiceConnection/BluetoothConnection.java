@@ -13,11 +13,14 @@ import willi.boelke.services.serviceConnection.ServiceConnection;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
- * A SdpBluetoothConnection is a Point-o-Point o point connection between two service records
- * on bluetooth enabled devices.
- * <p>
- * It is a thin wrapper around a BluetoothSocket to extends it with information about the service
- * it is connected too.
+ * A point to point connection between two bluetooth enabled devices
+ * based on a service.
+ * <h2>Description</h2>
+ * This combines a {@link BluetoothSocket} with a {@link ServiceDescription}
+ * making it easy to handle connection to several services and differentiating
+ * between them.
+ *
+ * @author WilliBoelke
  */
 public class BluetoothConnection implements ServiceConnection
 {
@@ -26,13 +29,27 @@ public class BluetoothConnection implements ServiceConnection
     //
     //  ----------  instance variables ----------
     //
+
+    /**
+     * Classname for logging
+     */
     private final String TAG = this.getClass().getSimpleName();
+
     /**
      * This shows if the connection was made as Server or client socket
      * This may be useful for the application
      */
     private final Boolean serverPeer;
+
+    /**
+     * The socket to the remote device
+     */
     private final BluetoothSocket connectionSocket;
+
+    /**
+     * The description of teh service which this
+     * connection is based on.
+     */
     private final ServiceDescription description;
 
 
@@ -144,7 +161,6 @@ public class BluetoothConnection implements ServiceConnection
     {
         return this.getRemoteDevice().getAddress();
     }
-
 
     public BluetoothSocket getConnectionSocket()
     {

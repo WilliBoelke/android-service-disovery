@@ -2,6 +2,7 @@ package willi.boelke.services.testUtils
 
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
+import android.net.wifi.p2p.WifiP2pDevice
 import android.os.ParcelUuid
 import android.os.Parcelable
 import io.mockk.every
@@ -17,65 +18,65 @@ import java.util.*
 //------------ get mocks -------------
 //
 
- var testUUIDOne: UUID = UUID.fromString("12345fff-f49a-11ec-b939-0242ac120002")
- var testUUIDTwo: UUID = UUID.fromString("22345fff-f49a-11ec-b939-0242ac120002")
- var testUUIDThree: UUID = UUID.fromString("32345fff-f49a-11ec-b939-0242ac120002")
+var testUUIDOne: UUID = UUID.fromString("12345fff-f49a-11ec-b939-0242ac120002")
+var testUUIDTwo: UUID = UUID.fromString("22345fff-f49a-11ec-b939-0242ac120002")
+var testUUIDThree: UUID = UUID.fromString("32345fff-f49a-11ec-b939-0242ac120002")
 
- lateinit var testDescriptionOne : ServiceDescription
- lateinit var testDescriptionTwo : ServiceDescription
- lateinit var testDescriptionThree : ServiceDescription
- lateinit var testDescriptionFour : ServiceDescription
- lateinit var testDescriptionFive : ServiceDescription
+lateinit var testDescriptionOne: ServiceDescription
+lateinit var testDescriptionTwo: ServiceDescription
+lateinit var testDescriptionThree: ServiceDescription
+lateinit var testDescriptionFour: ServiceDescription
+lateinit var testDescriptionFive: ServiceDescription
 
- fun initTestMocks(){
-     val serviceAttributesOne = HashMap<String, String>()
-     val serviceAttributesTwo = HashMap<String, String>()
-     val serviceAttributesTree = HashMap<String, String>()
-     val serviceAttributesFour = HashMap<String, String>()
-     val serviceAttributesFive = HashMap<String, String>()
-     serviceAttributesOne["service-name"] = "Test Service One"
-     serviceAttributesTwo["service-name"] = "Test Service Two"
-     serviceAttributesTree["service-name"] = "Test Service Three"
-     serviceAttributesFour["service-name"] = "Test Service Four"
-     serviceAttributesFive["service-name"] = "Test Service Five"
+fun initTestMocks() {
+    val serviceAttributesOne = HashMap<String, String>()
+    val serviceAttributesTwo = HashMap<String, String>()
+    val serviceAttributesTree = HashMap<String, String>()
+    val serviceAttributesFour = HashMap<String, String>()
+    val serviceAttributesFive = HashMap<String, String>()
+    serviceAttributesOne["service-name"] = "Test Service One"
+    serviceAttributesTwo["service-name"] = "Test Service Two"
+    serviceAttributesTree["service-name"] = "Test Service Three"
+    serviceAttributesFour["service-name"] = "Test Service Four"
+    serviceAttributesFive["service-name"] = "Test Service Five"
 
-     testDescriptionOne =
-         ServiceDescription(
-             "test service one",
-             serviceAttributesOne
-         )
-     testDescriptionTwo =
-         ServiceDescription(
-             "test service two",
-             serviceAttributesTwo
-         )
-     testDescriptionThree =
-         ServiceDescription(
-             "test service three",
-             serviceAttributesTree
-         )
-     testDescriptionFour =
-         ServiceDescription(
-             "test service four",
-             serviceAttributesFour
-         )
-     testDescriptionFive =
-         ServiceDescription(
-             "test service five",
-             serviceAttributesFive
-         )
+    testDescriptionOne =
+        ServiceDescription(
+            "test service one",
+            serviceAttributesOne
+        )
+    testDescriptionTwo =
+        ServiceDescription(
+            "test service two",
+            serviceAttributesTwo
+        )
+    testDescriptionThree =
+        ServiceDescription(
+            "test service three",
+            serviceAttributesTree
+        )
+    testDescriptionFour =
+        ServiceDescription(
+            "test service four",
+            serviceAttributesFour
+        )
+    testDescriptionFive =
+        ServiceDescription(
+            "test service five",
+            serviceAttributesFive
+        )
 
-     testDescriptionOne.overrideUuidForBluetooth(testUUIDOne)
-     testDescriptionTwo.overrideUuidForBluetooth(testUUIDTwo)
-     testDescriptionThree.overrideUuidForBluetooth(testUUIDThree)
- }
+    testDescriptionOne.overrideUuidForBluetooth(testUUIDOne)
+    testDescriptionTwo.overrideUuidForBluetooth(testUUIDTwo)
+    testDescriptionThree.overrideUuidForBluetooth(testUUIDThree)
+}
 
 fun getTestDeviceOne(): BluetoothDevice {
     val deviceOne = mockk<BluetoothDevice>()
     every { deviceOne.fetchUuidsWithSdp() } returns true
-    every { deviceOne.name } returns  "testDeviceOneName"
-    every { deviceOne.address } returns  "testDeviceOneAddress"
-    every { deviceOne.uuids } returns  arrayOf(
+    every { deviceOne.name } returns "testDeviceOneName"
+    every { deviceOne.address } returns "testDeviceOneAddress"
+    every { deviceOne.uuids } returns arrayOf(
         ParcelUuid(testUUIDTwo),
         ParcelUuid(testUUIDThree)
     )
@@ -86,9 +87,9 @@ fun getTestDeviceOne(): BluetoothDevice {
 fun getTestDeviceTwo(): BluetoothDevice {
     val deviceTwo = mockk<BluetoothDevice>()
     every { deviceTwo.fetchUuidsWithSdp() } returns true
-    every { deviceTwo.name } returns  "testDeviceTwoName"
-    every { deviceTwo.address } returns  "testDeviceTwoAddress"
-    every { deviceTwo.uuids } returns  arrayOf(
+    every { deviceTwo.name } returns "testDeviceTwoName"
+    every { deviceTwo.address } returns "testDeviceTwoAddress"
+    every { deviceTwo.uuids } returns arrayOf(
         ParcelUuid(testDescriptionFour.serviceUuid),
         ParcelUuid(testDescriptionFive.serviceUuid)
     )
@@ -114,14 +115,27 @@ fun getSocketToTestDevice(device: BluetoothDevice): BluetoothSocket {
     val inputStream = mockk<InputStream>(relaxed = true)
     justRun { outputStream.close() }
     justRun { inputStream.close() }
-    every {mockedSocket.inputStream} returns  inputStream
-    every {mockedSocket.outputStream} returns  outputStream
+    every { mockedSocket.inputStream } returns inputStream
+    every { mockedSocket.outputStream } returns outputStream
     every { mockedSocket.remoteDevice } returns device
     every { mockedSocket.isConnected } returns true
-    justRun {mockedSocket.close()}
+    justRun { mockedSocket.close() }
     return mockedSocket
 }
 
+fun getTestDeviceOne_Wifi(): WifiP2pDevice {
+    val testDevice = WifiP2pDevice()
+    testDevice.deviceAddress = "testDeviceOneAddress"
+    testDevice.deviceName = "testDeviceOne"
+    return testDevice
+}
+
+fun getTestDeviceTwo_Wifi(): WifiP2pDevice {
+    val testDevice = WifiP2pDevice()
+    testDevice.deviceAddress = "testDeviceTwoAddress"
+    testDevice.deviceName = "testDeviceTwo"
+    return testDevice
+}
 
 
 //
@@ -150,8 +164,8 @@ fun getSocketToTestDevice(device: BluetoothDevice): BluetoothSocket {
  * Also partially stolen from here, since i am not too familiar with kotlin:
  * {@link https://stackoverflow.com/questions/48158909/java-android-kotlin-reflection-on--field-and-call--methods-on-it}
  */
- inline fun <reified T> T.callPrivateFunc(name: String, vararg args: Any?): Any? {
-    val classArray: Array<Class<*>> = args.map { it!!::class.java}.toTypedArray()
+inline fun <reified T> T.callPrivateFunc(name: String, vararg args: Any?): Any? {
+    val classArray: Array<Class<*>> = args.map { it!!::class.java }.toTypedArray()
     return T::class.java.getDeclaredMethod(name, *classArray)
         .apply { isAccessible = true }
         .invoke(this, *args)
@@ -162,8 +176,12 @@ fun getSocketToTestDevice(device: BluetoothDevice): BluetoothSocket {
  * This a specialized version of the general callPrivateFun method.
  * It only calls "onUuidsFetched" but allows parameters to be null
  */
- inline fun <reified T> T.callOnUuidsFetchedWithNullParam(vararg args: Any?): Any? {
-    return T::class.java.getDeclaredMethod("onUuidsFetched", BluetoothDevice::class.java, Array<Parcelable>::class.java)
+inline fun <reified T> T.callOnUuidsFetchedWithNullParam(vararg args: Any?): Any? {
+    return T::class.java.getDeclaredMethod(
+        "onUuidsFetched",
+        BluetoothDevice::class.java,
+        Array<Parcelable>::class.java
+    )
         .apply { isAccessible = true }
         .invoke(this, *args)
 }

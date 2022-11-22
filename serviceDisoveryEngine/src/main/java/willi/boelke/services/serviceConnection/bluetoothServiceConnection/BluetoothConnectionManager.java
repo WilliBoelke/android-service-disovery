@@ -3,21 +3,24 @@ package willi.boelke.services.serviceConnection.bluetoothServiceConnection;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
- * Holds a list of {@link BluetoothConnection}
- * This helps with:
- * * Checking if a connection already is is established
- * * Closing connections when he socket (for whatever reason) died/closed
- * * Closing all open connections when the Application ends /The SdpBluetoothEngine was shu down.
- * * Closing all connections from or to a specific service.
+ * Holds a list of {@link BluetoothConnection}s
+ * which is used by the  {@link BluetoothServiceConnectionEngine}
  * <p>
+ * <h2>Usage in the BluetoothServiceConnectionEngine</h2>
+ * There are several use cases for this in the connect5ion engine:
+ * <ul>
+ *    <li>Preventing doubling connections / connection attempts</li>
+ *    <li>Closing connections when he socket
+ *    (for whatever reason) died/closed/disconnected</li>
+ *    <li>Closing all open connections when the
+ *     application ends / The engine stopped was stopped down.</li>
+ *    <li>Closing all connections from or to a specific service.</li>
+ * </ul>
  * This is utilized in {@link BluetoothServiceConnectionEngine}
  */
 class BluetoothConnectionManager
@@ -32,6 +35,10 @@ class BluetoothConnectionManager
      */
     private final String TAG = this.getClass().getSimpleName();
 
+    /**
+     * A thread safe array list
+     * holing all open {@link BluetoothConnection}s
+     */
     private final CopyOnWriteArrayList<BluetoothConnection> openConnections;
 
 
@@ -41,7 +48,7 @@ class BluetoothConnectionManager
 
     protected BluetoothConnectionManager()
     {
-        this.openConnections =  new CopyOnWriteArrayList<>();
+        this.openConnections = new CopyOnWriteArrayList<>();
     }
 
     //
@@ -203,16 +210,22 @@ class BluetoothConnectionManager
         }
     }
 
-    private void logConnectionTable(){
+    /**
+     * Logs the current
+     * {@link #openConnections} list.
+     */
+    private void logConnectionTable()
+    {
         StringBuilder sb = new StringBuilder();
         sb.append("---------------------------------\n");
-        for (BluetoothConnection connection : openConnections){
+        for (BluetoothConnection connection : openConnections)
+        {
             sb.append(connection);
             sb.append("\n");
         }
         sb.append("---------------------------------\n");
         Log.d(TAG, "currently open connections: \n"
-         +sb
+                + sb
         );
     }
 }

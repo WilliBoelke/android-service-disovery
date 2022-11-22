@@ -26,13 +26,13 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * The given {@link ControllerListener} will be notified about closed connections.
  *
  * @param <T>
- *     An Object implementing {@link ServiceConnection}
+ *         An Object implementing {@link ServiceConnection}
  * @param <D>
- *     The type of device connected through the connection // todo is that needed?
+ *         The type of device connected through the connection
  *
  * @author WilliBoelke
  */
-public class WriteThread <T extends ServiceConnection, D> extends Thread
+public class WriteThread<T extends ServiceConnection, D> extends Thread
 {
     /**
      * Classname for logging
@@ -41,22 +41,22 @@ public class WriteThread <T extends ServiceConnection, D> extends Thread
     /**
      * The connections to write to
      */
-    private final CopyOnWriteArrayList<T> connections;
+    private final List<T> connections;
     private final ServiceDescription serviceDescription;
     private Thread thread;
-    private final ControllerListener<T,D> listener;
+    private final ControllerListener<T, D> listener;
     private boolean shouldRun = true;
     private boolean isRunning = false;
 
 
-    public WriteThread(CopyOnWriteArrayList<T> connections, ServiceDescription serviceDescription, ControllerListener<T,D> listener)
+    public WriteThread(List<T> connections, ServiceDescription serviceDescription, ControllerListener<T, D> listener)
     {
         this.connections = connections;
-        this.listener = listener; 
-        this.serviceDescription = serviceDescription; 
+        this.listener = listener;
+        this.serviceDescription = serviceDescription;
     }
 
-
+    @Override
     public void run()
     {
         this.isRunning = true;
@@ -72,7 +72,7 @@ public class WriteThread <T extends ServiceConnection, D> extends Thread
                     try
                     {
                         String msg = "Test message:" + counter +
-                                    "\nService: " + serviceDescription.getServiceName();
+                                "\nService: " + serviceDescription.getServiceName();
                         connection.getOutputStream().write(msg.getBytes());
                     }
                     catch (IOException e)

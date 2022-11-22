@@ -87,14 +87,7 @@ public class BluetoothServiceDiscoveryVOne extends BluetoothServiceDiscoveryEngi
 
         if (uuidExtra != null)
         {
-            if (this.notifyAboutAllServices)
-            {
-                notifyListenersAboutServices(device, uuidExtra);
-            }
-            else
-            {
-                notifyListenersIfServiceIsAvailable(device, uuidExtra);
-            }
+            notifyListenersIfServiceIsAvailable(device, uuidExtra);
         }
     }
 
@@ -132,7 +125,7 @@ public class BluetoothServiceDiscoveryVOne extends BluetoothServiceDiscoveryEngi
     @Override
     protected void onRefreshStarted()
     {
-
+        // nothing to do here, should work in super
     }
 }
 

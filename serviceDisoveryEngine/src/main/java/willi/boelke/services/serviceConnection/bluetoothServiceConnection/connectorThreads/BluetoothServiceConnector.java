@@ -6,20 +6,37 @@ import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 
 /**
- * This thread registers a Bluetooth Service to the devices service records
- * and accepts incoming connection attempts
+ * This thread registers a SDP service record to the local SDP server
+ * and opens a RFCOMM server socket.
+ * The bluetooth service record can be found by sdp queries on remote devices
+ * and a connections attempts will be accepted here.
+ * <h2>Usage</h2>
+ * This thread will register the service with the local service
+ * on {@link #start()}.
+ * A service socket will be opened and connections accepted.
+ * This threads runs until ts stopped by calling {@link #cancel()}.
+ * While it is running it can accept multiple connections.
+ * Established connections will be reported by calling the
+ * {@link ConnectionEventListener#onConnectionSuccess(BluetoothConnectorThread, BluetoothConnection)}
+ * callback, providing the connected socket and the {@link ServiceDescription}.
+ * <p>
+ * When a connection fails {@link ConnectionEventListener#onConnectionFailed(UUID, BluetoothConnectorThread)}
+ * will be called, though the thread will keep running until canceled.
+ *
+ * @author WilliBoelke
  */
 public class BluetoothServiceConnector extends BluetoothConnectorThread
 {
 
     /**
-     * Log Tag
+     * Classname for logging
      */
     private final String TAG = this.getClass().getSimpleName();
 
@@ -30,7 +47,7 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
 
     /**
      * Implementation of the BluetoothServiceServer interface, which
-     * allows to  get notified about connections trough callbacks
+     * allows to get notified about connections / failures
      */
     private final ConnectionEventListener connectionEvenListener;
 
@@ -39,6 +56,11 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
      */
     private BluetoothServerSocket serverSocket;
 
+    /**
+     * Determines whether the tread is in a running state
+     * and should keep on with accepting connections
+     * or stop the loop.
+     */
     private boolean running;
 
     //
@@ -64,16 +86,24 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
     }
 
     //
-    //  ----------  start  ----------
+    //  ----------  run ----------
     //
 
-    public synchronized void startService() throws IOException
+    public void run()
     {
+        this.thread = currentThread();
         Log.d(TAG, "startService : starting Bluetooth Service");
-        openServerSocket();
-        this.start();
-    }
+        try
+        {
+            openServerSocket();
+        }
+        catch (IOException e)
+        {
+            connectionEvenListener.onConnectionFailed(this.description.getServiceUuid(), this);
+        }
 
+        acceptConnections();
+    }
 
     private void openServerSocket() throws IOException
     {
@@ -85,20 +115,6 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
                 );
     }
 
-    //
-    //  ----------  run ----------
-    //
-
-    public void run()
-    {
-        this.thread = currentThread();
-        while (this.running)
-        {
-            acceptConnections();
-        }
-        Log.d(TAG, "run: Accept thread ended final");
-    }
-
     /**
      * Accepts one incoming connection through the {@link #serverSocket}
      * If a connection was established  {@link ConnectionEventListener#onConnectionSuccess(BluetoothConnectorThread, BluetoothConnection)}
@@ -108,49 +124,52 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
      */
     private void acceptConnections()
     {
-        Log.d(TAG, "run:  Thread started");
-        BluetoothSocket socket = null;
-        //Blocking Call : Accept thread waits here till another device connects (or canceled)
-        Log.d(TAG, "run: RFCOMM server socket started, waiting for connections ...");
-        try
+        while (this.running)
         {
-            socket = this.serverSocket.accept();
-            Log.d(TAG, "run: RFCOMM server socked accepted client connection");
-        }
-        catch (IOException e)
-        {
-            Log.e(TAG, "acceptConnections: an IOException occurred, trying to fix");
+            Log.d(TAG, "run:  Thread started");
+            BluetoothSocket socket = null;
+            //Blocking Call : Accept thread waits here till another device connects (or canceled)
+            Log.d(TAG, "run: RFCOMM server socket started, waiting for connections ...");
             try
             {
-                Log.e(TAG, "acceptConnections: trying to close socket");
-                this.serverSocket.close();
+                socket = this.serverSocket.accept();
+                Log.d(TAG, "run: RFCOMM server socked accepted client connection");
             }
-            catch (IOException e1)
+            catch (IOException e)
             {
-                Log.e(TAG, "acceptConnections: could not close the socket");
+                Log.e(TAG, "acceptConnections: an IOException occurred, trying to fix");
+                try
+                {
+                    Log.e(TAG, "acceptConnections: trying to close socket");
+                    this.serverSocket.close();
+                }
+                catch (IOException e1)
+                {
+                    Log.e(TAG, "acceptConnections: could not close the socket");
+                }
+                if (this.running)
+                {
+                    /// notify that failed -- only if it should run
+                    this.connectionEvenListener.onConnectionFailed(this.description.getServiceUuid(), this);
+                }
             }
-            if (this.running)
+            catch (Exception ie)
             {
-                /// notify that failed -- only if it should run
-                this.connectionEvenListener.onConnectionFailed(this.description.getServiceUuid(), this);
+                // there is an exception throw here, when interrupting in test cases
+                // it does not say which one...or why, so i go with a general catch.
+                // I guess that it is somehow related to interrupting the thread while it waits for an async
+                // response from a mocked method, which also runs a thread, but i am not really sure in the end
+                Log.d(TAG, "acceptConnections: an unexpected exception occurred, this maybe is because thread was interrupted");
             }
-        }
-        catch (Exception ie)
-        {
-            // there is an exception throw here, when interrupting in test cases
-            // it does not say which one...or why, so i go with a general catch.
-            // I guess that it is somehow related to interrupting the thread while it waits for an async
-            // response from a mocked method, which also runs a thread, but i am not really sure in the end
-            Log.d(TAG, "acceptConnections: an unexpected exception occurred, this maybe is because thread was interrupted");
-        }
 
-        if (socket == null)
-        {
-            Log.d(TAG, "run: Thread was interrupted");
-            return;
+            if (socket == null)
+            {
+                Log.d(TAG, "run: Thread was interrupted");
+                return;
+            }
+            Log.d(TAG, "run:  service accepted client connection, opening streams");
+            this.connectionEvenListener.onConnectionSuccess(this, new BluetoothConnection(this.description, socket, true));
         }
-        Log.d(TAG, "run:  service accepted client connection, opening streams");
-        this.connectionEvenListener.onConnectionSuccess(this, new BluetoothConnection(this.description, socket, true));
     }
 
 

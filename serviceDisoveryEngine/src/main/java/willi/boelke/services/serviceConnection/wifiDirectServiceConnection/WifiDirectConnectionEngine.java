@@ -8,6 +8,8 @@ import static android.net.wifi.p2p.WifiP2pManager.P2P_UNSUPPORTED;
 import android.Manifest;
 import android.content.Context;
 import android.content.IntentFilter;
+import android.net.wifi.WifiManager;
+import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
@@ -17,13 +19,14 @@ import androidx.annotation.RequiresPermission;
 
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.tcp.TCPChannelMaker;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
-import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscoveryEngine;
+import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscovery;
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiServiceDiscoveryListener;
 
 /**
  * This is a prototypic implementation to establish
  * wifi direct connections between android devices based on the
- * {@link WifiDirectServiceDiscoveryEngine}.
+ * {@link WifiDirectServiceDiscovery}.
+ * The connections and groups will be formed automatically.
  * <p>
  * <h2>General</h2>
  * Starts service discovery and service advertisement,
@@ -38,7 +41,7 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
  * To obtain the singleton instance call {@link #getInstance()}.
  * <p>
  * After initialization the engine needs to be started before using
- * it {@link #start(Context)}. A running engine can be stopped by calling
+ * it {@link #start(Context, WifiDirectServiceDiscovery)}. A running engine can be stopped by calling
  * {@link #stop()} this will cancel the discovery, unregister the
  * service if it was registered and remove the local device from
  * the group and close all establish connections.
@@ -66,7 +69,7 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
  * This will be known to client and server.
  * It would be possible to transfer the port number though the txt record
  * to potential clients, which then can connect without prior
- * knowledge of the port, this should be implemented. 
+ * knowledge of the port, this should be implemented.
  * For now though it is also possible to set a custom port {@link #setPort(int)}
  * <p>
  * <h2>Limitations</h2>
@@ -84,6 +87,17 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
  * <li>A client cannot be a group owner at the same time as being a groups client</li>
  * <li>A group owner cannot connect to other group owners.</li>
  * </ul>
+ * <p>
+ * In its current state the engine will form a group randomly.
+ * It will try to establish a connection with the first matching service it finds
+ * and form a group. The group owner election is managed by Android.
+ * <p>
+ * When a GO was elected and a group formed the client will stop advertising its service
+ * as well as stop sending connection requests. Other clients can still discover
+ * and connect to the group owner.
+ * That though also means that if several devices are in range several groups
+ * can be formed independently.
+ *
  * <h2>Permissions</h2>
  * For the usage of the Wi-Fi APIs several android permissions are needed.
  * Here though especially {@link Manifest.permission#ACCESS_FINE_LOCATION}
@@ -148,11 +162,12 @@ public class WifiDirectConnectionEngine
     /**
      * The discovery engine
      */
-    private WifiDirectServiceDiscoveryEngine discoveryEngine;
+    private WifiDirectServiceDiscovery discoveryEngine;
 
     /**
      * The service the engine tries to find
      * at a given times.
+     *
      * @see #registerService(ServiceDescription, WifiDirectPeer)
      * @see #unregisterService()
      */
@@ -161,12 +176,13 @@ public class WifiDirectConnectionEngine
     /**
      * Determines if the engine was or not
      *
-     * @see #start(Context) ()
+     * @see #start(Context, WifiDirectServiceDiscovery)
      * @see #stop()
      */
     private boolean engineRunning = false;
     private boolean isConnected = false;
     private int usedPort = DEFAULT_PORT;
+
     //
     //  ----------  constructor and initialization ----------
     //
@@ -194,27 +210,54 @@ public class WifiDirectConnectionEngine
     }
 
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    public void start(Context context)
+    public boolean start(Context context, WifiDirectServiceDiscovery serviceDiscovery)
     {
         if (isRunning())
         {
             Log.e(TAG, "start: engine already running");
-            return;
+            return true;
         }
-        Log.d(TAG, "setup: setup wifi engine");
+
+        WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if (wifiManager == null)
+        {
+            Log.e(TAG, "start: Wifi Service not available");
+            return false;
+        }
+        if (!wifiManager.isP2pSupported())
+        {
+            Log.e(TAG, "start: Wifi turned off or not available");
+            return false;
+        }
+        this.manager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
+        if (manager == null)
+        {
+            Log.e(TAG, "start:Wifi Service not available");
+            return false;
+        }
+        this.channel = manager.initialize(context, context.getMainLooper(), null);
+        if (channel == null)
+        {
+            Log.e(TAG, "start: cant init WiFi direct");
+            return false;
+        }
+
+        Log.d(TAG, "start: setup wifi engine");
+
         // Initialize manager and channel
-        this.context = context;
-        this.manager = (WifiP2pManager) this.context.getSystemService(Context.WIFI_P2P_SERVICE);
-        this.channel = manager.initialize(this.context, this.context.getMainLooper(), null);
+        this.context = context.getApplicationContext();
+
+
         this.registerReceiver();
 
         //--- setting up discovery engine ---//
 
-        this.discoveryEngine = WifiDirectServiceDiscoveryEngine.getInstance();
-        this.discoveryEngine.start(manager, channel);
+        this.discoveryEngine = serviceDiscovery;
+        this.discoveryEngine.start(context, manager, channel);
         this.discoveryEngine.registerDiscoverListener(serviceDiscoveryListener);
 
         this.engineRunning = true;
+        return true;
     }
 
 
@@ -287,7 +330,7 @@ public class WifiDirectConnectionEngine
 
     /**
      * This registers the service for discovery, other devices can find this service then.
-     * Also the service with the given UUID (serviceUUID) will be looked for.
+     * Also the service with the given ServiceDescriptioe will be looked for.
      * The service discovery however needs to be started and stopped separately, for that please
      * refer to {@link #startDiscovery()} and {@link #stopDiscovery()} respectively.
      *
@@ -336,7 +379,8 @@ public class WifiDirectConnectionEngine
             Log.e(TAG, "unregisterService: engine not started - wont unregister");
             return;
         }
-        if(currentServiceDescription == null) {
+        if (currentServiceDescription == null)
+        {
             return; // service description was already null - means no service was registered
         }
         this.discoveryEngine.stopDiscoveryForService(currentServiceDescription);
@@ -375,7 +419,7 @@ public class WifiDirectConnectionEngine
                         @Override
                         public void onSuccess()
                         {
-                            Log.d(TAG, "disconnectFromGroup: disconnected succesfully");
+                            Log.d(TAG, "disconnectFromGroup: disconnected successfully");
                         }
 
                         @Override
@@ -428,11 +472,6 @@ public class WifiDirectConnectionEngine
 
 
     //
-    //  ----------  SdpWifiServiceDiscoverListener interface ----------
-    //
-
-
-    //
     //  ----------  connecting ----------
     //
 
@@ -450,13 +489,15 @@ public class WifiDirectConnectionEngine
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     private void tryToConnect(WifiP2pDevice device, ServiceDescription description)
     {
+
         Log.d(TAG, "tryToConnect: received a service - trying to connect");
         if (peer == null)
         {
             Log.e(TAG, "tryToConnect: peer was null, wont send connection request to " + device);
             return;
         }
-        if(isConnected)
+        peer.onServiceDiscovered(device, description);
+        if (isConnected)
         {
             Log.d(TAG, "tryToConnect: already connected, wont send connection request to " + device);
             return;
@@ -464,12 +505,14 @@ public class WifiDirectConnectionEngine
         if (!peer.shouldConnectTo(device, description))
         {
             Log.d(TAG, "tryToConnect: peer decided not to connect to " + device);
+            return;
         }
 
         Log.d(TAG, "tryToConnect: trying to connect to  " + device);
         WifiP2pConfig config = new WifiP2pConfig();
+        config.wps.setup = WpsInfo.PBC;
         config.deviceAddress = device.deviceAddress;
-        this.manager.connect(this.channel, config, new WifiP2pManager.ActionListener()
+        manager.connect(channel, config, new WifiP2pManager.ActionListener()
         {
             @Override
             public void onSuccess()
@@ -545,7 +588,7 @@ public class WifiDirectConnectionEngine
         }
         else
         {
-            Log.e(TAG, "onSocketConnected: no peer registered, closing connection" );
+            Log.e(TAG, "onSocketConnected: no peer registered, closing connection");
             connection.close();
             this.isConnected = false;
         }
@@ -572,10 +615,11 @@ public class WifiDirectConnectionEngine
         return this.usedPort;
     }
 
-    public void setPort(int port){
+    public void setPort(int port)
+    {
         this.usedPort = port;
     }
-    
+
     public boolean isRunning()
     {
         return this.engineRunning;

@@ -6,6 +6,11 @@ import android.content.Context;
 import willi.boelke.services.serviceDiscovery.IServiceDiscoveryEngine;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
+/**
+ * Contract for the public methods of a bluetooth service discovery
+ *
+ * @author WilliBoelke
+ */
 public interface BluetoothServiceDiscovery extends IServiceDiscoveryEngine
 {
 
@@ -17,14 +22,18 @@ public interface BluetoothServiceDiscovery extends IServiceDiscoveryEngine
      *
      * @param context
      *         the application context
+     *
+     * @return
      */
     @Override
-    void start(Context context);
+    boolean start(Context context);
 
     /**
      * Starts the engine
+     *
+     * @return
      */
-    void start(Context context, BluetoothAdapter adapter);
+    boolean start(Context context, BluetoothAdapter adapter);
 
     //
     //  ----------  shutdown and teardown ----------
@@ -113,6 +122,7 @@ public interface BluetoothServiceDiscovery extends IServiceDiscoveryEngine
     //
     //  ---------- config ----------
     //
+
     /**
      * On some devices service uuids will be
      * received in a little endian format.

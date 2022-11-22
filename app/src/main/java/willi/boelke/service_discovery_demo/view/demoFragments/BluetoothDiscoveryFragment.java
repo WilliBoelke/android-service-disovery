@@ -1,9 +1,6 @@
 package willi.boelke.service_discovery_demo.view.demoFragments;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,7 +8,6 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -20,7 +16,6 @@ import java.util.ArrayList;
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.FragmentBluetoothDiscoverBinding;
 import willi.boelke.service_discovery_demo.view.listAdapters.ServiceListAdapter;
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscovery;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVTwo;
 
 public class BluetoothDiscoveryFragment extends Fragment
@@ -28,16 +23,7 @@ public class BluetoothDiscoveryFragment extends Fragment
 
     //------------Instance Variables------------
 
-    /**
-     * The Log Tag
-     */
-    private final String TAG = this.getClass().getSimpleName();
-
     private FragmentBluetoothDiscoverBinding binding;
-
-    private BluetoothServiceDiscovery engine;
-
-    private boolean notifyAboutAll = false;
 
     private ServiceListAdapter connectionListAdapter;
 
@@ -54,16 +40,6 @@ public class BluetoothDiscoveryFragment extends Fragment
     {
         binding = FragmentBluetoothDiscoverBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-        engine = BluetoothServiceDiscoveryVTwo.getInstance();
-        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        {
-            Log.d(TAG, "onCreateView: starting engine");
-            engine.start(this.getActivity().getApplicationContext());
-        }
-        else
-        {
-            Log.e(TAG, "onCreateView: missing permissions");
-        }
 
         model = new ViewModelProvider(this).get(BluetoothDiscoveryViewModel.class);
 
@@ -75,21 +51,25 @@ public class BluetoothDiscoveryFragment extends Fragment
         //--- register observer ---//
         notificationObserver();
         discoveryObserver();
+        discoverAllStateObserver();
 
         return root;
     }
+
 
     @Override
     public void onDestroyView()
     {
         super.onDestroyView();
-        if (engine.isRunning())
-        {
-            model.stopSearchServiceOne();
-            model.stopSearchServiceTwo();
-            engine.notifyAboutAllServices(false);
-        }
-        binding = null;
+        model.goInactive();
+    }
+
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        model.goActive();
     }
 
 
@@ -113,7 +93,7 @@ public class BluetoothDiscoveryFragment extends Fragment
 
     private void onClickEventHandler(View view)
     {
-        if (!engine.isRunning())
+        if (!BluetoothServiceDiscoveryVTwo.getInstance().isRunning())
         {
             Toast.makeText(getContext(), "Missing permission or bluetooth not supported", Toast.LENGTH_LONG).show();
             return;
@@ -146,8 +126,7 @@ public class BluetoothDiscoveryFragment extends Fragment
         }
         else if (binding.discoverAllBtn.equals(view))
         {
-            this.notifyAboutAll = !notifyAboutAll;
-            engine.notifyAboutAllServices(notifyAboutAll);
+            model.notifyAboutAllServices();
         }
     }
 
@@ -163,6 +142,15 @@ public class BluetoothDiscoveryFragment extends Fragment
         {
             ServiceListAdapter serviceListAdapter = new ServiceListAdapter(getContext(), R.layout.recycler_card_service, devicesInRange);
             binding.connectionListView.setAdapter(serviceListAdapter);
+        });
+    }
+
+    private void discoverAllStateObserver()
+    {
+        model.getDiscoverAllState().observe(this.getViewLifecycleOwner(), notifyAboutAllServices ->
+        {
+            String message = notifyAboutAllServices ? "discover selected" : "discover all";
+            binding.discoverAllBtn.setText(message);
         });
     }
 }

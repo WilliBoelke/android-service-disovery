@@ -1,7 +1,5 @@
 package willi.boelke.service_discovery_demo.view.demoFragments;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,7 +8,6 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -23,14 +20,7 @@ import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiD
 public class WifiDirectConnectionFragment extends Fragment
 {
 
-    /**
-     * Classname for logging
-     */
-    private final String TAG = this.getClass().getSimpleName();
-
     private FragmentWifiDirectConnectBinding binding;
-
-    private WifiDirectConnectionEngine engine;
 
     private WifiDirectConnectionViewModel model;
 
@@ -44,15 +34,6 @@ public class WifiDirectConnectionFragment extends Fragment
         binding = willi.boelke.service_discovery_demo.databinding.FragmentWifiDirectConnectBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        {
-            Toast.makeText(getActivity(), "Missing permission", Toast.LENGTH_LONG).show();
-        }
-        else
-        {
-            this.engine = WifiDirectConnectionEngine.getInstance();
-            this.engine.start(this.getActivity().getApplicationContext());
-        }
 
         model = new ViewModelProvider(this).get(WifiDirectConnectionViewModel.class);
 
@@ -62,6 +43,24 @@ public class WifiDirectConnectionFragment extends Fragment
         setupNotificationObserver();
         return root;
     }
+
+    @Override
+    public void onDestroyView()
+    {
+        super.onDestroyView();
+        model.goInactive();
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        model.goActive();
+    }
+
+    //
+    //  ---------- user interaction ----------
+    //
 
     private void setupClickListener()
     {
@@ -75,7 +74,7 @@ public class WifiDirectConnectionFragment extends Fragment
 
     private void onClickEventHandler(View view)
     {
-        if (!engine.isRunning())
+        if (!WifiDirectConnectionEngine.getInstance().isRunning())
         {
             Toast.makeText(getContext(), "Missing permission or bluetooth not supported", Toast.LENGTH_LONG).show();
             return;

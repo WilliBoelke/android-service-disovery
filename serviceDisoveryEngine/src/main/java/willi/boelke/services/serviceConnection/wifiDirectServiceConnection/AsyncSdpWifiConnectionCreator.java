@@ -10,7 +10,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
  * This Thread awaits a {@link TCPChannelMaker} to establish a socket connection
- * (or to fail doing that...). IF a connection was established a {@link WifiConnection}
+ * (or to fail doing that...). If a connection was established a {@link WifiConnection}
  * will be passed to {@link WifiDirectConnectionEngine#onSocketConnected(WifiConnection)}
  *
  * <p>
@@ -95,7 +95,7 @@ class AsyncSdpWifiConnectionCreator extends Thread
         // cases) and then wait before trying again.
         // This fix actually works very well now
         // after testing it a while, though there may
-        // be room for improvements ? reties ?
+        // be room for improvements
         //----------------------------------
         try
         {

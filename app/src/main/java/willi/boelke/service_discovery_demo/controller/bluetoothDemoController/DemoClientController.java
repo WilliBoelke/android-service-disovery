@@ -3,9 +3,6 @@ package willi.boelke.service_discovery_demo.controller.bluetoothDemoController;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import willi.boelke.service_discovery_demo.controller.ControllerListener;
@@ -92,7 +89,7 @@ public class DemoClientController implements BluetoothServiceClient
     /**
      * This starts the client.
      * the client will be registered.
-     *
+     * <p>
      * The discovers process though needs to be started manually through the
      * BluetoothServiceConnectionEngine.
      */
@@ -123,7 +120,8 @@ public class DemoClientController implements BluetoothServiceClient
     //
 
 
-    public void setListener(ControllerListener<BluetoothConnection, BluetoothDevice> listener){
+    public void setListener(ControllerListener<BluetoothConnection, BluetoothDevice> listener)
+    {
         this.listener = listener;
     }
 
@@ -134,11 +132,12 @@ public class DemoClientController implements BluetoothServiceClient
 
     /**
      * Starts a new ReadThread and stores it in {@link #reader}.
-     * If a reader is already running i will be canceled first. 
+     * If a reader is already running i will be canceled first.
      */
     public void startReading()
     {
-        if(reader.isRunning()){
+        if (reader.isRunning())
+        {
             stopReading();
         }
         reader = new ReadThread<>(connections, listener);
@@ -150,7 +149,8 @@ public class DemoClientController implements BluetoothServiceClient
      */
     private void stopReading()
     {
-        if(reader.isRunning()){
+        if (reader.isRunning())
+        {
             reader.cancel();
         }
     }

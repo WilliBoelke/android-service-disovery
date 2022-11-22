@@ -31,7 +31,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * If a connection to a service host/server has been established
  * {@link BluetoothServiceClient#onConnectedToService(BluetoothConnection)} will be called,
  * providing the client with all necessary means to communicate with the peer/server.
- * <P>
+ * <p>
  * Before a connection will be attempted {@link BluetoothServiceClient#shouldConnectTo(BluetoothDevice, ServiceDescription)}
  * will be called, allowing the client to prevent (return false) or allow (return true) a connection attempt
  *
@@ -67,28 +67,31 @@ public interface BluetoothServiceClient
      * Will be called when a new bluetooth peer is discovered.
      * At this time no information about the available services
      * on this peer are given.
+     *
      * @param peer
-     * The discovered bluetooth peer
+     *         The discovered bluetooth peer
      */
     void onPeerDiscovered(BluetoothDevice peer);
 
     /**
      * Called when a connection has been established
+     *
      * @param connection
-     * The {@link BluetoothConnection}, which contains
-     * the service description and the socket
+     *         The {@link BluetoothConnection}, which contains
+     *         the service description and the socket
      */
     void onConnectedToService(BluetoothConnection connection);
 
     /**
      * Called before a connection attempt is made.
      * Will prevent or allow a connection attempt.
+     *
      * @param host
-     *  The host device of the service.
+     *         The host device of the service.
      * @param description
-     *  The service description of the service discovered.
-     * @return
-     * return true if a connection should be attempted, else return false.
+     *         The service description of the service discovered.
+     *
+     * @return return true if a connection should be attempted, else return false.
      */
     boolean shouldConnectTo(BluetoothDevice host, ServiceDescription description);
 }

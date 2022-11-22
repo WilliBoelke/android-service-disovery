@@ -16,18 +16,19 @@ import willi.boelke.service_discovery_demo.R;
 public class DeviceListAdapter extends ArrayAdapter<BluetoothDevice>
 {
 
-    private LayoutInflater mLayoutInflater;
-    private ArrayList<BluetoothDevice> mDevices;
-    private int  mViewResourceId;
+    private final LayoutInflater mLayoutInflater;
+    private final ArrayList<BluetoothDevice> mDevices;
+    private final int mViewResourceId;
 
     public DeviceListAdapter(Context context, int tvResourceId, ArrayList<BluetoothDevice> devices)
     {
-        super(context, tvResourceId,devices);
+        super(context, tvResourceId, devices);
         this.mDevices = devices;
         mLayoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mViewResourceId = tvResourceId;
     }
 
+    @Override
     public View getView(int position, View convertView, ViewGroup parent)
     {
         convertView = mLayoutInflater.inflate(mViewResourceId, null);
@@ -43,13 +44,14 @@ public class DeviceListAdapter extends ArrayAdapter<BluetoothDevice>
 
         TextView bond_state = convertView.findViewById(R.id.bonded_state);
         String bondState;
-        switch (device.getBondState()){
+        switch (device.getBondState())
+        {
             case BluetoothDevice.BOND_BONDED:
                 bondState = "Bonded";
                 break;
-                case BluetoothDevice.BOND_NONE:
-                    bondState = "-";
-                    break;
+            case BluetoothDevice.BOND_NONE:
+                bondState = "-";
+                break;
             case BluetoothDevice.BOND_BONDING:
                 bondState = "Bonding";
                 break;
@@ -59,6 +61,4 @@ public class DeviceListAdapter extends ArrayAdapter<BluetoothDevice>
         bond_state.setText(bondState);
         return convertView;
     }
-
-
 }

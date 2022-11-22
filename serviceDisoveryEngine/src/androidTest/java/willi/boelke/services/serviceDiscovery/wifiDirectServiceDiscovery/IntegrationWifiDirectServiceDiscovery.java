@@ -112,7 +112,7 @@ import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.Bluetoot
  */
 @RunWith(AndroidJUnit4.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class WifiDirectServiceDiscoveryEngineLiveTest
+public class IntegrationWifiDirectServiceDiscovery
 {
 
     /**
@@ -230,7 +230,7 @@ public class WifiDirectServiceDiscoveryEngineLiveTest
                 System.out.println("device not specified " + getCurrentDeviceName());
         }
     }
-    
+
     public void itShouldFindOneNearbyService_discover() throws InterruptedException
     {
 
@@ -423,5 +423,4 @@ public class WifiDirectServiceDiscoveryEngineLiveTest
         assertTrue(foundServiceDescriptions.contains(descriptionForServiceOne));
         assertTrue(foundServiceDescriptions.contains(descriptionForServiceTwo));
     }
-
 }

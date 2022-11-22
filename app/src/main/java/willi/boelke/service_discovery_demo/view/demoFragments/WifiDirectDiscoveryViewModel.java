@@ -26,16 +26,12 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
  */
 public class WifiDirectDiscoveryViewModel extends ViewModel implements WifiServiceDiscoveryListener
 {
-    /**
-     * Classname for logging
-     */
-    private final String TAG = this.getClass().getSimpleName();
     private final MutableLiveData<ArrayList<ServiceDescription>> discoveredServices
             = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<String> latestNotification = new MutableLiveData<>("");
     private final ServiceDescription descriptionForServiceTwo;
     private final ServiceDescription descriptionForServiceOne;
-    private boolean notifyAboutAllServices = false;
+    private final MutableLiveData<Boolean> notifyAboutAllServices = new MutableLiveData<>(false);
 
 
     public WifiDirectDiscoveryViewModel()
@@ -73,7 +69,6 @@ public class WifiDirectDiscoveryViewModel extends ViewModel implements WifiServi
         this.latestNotification.postValue("Start service 2");
         WifiDirectServiceDiscoveryEngine.getInstance().startDiscoveryForService(descriptionForServiceTwo);
         WifiDirectServiceDiscoveryEngine.getInstance().startService(descriptionForServiceTwo);
-
     }
 
     protected void stopSearchServiceOne()
@@ -92,10 +87,11 @@ public class WifiDirectDiscoveryViewModel extends ViewModel implements WifiServi
 
     protected void notifyAboutAllServices()
     {
-        this.notifyAboutAllServices = !this.notifyAboutAllServices;
-        String msg = this.notifyAboutAllServices ? "Looking for aöö services" : "Only specified services";
+        boolean discoverAll = Boolean.FALSE.equals(this.notifyAboutAllServices.getValue());
+        this.notifyAboutAllServices.postValue(discoverAll);
+        String msg = discoverAll ? "Looking for all services" : "Only specified services";
         this.latestNotification.postValue(msg);
-        WifiDirectServiceDiscoveryEngine.getInstance().notifyAboutAllServices(this.notifyAboutAllServices);
+        WifiDirectServiceDiscoveryEngine.getInstance().notifyAboutAllServices(discoverAll);
     }
 
 
@@ -105,6 +101,7 @@ public class WifiDirectDiscoveryViewModel extends ViewModel implements WifiServi
         WifiDirectServiceDiscoveryEngine.getInstance().stopDiscovery();
     }
 
+    //
     //
     //  ---------- LiveData getter ----------
     //
@@ -119,6 +116,11 @@ public class WifiDirectDiscoveryViewModel extends ViewModel implements WifiServi
         return this.discoveredServices;
     }
 
+    protected LiveData<Boolean> getDiscoverAllState()
+    {
+        return this.notifyAboutAllServices;
+    }
+
     //
     //  ----------  Discovers Listener ----------
     //
@@ -130,5 +132,21 @@ public class WifiDirectDiscoveryViewModel extends ViewModel implements WifiServi
         ArrayList<ServiceDescription> tmp = discoveredServices.getValue();
         tmp.add(description);
         discoveredServices.postValue(tmp);
+    }
+
+    public void goInactive()
+    {
+        WifiDirectServiceDiscoveryEngine.getInstance().stopDiscoveryForService(descriptionForServiceOne);
+        WifiDirectServiceDiscoveryEngine.getInstance().stopService(descriptionForServiceOne);
+        WifiDirectServiceDiscoveryEngine.getInstance().stopDiscoveryForService(descriptionForServiceTwo);
+        WifiDirectServiceDiscoveryEngine.getInstance().stopService(descriptionForServiceTwo);
+        WifiDirectServiceDiscoveryEngine.getInstance().notifyAboutAllServices(false);
+        WifiDirectServiceDiscoveryEngine.getInstance().unregisterDiscoveryListener(this);
+    }
+
+    public void goActive()
+    {
+        WifiDirectServiceDiscoveryEngine.getInstance().notifyAboutAllServices(Boolean.TRUE.equals(this.notifyAboutAllServices.getValue()));
+        WifiDirectServiceDiscoveryEngine.getInstance().registerDiscoverListener(this);
     }
 }

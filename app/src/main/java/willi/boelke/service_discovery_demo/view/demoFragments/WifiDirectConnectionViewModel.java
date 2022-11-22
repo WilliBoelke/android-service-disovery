@@ -63,7 +63,7 @@ public class WifiDirectConnectionViewModel extends ViewModel
         //
 
         // Implementing the listener interface and setting the implementation to both
-        // Demo Clients, this will update the Livate data and thus notify the view about changes.
+        // Demo Clients, this will update the LiveData and thus notify the view about changes.
 
         ControllerListener<WifiConnection, WifiP2pDevice> listener = new ControllerListener<WifiConnection, WifiP2pDevice>()
         {
@@ -98,7 +98,7 @@ public class WifiDirectConnectionViewModel extends ViewModel
             @Override
             public void onNewDiscovery(WifiP2pDevice device)
             {
-                // todo
+                // nothing to do here
             }
         };
 
@@ -133,7 +133,6 @@ public class WifiDirectConnectionViewModel extends ViewModel
 
     public void stopServiceOne()
     {
-
         this.wifiDemoControllerOne.stop();
     }
 
@@ -159,5 +158,17 @@ public class WifiDirectConnectionViewModel extends ViewModel
     public LiveData<String> getLatestMessage()
     {
         return latestMessage;
+    }
+
+
+    public void goInactive()
+    {
+        this.stopDiscovery();
+        this.stopServiceTwo();
+        this.stopServiceOne();
+    }
+
+    public void goActive()
+    {
     }
 }

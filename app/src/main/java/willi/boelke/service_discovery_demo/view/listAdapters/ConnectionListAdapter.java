@@ -13,7 +13,6 @@ import willi.boelke.service_discovery_demo.R;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 
 
-
 public class ConnectionListAdapter extends ArrayAdapter<BluetoothConnection>
 {
 
@@ -29,6 +28,7 @@ public class ConnectionListAdapter extends ArrayAdapter<BluetoothConnection>
         mViewResourceId = tvResourceId;
     }
 
+    @Override
     public View getView(int position, View convertView, ViewGroup parent)
     {
         convertView = mLayoutInflater.inflate(mViewResourceId, null);
@@ -46,16 +46,15 @@ public class ConnectionListAdapter extends ArrayAdapter<BluetoothConnection>
         description.setText(connection.getServiceDescription().getServiceRecord().get("service-info"));
         peerAddress.setText(connection.getRemoteDeviceAddress());
         peerName.setText(connection.getRemoteDevice().getName());
-        if(connection.isServerPeer())
+        if (connection.isServerPeer())
         {
             peerState.setText(R.string.ConnectionType_Client);
         }
-        else{
+        else
+        {
             peerState.setText(R.string.ConnectionType_Server);
         }
 
         return convertView;
     }
-
-
 }

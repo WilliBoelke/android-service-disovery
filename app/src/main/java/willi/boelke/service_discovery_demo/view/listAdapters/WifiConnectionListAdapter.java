@@ -16,9 +16,9 @@ import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiC
 public class WifiConnectionListAdapter extends ArrayAdapter<WifiConnection>
 {
 
-    private LayoutInflater mLayoutInflater;
-    private ArrayList<WifiConnection> connections;
-    private int mViewResourceId;
+    private final LayoutInflater mLayoutInflater;
+    private final ArrayList<WifiConnection> connections;
+    private final int mViewResourceId;
 
     public WifiConnectionListAdapter(Context context, int tvResourceId, ArrayList<WifiConnection> devices)
     {
@@ -28,6 +28,7 @@ public class WifiConnectionListAdapter extends ArrayAdapter<WifiConnection>
         mViewResourceId = tvResourceId;
     }
 
+    @Override
     public View getView(int position, View convertView, ViewGroup parent)
     {
         convertView = mLayoutInflater.inflate(mViewResourceId, null);
@@ -49,6 +50,4 @@ public class WifiConnectionListAdapter extends ArrayAdapter<WifiConnection>
 
         return convertView;
     }
-
-
 }

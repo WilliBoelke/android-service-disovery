@@ -5,20 +5,25 @@ import android.util.Log;
 
 import java.util.ArrayList;
 
-import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVOne;
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryEngine;
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscoveryEngine;
 
 
 /**
  * Abstract class for {@link WifiDirectServiceDiscoveryEngine}
- * and  {@link BluetoothServiceDiscoveryVOne}
+ * and {@link BluetoothServiceDiscoveryEngine}.
+ * This implements the methods described in {@link IServiceDiscoveryEngine}.
+ * Foremost the registration and unregister
+ * of a service for the discovery.
  * <p>
- * Allows the
+ * <h2>Abstract methods</h2>
+ * This provides the abstract methods
+ * {@link #onServiceRemoveFromDiscovery(ServiceDescription)}
+ * and {@link #onNewServiceToDiscover(ServiceDescription)}
+ * which can be overwritten in subclasses to react to the specified events.
  */
 public abstract class ServiceDiscoveryEngine implements IServiceDiscoveryEngine
 {
-
-
     //
     //  ----------  instance variables ----------
     //
@@ -38,13 +43,14 @@ public abstract class ServiceDiscoveryEngine implements IServiceDiscoveryEngine
      * Gives information about the state of the engine, will
      * set to true if the engine was started {@link  #start(Context)}
      * and false when its stopped {@link #stop()}
-     *
+     * <p>
      * can be accessed through {@link #isRunning()}
      */
     protected boolean engineRunning = false;
 
     /**
-     * If this is true all listeners
+     * If this is true all listeners will
+     * be notified about every discovered service
      */
     protected boolean notifyAboutAllServices = false;
 
@@ -66,13 +72,13 @@ public abstract class ServiceDiscoveryEngine implements IServiceDiscoveryEngine
     }
 
     @Override
-    public abstract void start(Context context);
+    public abstract boolean start(Context context);
 
     @Override
     public abstract void stop();
 
     //
-    //  ----------  add service for discovery ----------
+    //  ---------- register / unregister service ----------
     //
 
     @Override
@@ -96,19 +102,6 @@ public abstract class ServiceDiscoveryEngine implements IServiceDiscoveryEngine
         onNewServiceToDiscover(description);
     }
 
-    /**
-     * Called whenever a new service was added to be discovery
-     * though {@link #startDiscoveryForService(ServiceDescription)}
-     *
-     * @param description
-     *         the description of the service
-     */
-    protected abstract void onNewServiceToDiscover(ServiceDescription description);
-
-    //
-    //  ----------  remove service from discovery ----------
-    //
-
     @Override
     public void stopDiscoveryForService(ServiceDescription description)
     {
@@ -123,16 +116,6 @@ public abstract class ServiceDiscoveryEngine implements IServiceDiscoveryEngine
         // subclasses call
         onServiceRemoveFromDiscovery(description);
     }
-
-
-    /**
-     * called whenever a  service was removed to the discovery
-     * can be implemented in subclasses
-     *
-     * @param description
-     *         the description of the service
-     */
-    protected abstract void onServiceRemoveFromDiscovery(ServiceDescription description);
 
     /**
      * Checks if the service description is already in {@link #servicesToLookFor} list
@@ -167,4 +150,22 @@ public abstract class ServiceDiscoveryEngine implements IServiceDiscoveryEngine
         Log.d(TAG, "notifyAboutAllServices: notifying about all service = " + all);
         this.notifyAboutAllServices = all;
     }
+
+    /**
+     * Called whenever a new service was added to be discovery
+     * though {@link #startDiscoveryForService(ServiceDescription)}
+     *
+     * @param description
+     *         the description of the service
+     */
+    protected abstract void onNewServiceToDiscover(ServiceDescription description);
+
+    /**
+     * called whenever a service was removed to the discovery
+     * can be implemented in subclasses
+     *
+     * @param description
+     *         the description of the service
+     */
+    protected abstract void onServiceRemoveFromDiscovery(ServiceDescription description);
 }

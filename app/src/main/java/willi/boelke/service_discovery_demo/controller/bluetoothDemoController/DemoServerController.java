@@ -3,9 +3,6 @@ package willi.boelke.service_discovery_demo.controller.bluetoothDemoController;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import willi.boelke.service_discovery_demo.controller.ControllerListener;
@@ -90,11 +87,11 @@ public class DemoServerController implements BluetoothServiceServer
      */
     public void startWriting()
     {
-       if (!writer.isRunning())
-       {
-         writer = new WriteThread<>(connections, serviceDescription, listener);
-         writer.start();
-       }
+        if (!writer.isRunning())
+        {
+            writer = new WriteThread<>(connections, serviceDescription, listener);
+            writer.start();
+        }
     }
 
     /**
@@ -111,7 +108,7 @@ public class DemoServerController implements BluetoothServiceServer
     /**
      * This starts the advertisement of the service
      * using the {@link BluetoothServiceConnectionEngine}.
-     *
+     * <p>
      * Please not that the SdpBluetooth engine is require to be initialized at this point.
      */
     public void startService()
@@ -128,7 +125,8 @@ public class DemoServerController implements BluetoothServiceServer
         BluetoothServiceConnectionEngine.getInstance().disconnectFromClientsWithUUID(this.serviceDescription);
         BluetoothServiceConnectionEngine.getInstance().stopSDPService(this.serviceDescription);
         //--- notify listener that all connections where closed and clear the list ---//
-        for(BluetoothConnection connection : connections){
+        for (BluetoothConnection connection : connections)
+        {
             listener.onConnectionLost(connection);
         }
         this.connections.clear();
@@ -138,8 +136,8 @@ public class DemoServerController implements BluetoothServiceServer
     //  ----------  listener ----------
     //
 
-    public void setListener(ControllerListener<BluetoothConnection, BluetoothDevice> listener){
+    public void setListener(ControllerListener<BluetoothConnection, BluetoothDevice> listener)
+    {
         this.listener = listener;
     }
-
 }

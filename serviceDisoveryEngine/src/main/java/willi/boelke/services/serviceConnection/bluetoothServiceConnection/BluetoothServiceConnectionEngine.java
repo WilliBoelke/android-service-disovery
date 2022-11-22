@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -135,6 +134,10 @@ public class BluetoothServiceConnectionEngine
      */
     private boolean engineRunning = false;
 
+    /**
+     * The discovery engine which is used
+     * for service discovery
+     */
     private BluetoothServiceDiscovery discoveryEngine;
 
     //
@@ -165,8 +168,15 @@ public class BluetoothServiceConnectionEngine
     }
 
     /**
-     * Starts the engine and the service discovery engine
-     * the discovery is ready to be used after this
+     * Starts the engine and the given implementation
+     * of {@link BluetoothServiceDiscovery}.
+     * Using this will default to the default bluetooth adapter.
+     * <b>Note: please provide application context, to prevent memory leaks</b>
+     *
+     * @param context
+     *         the application context
+     * @param discoveryEngine
+     *         The {@link BluetoothServiceDiscovery} to be used for service discovery
      */
     public void start(Context context, BluetoothServiceDiscovery discoveryEngine)
     {
@@ -181,6 +191,18 @@ public class BluetoothServiceConnectionEngine
         start(context, adapter, discoveryEngine);
     }
 
+    /**
+     * Starts the engine and the given implementation
+     * of {@link BluetoothServiceDiscovery}.
+     * <b>Note: please provide application context, to prevent memory leaks</b>
+     *
+     * @param context
+     *         the application context
+     * @param discoveryEngine
+     *         The {@link BluetoothServiceDiscovery} to be used for service discovery.
+     * @param adapter
+     *         The bluetooth adapter to be used
+     */
     public void start(Context context, BluetoothAdapter adapter, BluetoothServiceDiscovery discoveryEngine)
     {
         //--- if no adapter we can stop right here ---//
@@ -197,10 +219,10 @@ public class BluetoothServiceConnectionEngine
         }
 
         this.bluetoothAdapter = adapter;
-        this.context = context;
+        this.context = context.getApplicationContext();
 
         //--- starting the discovery engine ---//
-        Log.e(TAG, "start: " + discoveryEngine );
+        Log.e(TAG, "start: " + discoveryEngine);
         this.discoveryEngine = discoveryEngine;
         this.discoveryEngine.start(context, adapter);
         this.discoveryEngine.registerDiscoverListener(new BluetoothServiceDiscoveryListener()
@@ -250,7 +272,7 @@ public class BluetoothServiceConnectionEngine
         stopAllClientConnectors();
         this.connectionManager.closeAllConnections();
         this.serviceClients = new HashMap<>();
-        Log.e(TAG, "stop: " + this.discoveryEngine );
+        Log.e(TAG, "stop: " + this.discoveryEngine);
         this.discoveryEngine.stop();
         this.engineRunning = false;
     }
@@ -267,6 +289,12 @@ public class BluetoothServiceConnectionEngine
         instance = null;
     }
 
+    /**
+     * Stops all running {@link BluetoothClientConnector}s
+     * which are currently trying to connect to a remote device
+     *
+     * @see #runningClientConnectors
+     */
     private void stopAllClientConnectors()
     {
         for (BluetoothClientConnector connector : this.runningClientConnectors)
@@ -275,6 +303,12 @@ public class BluetoothServiceConnectionEngine
         }
     }
 
+    /**
+     * Stop all {@link BluetoothServiceConnector}s
+     * which are currently running and accepting connections.
+     *
+     * @see #runningServiceConnectors
+     */
     private void stopAllServiceConnector()
     {
         for (BluetoothServiceConnector connector : this.runningServiceConnectors)
@@ -324,8 +358,6 @@ public class BluetoothServiceConnectionEngine
             Log.e(TAG, "startDiscoverable: the engine was not initialized or bluetooth is not available");
             return false;
         }
-        //  todo: actually it would probably appropriate to make a superclass here for this and the discovery engine
-        // but that's for when the discovery is in ASAP Android
         return this.discoveryEngine.startDeviceDiscovery();
     }
 
@@ -549,7 +581,7 @@ public class BluetoothServiceConnectionEngine
      * this point will remain connected and working.
      *
      * @param description
-     *  The description of the service
+     *         The description of the service
      */
     public void stopSDPService(ServiceDescription description)
     {
@@ -607,7 +639,17 @@ public class BluetoothServiceConnectionEngine
     //  ----------  starting the connection threads ----------
     //
 
-
+    /**
+     * Starts a {@link BluetoothClientConnector} to attempt
+     * to open a socket connection to the remote service/device.
+     * Also implements the necessary callback methods
+     * to react to a successful connection or a failure.
+     *
+     * @param device
+     *         The remote device / host
+     * @param description
+     *         The description of the serve to connect to (containing the service UUID)
+     */
     private void startClientThread(BluetoothDevice device, ServiceDescription description)
     {
         Log.d(TAG, "Staring Client");
@@ -655,8 +697,7 @@ public class BluetoothServiceConnectionEngine
                 runningServiceConnectors.remove(failedServer);
                 startServiceThread(description, serviceServer);
                 Log.e(TAG, "onConnectionFailed: server socket died , trying to restart");
-                // todo this probably should not run indevinity
-                // lets see how effective it is - keep monitoring
+                // this probably should not run indefinitely - keep an eye on the behavior
             }
 
             @Override
@@ -666,15 +707,9 @@ public class BluetoothServiceConnectionEngine
                 serviceServer.onClientConnected(connection);
             }
         });
-        try
-        {
-            bluetoothServiceConnector.startService();
-            this.runningServiceConnectors.add(bluetoothServiceConnector);
-        }
-        catch (IOException e)
-        {
-            Log.e(TAG, "startServiceThread:  could not start accept thread");
-        }
+
+        bluetoothServiceConnector.start();
+        this.runningServiceConnectors.add(bluetoothServiceConnector);
     }
 
     //
@@ -682,9 +717,11 @@ public class BluetoothServiceConnectionEngine
     //
 
     /**
-     * On some devices service uuids will be
+     * On some devices service UUIDs will be
      * received in a little endian format.
-     * The engine will by default reverse UUIDs and chek them as well
+     * The engine will by default reverse UUIDs
+     * and check them as well, preventing a services
+     * not being found.
      * <p>
      * Set this to `false` to disable this behaviour.
      *

@@ -22,7 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * service discovery. On each newly discovered device the device
  * discovery will be stopped and a service discovery for this device
  * will be performed.
- *
+ * <p>
  * This approach improves the duration between the start of the
  * discovery {@link #startDeviceDiscovery()} and the discovery of
  * services, since a device discovery will ( in its full lengths )
@@ -44,6 +44,12 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
      * Instance of the class following the singleton pattern
      */
     private static BluetoothServiceDiscoveryVTwo instance;
+
+    /**
+     * Defines the duration of the stop for the
+     * automatic re-enabling of the discovery
+     */
+    private static final long REFRESH_TIME = 12000;
 
     //
     //  ----------  instance variables  ----------
@@ -75,11 +81,6 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
      * the timestamp of the refresh start.
      */
     private long refreshingTimeStamp;
-    /**
-     * Defines the duration of the stop for the
-     * automatic re-enabling of the discovery
-     */
-    private final long REFRESH_TIME = 12000;
 
     //
     //  ----------  initialisation and setup ----------
@@ -186,7 +187,7 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
      * @param device
      *         The host device
      * @param uuidExtra
-     *  A parcelable array, containing the UUIDs of the services
+     *         A parcelable array, containing the UUIDs of the services
      */
     @Override
     protected void onUuidsFetched(BluetoothDevice device, Parcelable[] uuidExtra)
@@ -249,8 +250,8 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
 
     /**
      * Determines whether the refresh period is still running
-     * @return
-     * true if still refreshing, else false
+     *
+     * @return true if still refreshing, else false
      */
     public boolean isRefreshProcessRunning()
     {
@@ -260,7 +261,7 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
             return false;
         }
         Log.d(TAG, "isRefreshProcessRunning: refresh running");
-        return  true;
+        return true;
     }
 }
 

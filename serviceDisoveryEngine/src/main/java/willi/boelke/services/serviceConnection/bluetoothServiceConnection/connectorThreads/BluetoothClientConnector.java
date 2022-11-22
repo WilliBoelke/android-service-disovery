@@ -12,15 +12,22 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 
 /**
- * his connects a bluetooth sdp client to
- * an bluetooth SDP Server.
+ * This thread creates a RFCOMM Bluetooth Socket and tries to start an
+ * outgoing connection to the remote service
+ * server socket with the given serve UUID (through the {@link ServiceDescription})
+ * <h2>Usage</h2>
+ * This service will run exactly once and report back asynchronous
+ * through the callback methods specified in the {@link ConnectionEventListener}
+ * with either the created socket or to report failure.
+ *
+ * @author WilliBoelke
  */
 public class BluetoothClientConnector extends BluetoothConnectorThread
 {
     //------------Instance Variables------------
 
     /**
-     * Log Tag
+     * Classname for logging
      */
     private final String TAG = this.getClass().getSimpleName();
 
@@ -114,7 +121,8 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
         {
             e.printStackTrace();
         }
-        catch (NullPointerException e){
+        catch (NullPointerException e)
+        {
             Log.e(TAG, "cancel: socket was not yet initialized");
         }
     }

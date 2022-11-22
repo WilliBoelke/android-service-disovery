@@ -196,7 +196,8 @@ public abstract class IntegrationBluetoothServiceDiscovery
     {
 
         this.startDiscoverable();
-        synchronized (this){
+        synchronized (this)
+        {
             this.wait(14000); // wait for discovery
         }
     }
@@ -207,7 +208,8 @@ public abstract class IntegrationBluetoothServiceDiscovery
      */
     private void itShouldFindNearbyDevice_discovery() throws InterruptedException
     {
-        synchronized (this){
+        synchronized (this)
+        {
             wait(1000);
         }
 
@@ -235,7 +237,6 @@ public abstract class IntegrationBluetoothServiceDiscovery
         assertTrue(discoveredDevices.contains(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(MAC_B_BT)));
         assertTrue(discoveredDevices.contains(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(MAC_C_BT)));
     }
-
 
 
     //
@@ -266,7 +267,6 @@ public abstract class IntegrationBluetoothServiceDiscovery
             default:
                 Log.e(TAG, "device not specified " + getCurrentDeviceName());
         }
-
     }
 
     /**
@@ -287,9 +287,10 @@ public abstract class IntegrationBluetoothServiceDiscovery
     /**
      * Starts the service discovery and checks if the service was found
      */
-    private void   itShouldFindOneNearbyAvailableServices_serviceDiscovery() throws InterruptedException
+    private void itShouldFindOneNearbyAvailableServices_serviceDiscovery() throws InterruptedException
     {
-        synchronized (this){
+        synchronized (this)
+        {
             wait(1000);
         }
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
@@ -440,9 +441,7 @@ public abstract class IntegrationBluetoothServiceDiscovery
                 break;
             default:
                 Log.e(TAG, "device not specified " + getCurrentDeviceName());
-
         }
-
     }
 
     /**
@@ -468,7 +467,8 @@ public abstract class IntegrationBluetoothServiceDiscovery
      */
     private void itShouldFindTwoDifferentServices_serviceDiscovery() throws InterruptedException
     {
-        synchronized (this){
+        synchronized (this)
+        {
             this.wait(1000);
         }
 
@@ -534,7 +534,6 @@ public abstract class IntegrationBluetoothServiceDiscovery
             default:
                 Log.e(TAG, "device not specified " + getCurrentDeviceName());
         }
-
     }
 
 
@@ -552,7 +551,8 @@ public abstract class IntegrationBluetoothServiceDiscovery
 
     private void itShouldNotifiedAboutMatchingServicesAlreadyDiscovered_serviceDiscovery() throws InterruptedException
     {
-        synchronized (this){
+        synchronized (this)
+        {
             this.wait(1000);
         }
         ArrayList<BluetoothDevice> serviceHosts = new ArrayList<>();
