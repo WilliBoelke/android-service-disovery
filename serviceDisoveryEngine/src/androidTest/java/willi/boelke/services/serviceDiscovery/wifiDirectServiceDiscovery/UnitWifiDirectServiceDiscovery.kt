@@ -32,8 +32,6 @@ class UnitWifiDirectServiceDiscovery {
     private lateinit var mockedContext: Context
     private lateinit var mockedWifiManager: WifiManager
 
-    private final val DEFAULT_SERVICE_TYPE: String = "_presence._tcp.local."
-
     // The catered callbacks
     private var servListenerCapture = CapturingSlot<WifiP2pManager.DnsSdServiceResponseListener>()
     private var txtListenerCapture = CapturingSlot<WifiP2pManager.DnsSdTxtRecordListener>()
@@ -132,17 +130,14 @@ class UnitWifiDirectServiceDiscovery {
         }
     }
 
-    private fun simulateDiscoveryOf(
-        device: WifiP2pDevice,
-        serviceDescription: ServiceDescription,
-        serviceType: String = DEFAULT_SERVICE_TYPE
-    ) {
+    private fun simulateDiscoveryOf(device: WifiP2pDevice, serviceDescription: ServiceDescription) {
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable(
             "", serviceDescription.serviceRecord, device
         )
+
         servListenerCapture.captured.onDnsSdServiceAvailable(
             serviceDescription.serviceName,
-            serviceType,
+            serviceDescription.serviceType+".local.",
             device
         )
     }
@@ -538,45 +533,5 @@ class UnitWifiDirectServiceDiscovery {
         assertTrue(listener.hasDiscoveries(2))
         assertTrue(listener.hasServiceDiscovered(testDescriptionOne))
         assertTrue(listener.hasServiceDiscovered(testDescriptionTwo))
-    }
-
-    /**
-     * Per default the service type is
-     * <b>_presence._tcp</b>, if a different one is
-     * used, the discovery shouldn't notify.
-     * even if the description is the same.
-     */
-    @Test
-    fun itShouldFilterServiceType() {
-        val listener = TestDiscoveryListener()
-        val testDescription = testDescriptionFive
-        val testHost = getTestDeviceOne_Wifi()
-
-        WifiDirectServiceDiscoveryEngine.getInstance().registerDiscoverListener(listener)
-
-        WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery()
-        // registering only description five
-        WifiDirectServiceDiscoveryEngine.getInstance().startDiscoveryForService(testDescription)
-        simulateDiscoveryOf(testHost, testDescription, "_random._protocol")
-
-        assertTrue(listener.hasDiscoveries(0))
-    }
-
-    @Test
-    fun theServiceTypeCanBeChanged() {
-        val listener = TestDiscoveryListener()
-        val testDescription = testDescriptionFive
-        val testHost = getTestDeviceOne_Wifi()
-        val someServiceType = "_someOther._protocol."
-        val someServiceTypeLocal = "$someServiceType.local."
-        WifiDirectServiceDiscoveryEngine.getInstance().registerDiscoverListener(listener)
-
-        WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery()
-        // registering only description five
-        WifiDirectServiceDiscoveryEngine.getInstance().startDiscoveryForService(testDescription)
-        WifiDirectServiceDiscoveryEngine.getInstance().setServiceType(someServiceType)
-        simulateDiscoveryOf(testHost, testDescription, someServiceTypeLocal)
-
-        assertTrue(listener.hasDiscoveries(1))
     }
 }

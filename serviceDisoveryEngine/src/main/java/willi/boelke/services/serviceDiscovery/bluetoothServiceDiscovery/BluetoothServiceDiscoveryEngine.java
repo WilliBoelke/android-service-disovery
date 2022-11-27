@@ -70,7 +70,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDiscoveryEngine;
  * Service descriptions will generate a UUID. For services which are
  * registered and a description is known the fitting description will be
  * returned. If the option is used to get notified about all services it
- * is likely that no description for the five UUID is known to the engine.
+ * is likely that no description for the given UUID is known to the engine.
  * The engine then will return a description only containing the UUID
  * without any further information.
  *
@@ -221,7 +221,6 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      * @see #unregisterReceivers()
      */
     private final ArrayList<BluetoothServiceDiscoveryListener> bluetoothDiscoveryListeners = new ArrayList<>();
-
 
     //
     //  ----------  initialisation and setup ----------
@@ -709,7 +708,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
         {
             UUID uuid = ((ParcelUuid) pUuid).getUuid();
             Log.d(TAG, "notifyListenersAboutServices: checking uuid " + uuid);
-            ServiceDescription description = new ServiceDescription("", new HashMap<>()); // empty description
+            ServiceDescription description = new ServiceDescription("", new HashMap<>(), ""); // empty description
             description.overrideUuidForBluetooth(uuid);
 
             // overriding with registered service description
@@ -798,6 +797,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
             }
         }
     }
+
 
     //
     //  ---------- config ----------

@@ -36,19 +36,16 @@ public class ServiceListAdapter extends ArrayAdapter<ServiceDescription>
         ServiceDescription service = services.get(position);
 
         //Setup the name TextView
-        TextView name = convertView.findViewById(R.id.service_name_tv);
+        TextView name = convertView.findViewById(R.id.service_tv);
+        TextView srvName = convertView.findViewById(R.id.service_name_tv);
+        TextView uuid = convertView.findViewById(R.id.uuid_tv);
         TextView description = convertView.findViewById(R.id.description_tv);
-        String nameString = service.getServiceName() + " / " + service.getServiceUuid().toString();
-        name.setText(nameString);
 
-        if (service.getServiceRecord().size() > 0)
-        {
-            description.setText(service.getServiceRecord().toString());
-        }
-        else
-        {
-            description.setText("No record resolved");
-        }
+        String nameString = service.getServiceName() +"."+ service.getServiceType();
+        name.setText(nameString);
+         srvName.setText(service.getServiceRecord().get("name"));
+         description.setText(service.getServiceRecord().get("info"));
+         uuid.setText(service.getServiceUuid().toString());
 
         return convertView;
     }

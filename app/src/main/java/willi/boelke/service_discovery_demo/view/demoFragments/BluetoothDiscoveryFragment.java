@@ -87,7 +87,7 @@ public class BluetoothDiscoveryFragment extends Fragment
     private void setupListView()
     {
         ListView discoveredServicesListView = binding.connectionListView;
-        connectionListAdapter = new ServiceListAdapter(getContext(), R.layout.recycler_card_service, new ArrayList<>());
+        connectionListAdapter = new ServiceListAdapter(getContext(), R.layout.list_item_service, new ArrayList<>());
         discoveredServicesListView.setAdapter(connectionListAdapter);
     }
 
@@ -140,7 +140,7 @@ public class BluetoothDiscoveryFragment extends Fragment
     {
         model.getDiscoveredDevices().observe(this.getViewLifecycleOwner(), devicesInRange ->
         {
-            ServiceListAdapter serviceListAdapter = new ServiceListAdapter(getContext(), R.layout.recycler_card_service, devicesInRange);
+            ServiceListAdapter serviceListAdapter = new ServiceListAdapter(getContext(), R.layout.list_item_service, devicesInRange);
             binding.connectionListView.setAdapter(serviceListAdapter);
         });
     }

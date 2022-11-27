@@ -10,6 +10,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 
 import willi.boelke.service_discovery_demo.R;
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiConnection;
 
 
@@ -36,17 +37,19 @@ public class WifiConnectionListAdapter extends ArrayAdapter<WifiConnection>
         WifiConnection connection = connections.get(position);
 
         //Setup the name TextView
-        TextView name = convertView.findViewById(R.id.service_name_tv);
+        TextView name = convertView.findViewById(R.id.service_tv);
+        TextView serviceName = convertView.findViewById(R.id.service_name_tv);
         TextView description = convertView.findViewById(R.id.description_tv);
-        TextView peerName = convertView.findViewById(R.id.name_tv);
         TextView peerAddress = convertView.findViewById(R.id.address_tv);
-        TextView peerState = convertView.findViewById(R.id.peer_state_tv);
+        TextView uuid = convertView.findViewById(R.id.uuid_tv);
 
-        name.setText(connection.getServiceDescription().getServiceName());
-        description.setText(connection.getServiceDescription().getServiceRecord().get("service-info"));
+        String srvInstance = connection.getServiceDescription().getServiceName() + "." + connection.getServiceDescription().getServiceType();
+        name.setText(srvInstance);
+        description.setText(connection.getServiceDescription().getServiceRecord().get("info"));
+        serviceName.setText(connection.getServiceDescription().getServiceRecord().get("name"));
+        uuid.setText(connection.getServiceDescription().getServiceUuid().toString());
         peerAddress.setText(connection.getRemoteDeviceAddress());
-        peerName.setText("");
-        peerState.setText("");
+
 
         return convertView;
     }

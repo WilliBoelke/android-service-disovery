@@ -89,7 +89,6 @@ public class WifiDirectDiscoveryFragment extends Fragment
         if (binding.startDiscoveryOneBtn.equals(view))
         {
             model.startSearchServiceOne();
-            model.startDiscovery();
         }
         else if (binding.endDiscoveryOneBtn.equals(view))
         {
@@ -98,7 +97,6 @@ public class WifiDirectDiscoveryFragment extends Fragment
         else if (binding.startDiscoveryTwoBtn.equals(view))
         {
             model.startSearchServiceTwo();
-            model.startDiscovery();
         }
         else if (binding.endDiscoveryTwoBtn.equals(view))
         {
@@ -128,7 +126,7 @@ public class WifiDirectDiscoveryFragment extends Fragment
     {
         model.getDiscoveredDevices().observe(this.getViewLifecycleOwner(), devicesInRange ->
         {
-            ServiceListAdapter serviceListAdapter = new ServiceListAdapter(getContext(), R.layout.recycler_card_service, devicesInRange);
+            ServiceListAdapter serviceListAdapter = new ServiceListAdapter(getContext(), R.layout.list_item_service, devicesInRange);
             binding.connectionsListView.setAdapter(serviceListAdapter);
         });
     }

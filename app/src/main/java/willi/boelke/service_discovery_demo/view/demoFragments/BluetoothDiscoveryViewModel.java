@@ -28,8 +28,6 @@ public class BluetoothDiscoveryViewModel extends ViewModel implements BluetoothS
     private final BluetoothServiceDiscovery engine;
     private final MutableLiveData<ArrayList<ServiceDescription>> discoveredServices = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<String> notification = new MutableLiveData<>();
-    private final ServiceDescription descriptionForServiceOne;
-    private final ServiceDescription descriptionForServiceTwo;
     private final MutableLiveData<Boolean> notifyAboutAll = new MutableLiveData<>(Boolean.FALSE);
 
 
@@ -37,12 +35,6 @@ public class BluetoothDiscoveryViewModel extends ViewModel implements BluetoothS
     {
         // Should be initialized and started in view bc of context
         engine = BluetoothServiceDiscoveryVTwo.getInstance();
-        HashMap<String, String> serviceAttributesOne = new HashMap<>();
-        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
-        serviceAttributesOne.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        descriptionForServiceOne = new ServiceDescription("Counting Service One", serviceAttributesOne);
-        descriptionForServiceTwo = new ServiceDescription("Counting Service Two", serviceAttributesTwo);
         engine.registerDiscoverListener(this);
     }
 
@@ -59,22 +51,22 @@ public class BluetoothDiscoveryViewModel extends ViewModel implements BluetoothS
 
     protected void startSearchServiceOne()
     {
-        engine.startDiscoveryForService(descriptionForServiceOne);
+        engine.startDiscoveryForService(ServiceDescriptionProvider.getServiceDescriptionOne());
     }
 
     protected void startSearchServiceTwo()
     {
-        engine.startDiscoveryForService(descriptionForServiceTwo);
+        engine.startDiscoveryForService(ServiceDescriptionProvider.getServiceDescriptionOTwo());
     }
 
     protected void stopSearchServiceOne()
     {
-        engine.stopDiscoveryForService(descriptionForServiceOne);
+        engine.stopDiscoveryForService(ServiceDescriptionProvider.getServiceDescriptionOne());
     }
 
     protected void stopSearchServiceTwo()
     {
-        engine.stopDiscoveryForService(descriptionForServiceTwo);
+        engine.stopDiscoveryForService(ServiceDescriptionProvider.getServiceDescriptionOTwo());
     }
 
     protected void refreshServices()

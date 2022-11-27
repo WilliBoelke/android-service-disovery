@@ -49,17 +49,12 @@ public class BluetoothConnectionViewModel extends ViewModel
 
     private void setupController()
     {
-        HashMap<String, String> serviceAttributesOne = new HashMap<>();
-        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
-        serviceAttributesOne.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription("Counting Service One", serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Counting Service Two", serviceAttributesTwo);
 
-        clientControllerOne = new DemoClientController(descriptionForServiceOne);
-        clientControllerTwo = new DemoClientController(descriptionForServiceTwo);
-        serverControllerOne = new DemoServerController(descriptionForServiceOne);
-        serverControllerTwo = new DemoServerController(descriptionForServiceTwo);
+
+        clientControllerOne = new DemoClientController(ServiceDescriptionProvider.getServiceDescriptionOne());
+        clientControllerTwo = new DemoClientController(ServiceDescriptionProvider.getServiceDescriptionOTwo());
+        serverControllerOne = new DemoServerController(ServiceDescriptionProvider.getServiceDescriptionOne());
+        serverControllerTwo = new DemoServerController(ServiceDescriptionProvider.getServiceDescriptionOTwo());
 
         //
         //  ----------  Client Listener ----------

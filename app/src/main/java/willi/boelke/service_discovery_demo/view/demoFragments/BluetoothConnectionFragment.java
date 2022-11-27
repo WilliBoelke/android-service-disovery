@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -16,7 +15,7 @@ import java.util.ArrayList;
 
 import willi.boelke.service_discovery_demo.R;
 import willi.boelke.service_discovery_demo.databinding.FragmentBluetoothConnectBinding;
-import willi.boelke.service_discovery_demo.view.listAdapters.ConnectionListAdapter;
+import willi.boelke.service_discovery_demo.view.listAdapters.BluetoothConnectionListAdapter;
 import willi.boelke.service_discovery_demo.view.listAdapters.DeviceListAdapter;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
@@ -32,7 +31,7 @@ public class BluetoothConnectionFragment extends Fragment
 
     private FragmentBluetoothConnectBinding binding;
     private DeviceListAdapter deviceListAdapter;
-    private ConnectionListAdapter connectionListAdapter;
+    private BluetoothConnectionListAdapter connectionListAdapter;
     private BluetoothConnectionViewModel model;
 
     private final ArrayList<BluetoothConnection> openConnections = new ArrayList<>();
@@ -87,11 +86,11 @@ public class BluetoothConnectionFragment extends Fragment
     private void setupListViews()
     {
         //--- connections ListView ---//
-        connectionListAdapter = new ConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, openConnections);
+        connectionListAdapter = new BluetoothConnectionListAdapter(getContext(), R.layout.list_item_srv_conection, openConnections);
         binding.connectionListView.setAdapter(connectionListAdapter);
 
         //--- discovered devices ListView ---//
-        deviceListAdapter = new DeviceListAdapter(getContext(), R.layout.recycler_card_device, devicesInRange);
+        deviceListAdapter = new DeviceListAdapter(getContext(), R.layout.list_item_device, devicesInRange);
         binding.devicesInRange.setAdapter(deviceListAdapter);
     }
 

@@ -7,13 +7,11 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import willi.boelke.service_discovery_demo.controller.ControllerListener;
 import willi.boelke.service_discovery_demo.controller.wifiDemoController.WifiDemoController;
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiConnection;
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine;
-import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVOne;
 
 /**
@@ -49,14 +47,9 @@ public class WifiDirectConnectionViewModel extends ViewModel
 
     private void setupController()
     {
-        HashMap<String, String> serviceAttributesOne = new HashMap<>();
-        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
-        serviceAttributesOne.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription("Counting Service One", serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Counting Service Two", serviceAttributesTwo);
-        wifiDemoControllerOne = new WifiDemoController(descriptionForServiceOne);
-        wifiDemoControllerTwo = new WifiDemoController(descriptionForServiceTwo);
+
+        wifiDemoControllerOne = new WifiDemoController(ServiceDescriptionProvider.getServiceDescriptionOne());
+        wifiDemoControllerTwo = new WifiDemoController(ServiceDescriptionProvider.getServiceDescriptionOTwo());
 
         //
         //  ----------  Client Listener ----------

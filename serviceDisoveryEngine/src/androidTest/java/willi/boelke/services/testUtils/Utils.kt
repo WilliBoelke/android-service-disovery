@@ -43,27 +43,32 @@ fun initTestMocks() {
     testDescriptionOne =
         ServiceDescription(
             "test service one",
-            serviceAttributesOne
+            serviceAttributesOne,
+        "_testOne._tcp"
         )
     testDescriptionTwo =
         ServiceDescription(
             "test service two",
-            serviceAttributesTwo
+            serviceAttributesTwo,
+            "_testTwo._tcp"
         )
     testDescriptionThree =
         ServiceDescription(
             "test service three",
-            serviceAttributesTree
+            serviceAttributesTree,
+            "_testThree._tcp"
         )
     testDescriptionFour =
         ServiceDescription(
             "test service four",
-            serviceAttributesFour
+            serviceAttributesFour,
+            "_testFour._tcp"
         )
     testDescriptionFive =
         ServiceDescription(
             "test service five",
-            serviceAttributesFive
+            serviceAttributesFive,
+            "_testFive._tcp"
         )
 
     testDescriptionOne.overrideUuidForBluetooth(testUUIDOne)

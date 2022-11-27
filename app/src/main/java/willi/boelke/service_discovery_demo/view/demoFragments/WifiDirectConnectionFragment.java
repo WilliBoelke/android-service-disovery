@@ -129,7 +129,7 @@ public class WifiDirectConnectionFragment extends Fragment
         {
 
             ListView openConnectionsListView = binding.connectionsListView;
-            WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.recycler_card_service_connection, connections);
+            WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.list_item_srv_conection, connections);
             openConnectionsListView.setAdapter(connectionListAdapter);
         });
     }

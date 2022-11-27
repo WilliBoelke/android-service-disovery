@@ -17,6 +17,8 @@ import android.util.Log;
 
 import androidx.annotation.RequiresPermission;
 
+import java.util.HashMap;
+
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.tcp.TCPChannelMaker;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscovery;

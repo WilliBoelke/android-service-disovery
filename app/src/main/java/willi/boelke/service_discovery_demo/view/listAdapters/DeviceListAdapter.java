@@ -1,5 +1,6 @@
 package willi.boelke.service_discovery_demo.view.listAdapters;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -28,6 +29,7 @@ public class DeviceListAdapter extends ArrayAdapter<BluetoothDevice>
         mViewResourceId = tvResourceId;
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     public View getView(int position, View convertView, ViewGroup parent)
     {
@@ -36,7 +38,7 @@ public class DeviceListAdapter extends ArrayAdapter<BluetoothDevice>
         BluetoothDevice device = mDevices.get(position);
 
         //Setup the name TextView
-        TextView name = convertView.findViewById(R.id.service_name_tv);
+        TextView name = convertView.findViewById(R.id.service_tv);
         name.setText(device.getName());
 
         TextView address = convertView.findViewById(R.id.host_tv);

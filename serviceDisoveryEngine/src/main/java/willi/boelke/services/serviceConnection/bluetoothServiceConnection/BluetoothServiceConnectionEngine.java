@@ -217,6 +217,11 @@ public class BluetoothServiceConnectionEngine
             Log.e(TAG, "start: Bluetooth not enabled");
             return;
         }
+        if (!discoveryEngine.isRunning())
+        {
+            Log.e(TAG, "start: Bluetooth discovery not running");
+            return;
+        }
 
         this.bluetoothAdapter = adapter;
         this.context = context.getApplicationContext();
@@ -402,6 +407,11 @@ public class BluetoothServiceConnectionEngine
      */
     public void startSDPDiscoveryForService(ServiceDescription serviceDescription, BluetoothServiceClient serviceClient)
     {
+        if (engineIsNotRunning())
+        {
+            Log.e(TAG, "startSDPDiscoveryForService: the engine is not running, wont start");
+            return;
+        }
         // Adding the service client ot the list
         this.serviceClients.put(serviceDescription, serviceClient);
         this.discoveryEngine.startDiscoveryForService(serviceDescription);
@@ -429,6 +439,7 @@ public class BluetoothServiceConnectionEngine
         if (engineIsNotRunning())
         {
             Log.e(TAG, "stopSDPDiscoveryForService: the engine is not running, wont stop");
+            return;
         }
         Log.d(TAG, "End service discovery for " + description);
         this.discoveryEngine.stopDiscoveryForService(description);
@@ -464,6 +475,11 @@ public class BluetoothServiceConnectionEngine
      */
     public void disconnectFromServicesWith(ServiceDescription description)
     {
+        if (engineIsNotRunning())
+        {
+            Log.e(TAG, "disconnectFromServicesWith: the engine is not running, wont stop");
+            return;
+        }
         Log.d(TAG, "disconnectFromServicesWith: disconnecting from servers with " + description);
         this.connectionManager.closeAllClientConnectionsToService(description);
     }

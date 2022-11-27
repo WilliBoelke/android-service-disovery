@@ -32,4 +32,10 @@
     <string name="refresh_services">refresh services</string>
     <string name="ConnectionType_Server">as Server</string>
     <string name="ConnectionType_Client">as Client</string>
+    <string name="service_instance">Service Instance</string>
+    <string name="name">Name</string>
+    <string name="connected_peer">Connected Peer :</string>
+    <string name="address">address</string>
+    <string name="uuid">UUID</string>
+    <string name="info">info</string>
 </resources>

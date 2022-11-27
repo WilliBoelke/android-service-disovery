@@ -39,8 +39,6 @@ public interface WifiDirectServiceDiscovery extends IServiceDiscoveryEngine
 
     void unregisterDiscoveryListener(WifiServiceDiscoveryListener listener);
 
-    void setServiceType(String serviceType);
-
     @Override
     void notifyAboutAllServices(boolean all);
 }

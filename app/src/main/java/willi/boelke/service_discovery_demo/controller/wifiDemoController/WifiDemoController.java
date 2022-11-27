@@ -20,13 +20,22 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
 /**
  * Demo implementation of a SdpWifiPeer.
  * <p>
- * A peer can either be Group Owner or Client in a Wifi Direct Group.
- * In this demo implementation the GO will periodically write messages
- * tho the clients in the group.
+ * <h2>WifiDirectPeer</h2>
+ * A wifi direct peer advertises and looks for a service.
+ * It will get notified by the connection engine about events
+ * like the discovery of services or connections.
+ *
+ * A peer can either Become a group owner or a
+ * client to another group owner.
  * <p>
- * other implementations may do it the other wa around or implement a
- * different protocol for communications.
- * Or even the GO routing messages between the clients.
+ * <h2>WifiDemoController</h2>
+ * This demo implementation well advertise and look for a
+ * service which periodically sends messages to all connected peers.
+ * The counting will be done by the GO, while clients only read his messages.
+ * <p>
+ * This though is just for demo purposes,
+ * for other implementations there are no limits on using the given
+ * information for their own purposes.
  *
  * @author Willi Boelke
  */
@@ -42,6 +51,7 @@ public class WifiDemoController implements WifiDirectPeer
     private ControllerListener<WifiConnection, WifiP2pDevice> listener;
     private ReadThread<WifiConnection, WifiP2pDevice> readThread;
     private WriteThread<WifiConnection, WifiP2pDevice> writeThread;
+    private boolean isStarted = false;
 
     /**
      * Indicating whether a role (Go or client) was assigned before or not.
@@ -74,6 +84,7 @@ public class WifiDemoController implements WifiDirectPeer
 
     public void startService()
     {
+        this.isStarted = true;
         this.writeThread = new WriteThread<>(this.connections, this.description, this.listener);
         this.readThread = new ReadThread<>(this.connections, this.listener);
         WifiDirectConnectionEngine.getInstance().registerService(this.description, this);
@@ -82,6 +93,14 @@ public class WifiDemoController implements WifiDirectPeer
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     public void stop()
     {
+        if(!isStarted){
+            // the controller isn't running.
+            // stopping it would stop other services running on the singleton
+            // instance of teh engine, so checking before to not end
+            // services which are not managed by this controller
+            Log.e(TAG, "stop: this service is ot running, wont stop is");
+            return;
+        }
         WifiDirectConnectionEngine.getInstance().unregisterService();
         WifiDirectConnectionEngine.getInstance().stopDiscovery();
         for (WifiConnection connection : connections)
@@ -115,8 +134,8 @@ public class WifiDemoController implements WifiDirectPeer
         this.gotRoleAssigned = false;
         this.listener.onMessageChange("");
         this.listener.onNewNotification("Stopped client - disconnected");
+        this.isStarted = false;
     }
-
 
     @Override
     public void onServiceDiscovered(WifiP2pDevice device, ServiceDescription description)
@@ -124,7 +143,6 @@ public class WifiDemoController implements WifiDirectPeer
         listener.onNewNotification("Found service " + description.getServiceUuid());
         listener.onNewDiscovery(device);
     }
-
 
     @Override
     public void onBecameGroupOwner()

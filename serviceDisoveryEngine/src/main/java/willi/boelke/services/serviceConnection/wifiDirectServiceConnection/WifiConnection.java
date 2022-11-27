@@ -15,7 +15,7 @@ public class WifiConnection implements ServiceConnection
 {
     private final Socket connectionSocket;
 
-    private final ServiceDescription serviceDescription;
+    private ServiceDescription serviceDescription;
 
     public WifiConnection(Socket socket, ServiceDescription description)
     {
