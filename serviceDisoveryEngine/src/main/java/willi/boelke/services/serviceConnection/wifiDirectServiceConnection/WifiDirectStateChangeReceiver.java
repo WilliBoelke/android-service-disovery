@@ -10,7 +10,7 @@ import android.util.Log;
 /**
  * This BroadcastReceiver listens on changes in the Wifi Direct State
  */
-public class WifiDirectStateChangeReceiver extends BroadcastReceiver
+class WifiDirectStateChangeReceiver extends BroadcastReceiver
 {
     private final String TAG = this.getClass().getSimpleName();
     private final WifiP2pManager manager;

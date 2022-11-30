@@ -45,13 +45,15 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
         // NOTE : apparently this method will also be called
         // for the GO, when a client leaves the group and other
         // clients are connected. That's because in the  WifiDirectStateChangeReceiver,
-        // the condition `isConnected()` is still true.
-        // There seems to be no way around this, or distinguish the two cases.
+        // the condition `isConnected()` is still true (second device is still connected).
         //
         // The GO will try to establish a connection to the given device,
         // and this ended in a infinite loop in the TCPServer.
-        // To prevent this there is now a maximum of retires in the Tcp
+        // To prevent this there is now a maximum of retires in the TCP
         // server.
+        //
+        // Though there should be a way to distinguish the two cases prior..
+        // i could not ind anything so far.
         //----------------------------------
 
         Log.d(TAG, "onConnectionInfoAvailable: received connection info");
@@ -99,6 +101,7 @@ class WifiDirectConnectionInfoListener implements WifiP2pManager.ConnectionInfoL
      * In many cases this behavior isn't (for example when connections are already established)
      *
      * @param shouldEstablish
+     * boolean determining whether a connection should be attempted
      */
     protected void establishConnections(boolean shouldEstablish)
     {

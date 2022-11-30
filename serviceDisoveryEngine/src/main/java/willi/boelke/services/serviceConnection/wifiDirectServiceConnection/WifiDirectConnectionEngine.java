@@ -180,7 +180,7 @@ public class WifiDirectConnectionEngine
      * @see #stop()
      */
     private boolean engineRunning = false;
-    private boolean isConnected = false;
+
     private int usedPort = DEFAULT_PORT;
 
     //
@@ -330,7 +330,7 @@ public class WifiDirectConnectionEngine
 
     /**
      * This registers the service for discovery, other devices can find this service then.
-     * Also the service with the given ServiceDescriptioe will be looked for.
+     * Also the service with the given ServiceDescription will be looked for.
      * The service discovery however needs to be started and stopped separately, for that please
      * refer to {@link #startDiscovery()} and {@link #stopDiscovery()} respectively.
      *
@@ -434,7 +434,6 @@ public class WifiDirectConnectionEngine
 
         //--- accepting connections again ---//
         this.connectionListener.establishConnections(true);
-        this.isConnected = false;
     }
 
 
@@ -497,11 +496,6 @@ public class WifiDirectConnectionEngine
             return;
         }
         peer.onServiceDiscovered(device, description);
-        if (isConnected)
-        {
-            Log.d(TAG, "tryToConnect: already connected, wont send connection request to " + device);
-            return;
-        }
         if (!peer.shouldConnectTo(device, description))
         {
             Log.d(TAG, "tryToConnect: peer decided not to connect to " + device);
@@ -545,7 +539,6 @@ public class WifiDirectConnectionEngine
         {
             this.peer.onBecameGroupOwner();
         }
-        this.isConnected = true;
     }
 
     /**
@@ -560,8 +553,6 @@ public class WifiDirectConnectionEngine
             this.peer.onBecameGroupClient();
         }
         Log.d(TAG, "onBecameClient: became client to a GO, doing client stuff");
-        this.discoveryEngine.stopService(currentServiceDescription);
-        this.connectionListener.establishConnections(false);
         //----------------------------------
         // NOTE : as a client, the local device does
         // not need to discover further devices, since
@@ -574,8 +565,10 @@ public class WifiDirectConnectionEngine
         // another GO election. This would break
         // the existing group.
         //----------------------------------
-        this.stopDiscovery();
-        this.isConnected = true;
+
+        // this.discoveryEngine.stopService(currentServiceDescription);
+        // this.stopDiscovery();
+        this.connectionListener.establishConnections(false);
     }
 
     protected void onSocketConnected(WifiConnection connection)
@@ -590,7 +583,6 @@ public class WifiDirectConnectionEngine
         {
             Log.e(TAG, "onSocketConnected: no peer registered, closing connection");
             connection.close();
-            this.isConnected = false;
         }
     }
 

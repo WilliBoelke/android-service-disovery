@@ -331,6 +331,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     public void startDiscoveryForService(ServiceDescription description)
     {
         super.startDiscoveryForService(description);
+        tryToFindAlreadyDiscoveredServices(description);
     }
 
     @Override
@@ -415,6 +416,32 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
         catch (IllegalArgumentException e)
         {
             Log.e(TAG, "stopSDPService: tried to stop service which is not registered");
+        }
+    }
+
+
+    /**
+     * This checks if the service was discovered previously.
+     * Listeners will be notified if the service was discovered before.
+     *
+     * @param description
+     *         ServiceDescription of the service
+     */
+    private void tryToFindAlreadyDiscoveredServices(ServiceDescription description)
+    {
+        Log.d(TAG, "tryToFindAlreadyDiscoveredServices: checking if " + description + " was discovered before ");
+
+        // iterating through devices already discovered
+        if(!this.discoveredServices.keySet().contains(description)){
+            Log.d(TAG, "tryToFindAlreadyDiscoveredServices: no such service discovered yet");
+            return;
+        }
+        ArrayList<WifiP2pDevice> knownHosts = this.discoveredServices.get(description);
+        Log.d(TAG, "tryToFindAlreadyDiscoveredServices: found hosts of " + description.getServiceType());
+        Log.d(TAG, "tryToFindAlreadyDiscoveredServices: hosts  " + knownHosts);
+        for (WifiP2pDevice knownHost: knownHosts)
+        {
+            notifyOnServiceDiscovered(knownHost, description);
         }
     }
 
@@ -537,12 +564,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     {
         Log.d(TAG, "onServiceDiscovered: ----discovered a new Service on " + device + "----");
 
-        if (!isServiceBeingLockedFor(registrationType) && !notifyAboutAllServices)
-        {
-            Log.e(TAG, "onServiceDiscovered: its a " + registrationType + " service - stop");
-            return;
-        }
-
         //--- updating discovered services list ---//
 
         registrationType = registrationType.replace(LOCAL_TLD, "");
@@ -550,40 +571,62 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
 
         boolean newService = false;
 
-        if (this.discoveredServices.containsKey(description) && this.discoveredServices.get(description).contains(device))
+        //--- service already cached ---//
+
+        if (this.discoveredServices.containsKey(description) &&
+                this.discoveredServices.get(description).contains(device))
         {
-            //--- service already cached ---//
             Log.d(TAG, "onServiceDiscovered: already knew the service");
         }
+
+        //--- service and device new ---//
+
         else if (!this.discoveredServices.containsKey(description))
         {
-            //--- service and device new ---//
             Log.d(TAG, "onServiceDiscovered: discovered new service");
             ArrayList<WifiP2pDevice> serviceDevices = new ArrayList<>();
             serviceDevices.add(device);
             this.discoveredServices.put(description, serviceDevices);
             newService = true;
         }
+
+        //--- device new ---//
+
         else
         {
-            //--- device new ---//
             Log.d(TAG, "onServiceDiscovered: knew the service, but this is a new host");
             Objects.requireNonNull(discoveredServices.get(description)).add(device);
             newService = true;
         }
-        if (newService)
+
+        //--- notify listeners ? ---//
+
+        if (newService && isServiceBeingLockedFor(description))
         {
             notifyOnServiceDiscovered(device, description);
         }
     }
 
-    private boolean isServiceBeingLockedFor(String registrationType)
+    /**
+     * Deceives whether or now a service is "being looked for"
+     * meaning either on {@link #servicesToLookFor} or
+     * {@link #notifyAboutAllServices} == true
+     *
+     * @param description#The description of the service to check
+     * @return
+     * true if the service is being searched for, else return false
+     */
+    private boolean isServiceBeingLockedFor(ServiceDescription description)
     {
+        if(notifyAboutAllServices)
+        {
+            return true;
+        }
         for (ServiceDescription serviceDescription : servicesToLookFor)
         {
-            String searchedServiceType = serviceDescription.getServiceType() + LOCAL_TLD;
-            Log.e(TAG, "isServiceBeingLockedFor: " + searchedServiceType + " / " + registrationType);
-            if (searchedServiceType.equals(registrationType))
+            String searchedServiceType = serviceDescription.getServiceType();
+            Log.e(TAG, "isServiceBeingLockedFor: " + searchedServiceType + " / " + description.getServiceType());
+            if (serviceDescription.equals(description))
             {
                 return true;
             }
