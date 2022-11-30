@@ -174,7 +174,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      * {@link DeviceFoundReceiver}
      *
      * @see #registerReceivers()
-     * @see #unregisterReceivers()
+     * @see #unregisterAllReceivers()
      */
     private final BroadcastReceiver foundDeviceReceiver;
 
@@ -183,16 +183,16 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      * {@link UUIDFetchedReceiver}
      *
      * @see #registerReceivers()
-     * @see #unregisterReceivers()
+     * @see #unregisterAllReceivers()
      */
     private final BroadcastReceiver fetchedUuidReceiver;
 
     /**
      * BroadcastReceiver to log bluetooth api events
-     * {@link BluetoothBroadcastReceiver}
+     * {@link DeviceDiscoveryStateReceiver}
      *
      * @see #registerReceivers()
-     * @see #unregisterReceivers()
+     * @see #unregisterAllReceivers()
      */
     private final BroadcastReceiver bluetoothReceiver;
 
@@ -218,7 +218,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      * List of all listeners who registered
      * using {@link #registerDiscoverListener(BluetoothServiceDiscoveryListener)}
      *
-     * @see #unregisterReceivers()
+     * @see #unregisterAllReceivers()
      */
     private final ArrayList<BluetoothServiceDiscoveryListener> bluetoothDiscoveryListeners = new ArrayList<>();
 
@@ -234,7 +234,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
     {
         this.foundDeviceReceiver = new DeviceFoundReceiver(this);
         this.fetchedUuidReceiver = new UUIDFetchedReceiver(this);
-        this.bluetoothReceiver = new BluetoothBroadcastReceiver(this);
+        this.bluetoothReceiver = new DeviceDiscoveryStateReceiver(this);
     }
 
     /**
@@ -242,15 +242,17 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      *
      * @see UUIDFetchedReceiver
      * @see DeviceFoundReceiver
-     * @see BluetoothBroadcastReceiver
+     * @see DeviceDiscoveryStateReceiver
      */
     private void registerReceivers()
     {
         IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         IntentFilter actionUUID = new IntentFilter(BluetoothDevice.ACTION_UUID);
-        IntentFilter debuggingFilter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        IntentFilter bluetoothDiscoveryStateFilter = new IntentFilter();
+        bluetoothDiscoveryStateFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        bluetoothDiscoveryStateFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
 
-        context.registerReceiver(bluetoothReceiver, debuggingFilter);
+        context.registerReceiver(bluetoothReceiver, bluetoothDiscoveryStateFilter);
         context.registerReceiver(fetchedUuidReceiver, actionUUID);
         context.registerReceiver(foundDeviceReceiver, discoverDevicesIntent);
     }
@@ -271,7 +273,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      * @param context
      *         the application context
      *
-     * @return
+     * @return true if the engine started successfully
      */
     @Override
     public boolean start(Context context)
@@ -286,9 +288,14 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
     }
 
     /**
-     * Starts the engine
+     * Starts the discovery engine
      *
-     * @return
+     * @param context
+     *         the application context
+     * @param adapter
+     *         A BluetoothAdapter
+     *
+     * @return true if the engine started successfully
      */
     @Override
     public boolean start(Context context, BluetoothAdapter adapter)
@@ -329,37 +336,28 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
             Log.e(TAG, "stop: engine is not running - wont stop");
             return;
         }
-        unregisterReceivers();
+        unregisterAllReceivers();
         stopDeviceDiscovery();
         this.servicesToLookFor = new ArrayList<>();
         this.engineRunning = false;
     }
 
-    private void unregisterReceivers()
+    private void unregisterAllReceivers()
+    {
+        unregisterReceiver(bluetoothReceiver);
+        unregisterReceiver(foundDeviceReceiver);
+        unregisterReceiver(fetchedUuidReceiver);
+    }
+
+    private void unregisterReceiver(BroadcastReceiver receiver)
     {
         try
         {
-            this.context.unregisterReceiver(fetchedUuidReceiver);
+            this.context.unregisterReceiver(receiver);
         }
         catch (IllegalArgumentException e)
         {
-            Log.e(TAG, "unregisterReceivers: fetchedUuidReceiver was not registered ");
-        }
-        try
-        {
-            this.context.unregisterReceiver(foundDeviceReceiver);
-        }
-        catch (IllegalArgumentException e)
-        {
-            Log.e(TAG, "unregisterReceivers: foundDeviceReceiver was not registered ");
-        }
-        try
-        {
-            this.context.unregisterReceiver(bluetoothReceiver);
-        }
-        catch (IllegalArgumentException e)
-        {
-            Log.e(TAG, "unregisterReceivers: foundDeviceReceiver was not registered ");
+            Log.e(TAG, "unregisterReceivers:  was not registered ");
         }
     }
 
@@ -410,9 +408,8 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
 
     /**
      * This just (re) starts the device discovery
-     * without clearing the device list
-     * publicly its used through {@link #startDeviceDiscovery()}
-     * though in some Internal cases the discovery may need to be restarted without clearing the list
+     * without clearing the device list. Its used through {@link #startDeviceDiscovery()}
+     * Though in some cases the discovery may need to be restarted without clearing the list.
      *
      * @return true if the discovery was started, else returns false
      */
@@ -425,18 +422,14 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
             Log.d(TAG, "startDeviceDiscovery: already scanning, restarting ... ");
             this.bluetoothAdapter.cancelDiscovery();
         }
-
         Log.d(TAG, "startDeviceDiscovery: enabled ? = " + bluetoothAdapter.isEnabled());
         if (this.bluetoothAdapter.startDiscovery())
         {
             Log.d(TAG, "startDeviceDiscovery: started device discovery");
             return true;
         }
-        else
-        {
-            Log.e(TAG, "startDeviceDiscovery: could not start Discovery");
-            return false;
-        }
+        Log.e(TAG, "startDeviceDiscovery: could not start Discovery");
+        return false;
     }
 
     /*
@@ -555,6 +548,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
         }
         Log.d(TAG, "refreshNearbyServices: start refreshing");
         this.bluetoothAdapter.cancelDiscovery();
+        Log.e(TAG, "refreshNearbyServices: " + bluetoothAdapter.isDiscovering());
         this.onRefreshStarted();
         requestServiceFromDiscoveredDevices();
     }
@@ -765,11 +759,11 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
     }
 
     /**
-     * This checks if the service was discovered previously and if
-     * it is still in range.
+     * This checks if the service was discovered previously.
+     * Listeners will be notified if the service was discovered before.
      *
      * @param description
-     *         Description of the service
+     *         ServiceDescription of the service
      */
     private void tryToFindAlreadyDiscoveredServices(ServiceDescription description)
     {

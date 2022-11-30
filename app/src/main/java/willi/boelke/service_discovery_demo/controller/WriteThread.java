@@ -5,7 +5,6 @@ import android.util.Log;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import willi.boelke.services.serviceConnection.ServiceConnection;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
@@ -64,6 +63,9 @@ public class WriteThread<T extends ServiceConnection, D> extends Thread
         int counter = 0;
         while (shouldRun)
         {
+            if(connections.isEmpty()){
+                this.cancel();
+            }
             ArrayList<T> disconnectedConnections = new ArrayList<>();
             for (T connection : connections)
             {
@@ -72,7 +74,7 @@ public class WriteThread<T extends ServiceConnection, D> extends Thread
                     try
                     {
                         String msg = "Test message:" + counter +
-                                "\nService: " + serviceDescription.getServiceName();
+                                "\nService: " + serviceDescription.getInstanceName();
                         connection.getOutputStream().write(msg.getBytes());
                     }
                     catch (IOException e)
@@ -89,7 +91,6 @@ public class WriteThread<T extends ServiceConnection, D> extends Thread
             }
             for (T disconnected : disconnectedConnections)
             {
-                listener.onNewNotification("Lost connection " + disconnected);
                 disconnected.close();
                 listener.onConnectionLost(disconnected);
                 connections.remove(disconnected);

@@ -71,10 +71,12 @@ public class DemoServerController implements BluetoothServiceServer
     @Override
     public void onClientConnected(BluetoothConnection connection)
     {
-        Log.d(TAG, "onClientConnected: a client connect, adding to connections");
-        listener.onNewNotification("A Client connected " + connection);
+        Log.d(TAG, "onClientConnected: a client connect, adding to connections ");
         listener.onNewConnection(connection);
         connections.add(connection);
+        if(connections.size()==1){
+            startWriting();
+        }
     }
 
     //
@@ -85,7 +87,7 @@ public class DemoServerController implements BluetoothServiceServer
      * Starts the WriteThread if i is not
      * already running
      */
-    public void startWriting()
+    private void startWriting()
     {
         if (!writer.isRunning())
         {
@@ -97,7 +99,7 @@ public class DemoServerController implements BluetoothServiceServer
     /**
      * Stops the WriteThread
      */
-    public void stopWriting()
+    private void stopWriting()
     {
         if (writer.isRunning())
         {
@@ -125,6 +127,7 @@ public class DemoServerController implements BluetoothServiceServer
         BluetoothServiceConnectionEngine.getInstance().disconnectFromClientsWithUUID(this.serviceDescription);
         BluetoothServiceConnectionEngine.getInstance().stopSDPService(this.serviceDescription);
         //--- notify listener that all connections where closed and clear the list ---//
+        this.stopWriting();
         for (BluetoothConnection connection : connections)
         {
             listener.onConnectionLost(connection);

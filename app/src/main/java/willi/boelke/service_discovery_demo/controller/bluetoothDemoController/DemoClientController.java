@@ -56,15 +56,17 @@ public class DemoClientController implements BluetoothServiceClient
     public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
     {
         this.listener.onNewNotification("Discovered service " + description.getServiceUuid());
-        Log.d(TAG, "onServiceDiscovered: a service with the UUID " + description + " has been discovered");
+        Log.d(TAG, "onServiceDiscovered: a service of " + description.getServiceType() + " has been discovered");
     }
 
     @Override
     public void onConnectedToService(BluetoothConnection connection)
     {
         this.connections.add(connection);
-        this.listener.onNewNotification("New connection established to " + connection.getRemoteDeviceAddress());
         this.listener.onNewConnection(connection);
+        if(this.connections.size() == 1){
+            this.startReading();
+        }
     }
 
     @Override
@@ -77,7 +79,6 @@ public class DemoClientController implements BluetoothServiceClient
     public void onPeerDiscovered(BluetoothDevice device)
     {
         Log.d(TAG, "onDevicesInRangeChange: called with new device");
-        this.listener.onNewNotification("New peer discovered " + device);
         this.listener.onNewDiscovery(device);
     }
 
@@ -96,7 +97,6 @@ public class DemoClientController implements BluetoothServiceClient
     public void startClient()
     {
         BluetoothServiceConnectionEngine.getInstance().startSDPDiscoveryForService(serviceDescription, this);
-        startReading();
     }
 
     /**
@@ -110,7 +110,7 @@ public class DemoClientController implements BluetoothServiceClient
         BluetoothServiceConnectionEngine.getInstance().stopSDPDiscoveryForService(serviceDescription);
         BluetoothServiceConnectionEngine.getInstance().disconnectFromServicesWith(serviceDescription);
         stopReading();
-        this.listener.onNewNotification("Stopped client for service " + this.serviceDescription.getServiceUuid());
+        this.listener.onNewNotification("Stopped client for service " + this.serviceDescription.getServiceType());
         this.listener.onMessageChange("");
     }
 
@@ -134,7 +134,7 @@ public class DemoClientController implements BluetoothServiceClient
      * Starts a new ReadThread and stores it in {@link #reader}.
      * If a reader is already running i will be canceled first.
      */
-    public void startReading()
+    private void startReading()
     {
         if (reader.isRunning())
         {

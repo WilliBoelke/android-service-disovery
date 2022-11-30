@@ -8,7 +8,6 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscovery;

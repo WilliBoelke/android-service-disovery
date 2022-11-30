@@ -97,6 +97,12 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
      */
     private static WifiDirectServiceDiscoveryEngine instance;
 
+    /**
+     * That the "TLD" established by Bonjour/mDNS for link local
+     * mDNS domain names.
+     */
+    private static final String LOCAL_TLD = ".local.";
+
     //
     //  ----------  instance members ----------
     //
@@ -105,12 +111,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
      * Classname for logging
      */
     private final String TAG = this.getClass().getSimpleName();
-
-    /**
-     * That the "TLD" established by Bonjour/mDNS for link local
-     * mDNS domain names.
-     */
-    private final String LOCAL_TLD = ".local.";
 
     /**
      * Wifi direct channel
@@ -183,8 +183,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
      * @param context
      *         the application context
      *
-     * @return
-     * true if the engine was successfully started, else returns false
+     * @return true if the engine was successfully started, else returns false
      *
      * @see #stop()
      */
@@ -340,22 +339,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
         // nothing to do here
     }
 
-    /**
-     * This stops the discovery for the service given previously
-     * trough calling {@link #startDiscoveryForService(ServiceDescription)} (UUID, SdpWifiPeer)}.
-     * <p>
-     * This however does not end any existing connections and does not cancel the overall service discovery
-     * refer to {@link #stopDiscovery()}
-     */
-    @Override
-    public void stopDiscoveryForService(ServiceDescription description)
-    {
-        if (!engineIsNotRunning())
-        {
-            super.stopDiscoveryForService(description);
-        }
-    }
-
     @Override
     protected void onServiceRemoveFromDiscovery(ServiceDescription description)
     {
@@ -379,9 +362,9 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
         }
         Log.d(TAG, "startSdpService: starting service : " + description);
         WifiP2pServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(
-                description.getServiceName(),
+                description.getInstanceName(),
                 description.getServiceType(),
-                description.getServiceRecord());
+                description.getTxtRecord());
         manager.addLocalService(channel, serviceInfo, new WifiP2pManager.ActionListener()
         {
             @Override
@@ -431,7 +414,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
         }
         catch (IllegalArgumentException e)
         {
-            Log.e(TAG, "stopSDPService: tried to stop service which is not regsitered");
+            Log.e(TAG, "stopSDPService: tried to stop service which is not registered");
         }
     }
 
@@ -596,11 +579,11 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
 
     private boolean isServiceBeingLockedFor(String registrationType)
     {
-        for (ServiceDescription serviceDescription: servicesToLookFor)
+        for (ServiceDescription serviceDescription : servicesToLookFor)
         {
             String searchedServiceType = serviceDescription.getServiceType() + LOCAL_TLD;
-            Log.e(TAG, "isServiceBeingLockedFor: " + searchedServiceType + " / " + registrationType );
-            if (searchedServiceType.equals(registrationType) )
+            Log.e(TAG, "isServiceBeingLockedFor: " + searchedServiceType + " / " + registrationType);
+            if (searchedServiceType.equals(registrationType))
             {
                 return true;
             }
@@ -691,7 +674,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
                             public void onFailure(int code)
                             {
                                 Log.d(TAG, "failed to start service discovery");
-                                onServiceDiscoveryFailure();
                             }
                         });
                     }
@@ -700,7 +682,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
                     public void onFailure(int code)
                     {
                         Log.d(TAG, "failed to add service discovery request");
-                        onServiceDiscoveryFailure();
                     }
                 });
             }
@@ -709,7 +690,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
             public void onFailure(int reason)
             {
                 Log.d(TAG, "failed to add service discovery request");
-                onServiceDiscoveryFailure();
             }
         });
     }
@@ -755,15 +735,17 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
         //--- TXT Record listener ---//
 
         WifiP2pManager.DnsSdTxtRecordListener txtListener = (fullDomain, txtRecord, device) ->
-            tmpRecordCache.put(device.deviceAddress, txtRecord);
+                tmpRecordCache.put(device.deviceAddress, txtRecord);
 
         //--- Service response listener - gives additional service info ---//
 
         WifiP2pManager.DnsSdServiceResponseListener servListener = (instanceName, registrationType, device) ->
         {
             Map<String, String> receivedTxtRecord = tmpRecordCache.get(device.deviceAddress);
-            if(receivedTxtRecord == null)
+            if (receivedTxtRecord == null)
+            {
                 receivedTxtRecord = new HashMap<>();
+            }
             onServiceDiscovered(device, receivedTxtRecord, registrationType, instanceName);
         };
 
@@ -771,19 +753,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
 
         manager.setDnsSdResponseListeners(channel, servListener, txtListener);
     }
-
-    /**
-     * If the Service discovery fails it mostly
-     * happens through a "busy" error, Which means
-     * that Wifi P2P is Currently doing some other things.
-     * Maybe because a service was registered or
-     * something else happened.
-     */
-    private void onServiceDiscoveryFailure()
-    {
-        Log.e(TAG, "onServiceDiscoveryFailure: wait interrupted");
-    }
-
 
     /**
      * Set the engine to notify about every service, even though it

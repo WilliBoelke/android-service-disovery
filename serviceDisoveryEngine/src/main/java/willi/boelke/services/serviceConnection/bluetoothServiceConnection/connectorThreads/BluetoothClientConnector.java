@@ -6,6 +6,7 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
@@ -64,6 +65,7 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
         this.thread = currentThread();
         BluetoothSocket tmp = null;
         Log.d(TAG, "run: ----ConnectThread is running---- \n trying to connect to " + this.server.getName() + " | " + this.server.getAddress());
+
         try
         {
             Log.d(TAG, "run: trying to create a Rfcomm Socket ");
@@ -75,10 +77,22 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
             e.printStackTrace();
         }
         mmSocket = tmp;
-
+        try
+        {
+            Log.d(TAG, "run: random wait in case we found several services...");
+            synchronized (this)
+            {
+                wait(new Random().nextInt(400));
+            }
+        }
+        catch (InterruptedException e)
+        {
+            // just go on and try to connect if this is interrupted
+        }
         Log.d(TAG, "run: socket created - tyring to connect");
         try
         {
+
             // Blocking call:
             // only return on successful connection or exception
             mmSocket.connect();

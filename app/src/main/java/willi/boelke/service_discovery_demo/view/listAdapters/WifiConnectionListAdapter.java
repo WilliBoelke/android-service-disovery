@@ -10,7 +10,6 @@ import android.widget.TextView;
 import java.util.ArrayList;
 
 import willi.boelke.service_discovery_demo.R;
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiConnection;
 
 
@@ -43,10 +42,10 @@ public class WifiConnectionListAdapter extends ArrayAdapter<WifiConnection>
         TextView peerAddress = convertView.findViewById(R.id.address_tv);
         TextView uuid = convertView.findViewById(R.id.uuid_tv);
 
-        String srvInstance = connection.getServiceDescription().getServiceName() + "." + connection.getServiceDescription().getServiceType();
+        String srvInstance = connection.getServiceDescription().getInstanceName() + "." + connection.getServiceDescription().getServiceType();
         name.setText(srvInstance);
-        description.setText(connection.getServiceDescription().getServiceRecord().get("info"));
-        serviceName.setText(connection.getServiceDescription().getServiceRecord().get("name"));
+        description.setText(connection.getServiceDescription().getTxtRecord().get("info"));
+        serviceName.setText(connection.getServiceDescription().getTxtRecord().get("name"));
         uuid.setText(connection.getServiceDescription().getServiceUuid().toString());
         peerAddress.setText(connection.getRemoteDeviceAddress());
 

@@ -17,6 +17,4 @@ class UnitBluetoothServiceDiscoveryVOne : UnitBluetoothServiceDiscovery() {
     override fun getDiscoveryEngine(): BluetoothServiceDiscoveryEngine {
         return BluetoothServiceDiscoveryVOne.getInstance()
     }
-
-
 }

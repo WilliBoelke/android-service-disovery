@@ -76,7 +76,7 @@ public class WifiDirectConnectionFragment extends Fragment
     {
         if (!WifiDirectConnectionEngine.getInstance().isRunning())
         {
-            Toast.makeText(getContext(), "Missing permission or bluetooth not supported", Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), "Missing permission or wifi not supported", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -115,21 +115,25 @@ public class WifiDirectConnectionFragment extends Fragment
 
     private void setupMessageOneObserver()
     {
-        model.getLatestMessage().observe(this.getViewLifecycleOwner(), message -> binding.msgTextView.setText(message));
+        model.getLatestMessage().observe(
+                this.getViewLifecycleOwner(), message ->
+                        binding.msgTextView.setText(message));
     }
 
     private void setupNotificationObserver()
     {
-        model.getLatestNotification().observe(this.getViewLifecycleOwner(), message -> Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show());
+        model.getLatestNotification().observe(
+                this.getViewLifecycleOwner(), message ->
+                        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show());
     }
 
     private void setupConnectionObserver()
     {
         model.getOpenConnections().observe(this.getViewLifecycleOwner(), connections ->
         {
-
             ListView openConnectionsListView = binding.connectionsListView;
-            WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(), R.layout.list_item_srv_conection, connections);
+            WifiConnectionListAdapter connectionListAdapter = new WifiConnectionListAdapter(getContext(),
+                    R.layout.list_item_srv_conection, connections);
             openConnectionsListView.setAdapter(connectionListAdapter);
         });
     }

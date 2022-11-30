@@ -253,7 +253,7 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
      *
      * @return true if still refreshing, else false
      */
-    public boolean isRefreshProcessRunning()
+    private boolean isRefreshProcessRunning()
     {
         if (System.currentTimeMillis() - this.refreshingTimeStamp >= REFRESH_TIME)
         {

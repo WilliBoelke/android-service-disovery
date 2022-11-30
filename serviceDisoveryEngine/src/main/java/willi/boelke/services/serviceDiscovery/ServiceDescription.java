@@ -1,5 +1,6 @@
 package willi.boelke.services.serviceDiscovery;
 
+
 import androidx.annotation.NonNull;
 
 import java.nio.ByteBuffer;
@@ -34,6 +35,7 @@ import java.util.UUID;
  * _udp or _tcp depending on the offered transport protocol.
  * See <a href="https://www.ietf.org/rfc/rfc6763.txt">RFC 6763</a> for more
  * information on this.
+ *
  * <h2>Connecting the two</h2>
  * As mentioned this class is aiming on connecting the two - so that for one
  * application, offering one (or several) service(s)
@@ -45,10 +47,10 @@ import java.util.UUID;
  * The android API for WiFi direct does not offer complete access to the
  * SRV / PTR record as described in RFC 6763, alas a service name and type
  * can be specified. This equals the aforementioned instance name and domain.
- *
+ * <p>
  * Also for Bluetooth a service name is required to be registered within the
  * local SPD server.
- *
+ * <p>
  * This will be reflected in here through the {@link this.serviceName}
  * which ahs to be set on initialization.
  *
@@ -68,8 +70,10 @@ import java.util.UUID;
  * As mentioned android requires a UUID for registering a service withing
  * the SDP server. This UUID can be generated as a name-based UUID
  * <a href="https://www.ietf.org/rfc/rfc4122.txt">RFC 4122</a>
- * by calculating MD5 Hash over the of the service type and the
- * contents of the TXT records.
+ * by calculating MD5 Hash over the of the service type.
+ * Since both ServiceName and TXT Record can be variable
+ * depending on device and service instance a reliably
+ * equal uuid cannot be created from those.
  * <p>
  * <h2>Overwriting the UUID</h2>
  * As mentioned per default the UUID will be generated
@@ -97,7 +101,7 @@ public class ServiceDescription
     /**
      * The Service attributes
      */
-    private final Map<String, String> attributes;
+    private final Map<String, String> txtRecord;
 
     /**
      * The name of the service
@@ -106,7 +110,7 @@ public class ServiceDescription
      * or a bonjour / mDNS servers as instance name.
      * It does not have to be the same on all service instances
      */
-    private final String serviceName;
+    private final String instanceName;
 
     /**
      * A custom uuid, which - when set- will be used
@@ -126,14 +130,20 @@ public class ServiceDescription
     /**
      * Public constructor
      *
-     * @param serviceRecord
+     * @param txtRecord
      *         The service record, this needs to contain at least one
      *         key - value
+     * @param instanceName
+     *         The name of the service instance.
+     *         this "can" differ between different devices.
+     * @param serviceType
+     *         This is the serviceType as defined in Bonjour / mDNS-SD.
+     *         it can be specified here as a string of the form "_serviceName._transportProtocol"
      */
-    public ServiceDescription(String serviceName, Map<String, String> serviceRecord, String serviceType)
+    public ServiceDescription(String instanceName, Map<String, String> txtRecord, String serviceType)
     {
-        this.serviceName = serviceName;
-        this.attributes = serviceRecord;
+        this.instanceName = instanceName;
+        this.txtRecord = txtRecord;
         this.serviceType = serviceType;
     }
 
@@ -172,8 +182,8 @@ public class ServiceDescription
     {
         if (this.serviceUuid == null)
         {
-            //--- generating UUID from attributes ---//
-            this.serviceUuid = getUuidForService( this.attributes, this.serviceType);
+            //--- generating UUID from service type ---//
+            this.serviceUuid = getUuidForService(this.serviceType);
         }
 
         return this.serviceUuid;
@@ -181,11 +191,11 @@ public class ServiceDescription
 
     /**
      * Returns the service type
-     * @return
-     * the service type of the service
      *
+     * @return the service type of the service
      */
-    public String getServiceType(){
+    public String getServiceType()
+    {
         return this.serviceType;
     }
 
@@ -195,32 +205,22 @@ public class ServiceDescription
      *
      * @return The service records Map
      */
-    public Map<String, String> getServiceRecord()
+    public Map<String, String> getTxtRecord()
     {
-        return this.attributes;
+        return this.txtRecord;
     }
 
     /**
-     * Generates a name based (type 3) UUID from a Map (service records)
-     *
-     * @param serviceRecord
-     *         A Map containing key value pairs, describing a service
+     * Generates a name based (type 3) UUID from teh service type
      *
      * @return A UUID generated from the map entries
      *
      * @throws NullPointerException
      *         If the given Map was empty
      */
-    public static UUID getUuidForService( Map<String, String> serviceRecord, String serviceType)
+    public static UUID getUuidForService(String serviceType)
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append(serviceType);
-        for (Map.Entry<String, String> entry : serviceRecord.entrySet())
-        {
-            sb.append(entry.getKey());
-            sb.append(entry.getValue());
-        }
-        return UUID.nameUUIDFromBytes(sb.toString().getBytes(StandardCharsets.UTF_8));
+        return UUID.nameUUIDFromBytes(serviceType.getBytes(StandardCharsets.UTF_8));
     }
 
 
@@ -274,7 +274,7 @@ public class ServiceDescription
     @Override
     public int hashCode()
     {
-        return Objects.hash(this.getServiceUuid(), serviceType);
+        return Objects.hash(this.getServiceUuid());
     }
 
     @NonNull
@@ -282,7 +282,7 @@ public class ServiceDescription
     public String toString()
     {
         return String.format("{|Name: %-20s|UUID: %-36s|Attr: %-10s|}",
-                this.getServiceName(), this.getServiceUuid(), this.getServiceRecord());
+                this.getInstanceName(), this.getServiceUuid(), this.getTxtRecord());
     }
 
     /**
@@ -290,8 +290,8 @@ public class ServiceDescription
      *
      * @return the service name
      */
-    public String getServiceName()
+    public String getInstanceName()
     {
-        return this.serviceName;
+        return this.instanceName;
     }
 }

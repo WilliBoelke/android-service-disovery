@@ -56,6 +56,9 @@ public class ReadThread<T extends ServiceConnection, D> extends Thread
 
         while (running)
         {
+            if(connections.isEmpty()){
+                this.cancel();
+            }
             ArrayList<T> disconnectedConnections = new ArrayList<>();
             for (int i = 0; i < connections.size(); i++)
             {

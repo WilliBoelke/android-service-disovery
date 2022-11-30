@@ -132,12 +132,12 @@ class UnitWifiDirectServiceDiscovery {
 
     private fun simulateDiscoveryOf(device: WifiP2pDevice, serviceDescription: ServiceDescription) {
         txtListenerCapture.captured.onDnsSdTxtRecordAvailable(
-            "", serviceDescription.serviceRecord, device
+            "", serviceDescription.txtRecord, device
         )
 
         servListenerCapture.captured.onDnsSdServiceAvailable(
-            serviceDescription.serviceName,
-            serviceDescription.serviceType+".local.",
+            serviceDescription.instanceName,
+            serviceDescription.serviceType + ".local.",
             device
         )
     }
@@ -516,6 +516,32 @@ class UnitWifiDirectServiceDiscovery {
      */
     @Test
     fun itShouldNotifyAboutAllServices() {
+        val listener = TestDiscoveryListener()
+        val testDescriptionOne = testDescriptionFive
+        val testDescriptionTwo = testDescriptionFour
+        val testHost = getTestDeviceOne_Wifi()
+
+        WifiDirectServiceDiscoveryEngine.getInstance().registerDiscoverListener(listener)
+
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery()
+        // registering only description five
+        WifiDirectServiceDiscoveryEngine.getInstance().startDiscoveryForService(testDescriptionOne)
+        WifiDirectServiceDiscoveryEngine.getInstance().notifyAboutAllServices(true)
+        simulateDiscoveryOf(testHost, testDescriptionOne)
+        simulateDiscoveryOf(testHost, testDescriptionTwo)
+
+        assertTrue(listener.hasDiscoveries(2))
+        assertTrue(listener.hasServiceDiscovered(testDescriptionOne))
+        assertTrue(listener.hasServiceDiscovered(testDescriptionTwo))
+    }
+
+
+    /**
+     * It should discover instances with a different instance names
+     * (amd still return the correct data)
+     */
+    @Test
+    fun itShouldDiscoverDifferentInstances() {
         val listener = TestDiscoveryListener()
         val testDescriptionOne = testDescriptionFive
         val testDescriptionTwo = testDescriptionFour

@@ -39,7 +39,6 @@ class AsyncSdpWifiConnectionCreator extends Thread
         this.engine = engine;
     }
 
-
     @Override
     public void run()
     {

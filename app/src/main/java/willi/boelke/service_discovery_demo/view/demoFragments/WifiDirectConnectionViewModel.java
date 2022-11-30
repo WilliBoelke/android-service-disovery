@@ -1,5 +1,6 @@
 package willi.boelke.service_discovery_demo.view.demoFragments;
 
+import android.annotation.SuppressLint;
 import android.net.wifi.p2p.WifiP2pDevice;
 
 import androidx.lifecycle.LiveData;
@@ -23,11 +24,6 @@ import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.Bluetoot
  */
 public class WifiDirectConnectionViewModel extends ViewModel
 {
-    /**
-     * Classname for logging
-     */
-    private final String TAG = this.getClass().getSimpleName();
-
     private final WifiDirectConnectionEngine engine;
     private final MutableLiveData<ArrayList<WifiConnection>> openConnections = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<String> latestNotification = new MutableLiveData<>("");
@@ -124,11 +120,13 @@ public class WifiDirectConnectionViewModel extends ViewModel
         wifiDemoControllerTwo.startService();
     }
 
+    @SuppressLint("MissingPermission")
     public void stopServiceOne()
     {
         this.wifiDemoControllerOne.stop();
     }
 
+    @SuppressLint("MissingPermission")
     public void stopServiceTwo()
     {
         this.wifiDemoControllerTwo.stop();

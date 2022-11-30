@@ -7,14 +7,12 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import willi.boelke.service_discovery_demo.controller.ControllerListener;
 import willi.boelke.service_discovery_demo.controller.bluetoothDemoController.DemoClientController;
 import willi.boelke.service_discovery_demo.controller.bluetoothDemoController.DemoServerController;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServiceConnectionEngine;
-import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
  * This is the ViewModel for the BluetoothConnection Fragment.
@@ -168,44 +166,34 @@ public class BluetoothConnectionViewModel extends ViewModel
         engine.stopDeviceDiscovery();
     }
 
-    protected void enableDiscoverable()
-    {
-        engine.startDiscoverable();
-    }
 
     protected void startServiceOne()
     {
-        this.serverControllerOne.startWriting();
         this.serverControllerOne.startService();
     }
 
     protected void startServiceTwo()
     {
-        this.serverControllerTwo.startWriting();
         this.serverControllerTwo.startService();
     }
 
     protected void stopServiceOne()
     {
-        this.serverControllerOne.stopWriting();
         this.serverControllerOne.stopService();
     }
 
     protected void stopServiceTwo()
     {
-        this.serverControllerTwo.stopWriting();
         this.serverControllerTwo.stopService();
     }
 
     protected void startClientOne()
     {
-        this.clientControllerOne.startReading();
         this.clientControllerOne.startClient();
     }
 
     protected void startClientTwo()
     {
-        this.clientControllerTwo.startReading();
         this.clientControllerTwo.startClient();
     }
 

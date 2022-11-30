@@ -10,7 +10,12 @@ import java.net.Socket;
 import willi.boelke.services.serviceConnection.ServiceConnection;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
-
+/**
+ * A P2P connection between a two Wi-Fi Direct devices
+ * based on a bonjour / mDNS Service
+ *
+ * @author WilliBoelke
+ */
 public class WifiConnection implements ServiceConnection
 {
     private final Socket connectionSocket;

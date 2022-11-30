@@ -18,58 +18,60 @@ public class ServiceDescriptionTest
 {
 
     @Test
-    public void itShouldGenerateDifferentUuidsBasedOnServiceAttributes()
+    public void itShouldGenerateDifferentUuidsBasedOnServiceType()
     {
         HashMap<String, String> serviceAttributesOne = new HashMap<>();
         HashMap<String, String> serviceAttributesTwo = new HashMap<>();
         serviceAttributesOne.put("service-name", "Test Service One");
-        serviceAttributesOne.put("service-info", "This is a test service description");
-        serviceAttributesTwo.put("service-name", "Counting Service Two");
-        serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service One", serviceAttributesOne);
-        assertNotEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
-    }
-
-    @Test
-    public void itShouldGenerateDifferentUuidsBasedOnServiceAttributeKeys()
-    {
-        HashMap<String, String> serviceAttributesOne = new HashMap<>();
-        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
-        serviceAttributesOne.put("service-name", "Test Service One");
-        serviceAttributesOne.put("service-info", "This is a test service description");
-        serviceAttributesTwo.put("serviceName", "Counting Service One");
-        serviceAttributesTwo.put("service-port", "This is a test service description");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service One", serviceAttributesTwo);
-        assertNotEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
-    }
-
-
-    @Test
-    public void itShouldNotIncludeTheServiceNameInTheUuidGeneration()
-    {
-        HashMap<String, String> serviceAttributesOne = new HashMap<>();
-        serviceAttributesOne.put("service-info", "This is a test service description");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service Two", serviceAttributesOne);
-        assertEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
-    }
-
-
-    @Test
-    public void twoServicesWithSameAttributesShouldBeEqual()
-    {
-        HashMap<String, String> serviceAttributesOne = new HashMap<>();
-        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
-        serviceAttributesOne.put("service-name", "Test Service One");
-        serviceAttributesOne.put("service-info", "This is a test service description");
         serviceAttributesTwo.put("service-name", "Test Service One");
-        serviceAttributesTwo.put("service-info", "This is a test service description");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service One", serviceAttributesOne);
+        ServiceDescription descriptionForServiceOne = new ServiceDescription(
+                "Test Service One",
+                serviceAttributesOne,
+                "_testOne._tcp");
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription(
+                "Test Service One",
+                serviceAttributesTwo,
+                "_testTwo._tcp");
+        assertNotEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
+    }
+
+
+    @Test
+    public void itShouldGenerateTheSameUUIdWhenInstanceIsDifferent()
+    {
+        HashMap<String, String> serviceAttributesOne = new HashMap<>();
+        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
+        serviceAttributesOne.put("name", "Test Service One");
+        serviceAttributesTwo.put("name", "Test Service One");
+        ServiceDescription descriptionForServiceOne = new ServiceDescription(
+                "Test Service Two",
+                serviceAttributesOne,
+                "_testOne._tcp");
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription(
+                "Test Service One",
+                serviceAttributesTwo,
+                "_testOne._tcp");
         assertEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
     }
+
+    @Test
+    public void itShouldGenerateTheSameUUIdWhenAttributesAreDifferent()
+    {
+        HashMap<String, String> serviceAttributesOne = new HashMap<>();
+        HashMap<String, String> serviceAttributesTwo = new HashMap<>();
+        serviceAttributesOne.put("name", "Test Service One");
+        serviceAttributesTwo.put("name", "Test Service Two 4242");
+        ServiceDescription descriptionForServiceOne = new ServiceDescription(
+                "Test Service One",
+                serviceAttributesOne,
+                "_testOne._tcp");
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription(
+                "Test Service One",
+                serviceAttributesTwo,
+                "_testOne._tcp");
+        assertEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());
+    }
+
 
     /**
      * Custom UUIDs can be set for the use of Bluetooth
@@ -84,8 +86,13 @@ public class ServiceDescriptionTest
         serviceAttributesOne.put("service-info", "This is a test service description");
         serviceAttributesTwo.put("service-name", "Test Service One");
         serviceAttributesTwo.put("service-info", "This is a test service description");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service One", serviceAttributesOne);
+        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One",
+                serviceAttributesOne,
+                "_testOne._tcp");
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription(
+                "Test Service One",
+                serviceAttributesTwo,
+                "_testTwo._tcp");
         UUID uuid = UUID.fromString("e3d4932e-1016-4b95-8466-9f160ec1b553");
         descriptionForServiceTwo.overrideUuidForBluetooth(uuid);
         assertNotEquals(descriptionForServiceTwo.getServiceUuid(), descriptionForServiceOne.getServiceUuid());

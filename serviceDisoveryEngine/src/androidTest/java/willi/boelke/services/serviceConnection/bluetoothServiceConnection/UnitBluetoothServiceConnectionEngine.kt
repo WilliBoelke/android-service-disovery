@@ -78,7 +78,7 @@ class UnitBluetoothServiceConnectionEngine {
     private lateinit var mockedContext: Context
     private lateinit var mockedDiscoveryVTwo: BluetoothServiceDiscoveryVTwo
 
-    private var discoveryListender = CapturingSlot<BluetoothServiceDiscoveryListener>()
+    private var discoveryListener = CapturingSlot<BluetoothServiceDiscoveryListener>()
 
     @Before
     fun setup() {
@@ -90,7 +90,7 @@ class UnitBluetoothServiceConnectionEngine {
 
         justRun {
             mockedDiscoveryVTwo.registerDiscoverListener(
-                capture(discoveryListender)
+                capture(discoveryListener)
             )
         }
 
@@ -99,6 +99,7 @@ class UnitBluetoothServiceConnectionEngine {
         every { mockedBtAdapter.startDiscovery() } returns true
         every { mockedBtAdapter.cancelDiscovery() } returns true
         every { mockedBtAdapter.startDiscovery() } returns true
+        every { mockedDiscoveryVTwo.isRunning } returns true
 
         //Run
         BluetoothServiceConnectionEngine.getInstance()
@@ -192,7 +193,7 @@ class UnitBluetoothServiceConnectionEngine {
         val testDevice = getTestDeviceOne()
         BluetoothServiceConnectionEngine.getInstance()
             .startSDPDiscoveryForService(testDescriptionOne, client)
-        discoveryListender.captured.onPeerDiscovered(testDevice)
+        discoveryListener.captured.onPeerDiscovered(testDevice)
         assertEquals(testDevice, client.foundDevices[0])
     }
 
@@ -213,7 +214,7 @@ class UnitBluetoothServiceConnectionEngine {
 
         val testDeviceOne = getTestDeviceOne()
 
-        discoveryListender.captured.onPeerDiscovered(testDeviceOne)
+        discoveryListener.captured.onPeerDiscovered(testDeviceOne)
 
         assertEquals(testDeviceOne, clientOne.foundDevices[0])
         assertEquals(testDeviceOne, clientTwo.foundDevices[0])
@@ -233,8 +234,8 @@ class UnitBluetoothServiceConnectionEngine {
 
         // discovered device with
         val testDeviceOne = getTestDeviceOne()
-        discoveryListender.captured.onPeerDiscovered(testDeviceOne)
-        discoveryListender.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
+        discoveryListener.captured.onPeerDiscovered(testDeviceOne)
+        discoveryListener.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
 
         assertEquals(testDeviceOne, client.foundServiceHosts[0])
         assertEquals(testDescriptionTwo, client.foundServices[0])
@@ -257,10 +258,10 @@ class UnitBluetoothServiceConnectionEngine {
         val testDeviceOne = getTestDeviceOne()
         val testDeviceTwo = getTestDeviceTwo()
 
-        discoveryListender.captured.onPeerDiscovered(testDeviceOne)
-        discoveryListender.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
-        discoveryListender.captured.onPeerDiscovered(testDeviceTwo)
-        discoveryListender.captured.onServiceDiscovered(testDeviceTwo, testDescriptionFour)
+        discoveryListener.captured.onPeerDiscovered(testDeviceOne)
+        discoveryListener.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
+        discoveryListener.captured.onPeerDiscovered(testDeviceTwo)
+        discoveryListener.captured.onServiceDiscovered(testDeviceTwo, testDescriptionFour)
 
         assertTrue(clientOne.foundServiceHosts.contains(testDeviceTwo))
         assertFalse(clientOne.foundServiceHosts.contains(testDeviceOne))
@@ -292,8 +293,8 @@ class UnitBluetoothServiceConnectionEngine {
         BluetoothServiceConnectionEngine.getInstance()
             .startSDPDiscoveryForService(testDescriptionTwo, client)
 
-        discoveryListender.captured.onPeerDiscovered(testDeviceOne)
-        discoveryListender.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
+        discoveryListener.captured.onPeerDiscovered(testDeviceOne)
+        discoveryListener.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
 
         assertEquals(getTestDeviceTwo().name, client.establishedConnections[0].remoteDevice.name)
         assertFalse(client.establishedConnections[0].isServerPeer) // connected as client
@@ -322,10 +323,10 @@ class UnitBluetoothServiceConnectionEngine {
         BluetoothServiceConnectionEngine.getInstance()
             .startSDPDiscoveryForService(testDescriptionTwo, client)
 
-        discoveryListender.captured.onPeerDiscovered(testDeviceTwo)
-        discoveryListender.captured.onServiceDiscovered(testDeviceTwo, testDescriptionTwo)
-        discoveryListender.captured.onPeerDiscovered(testDeviceOne)
-        discoveryListender.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
+        discoveryListener.captured.onPeerDiscovered(testDeviceTwo)
+        discoveryListener.captured.onServiceDiscovered(testDeviceTwo, testDescriptionTwo)
+        discoveryListener.captured.onPeerDiscovered(testDeviceOne)
+        discoveryListener.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
         Thread.sleep(1000) // waiting for connect thread
         assertTrue(
             client.establishedConnections[0].remoteDevice.equals(testDeviceOne) ||
@@ -358,8 +359,8 @@ class UnitBluetoothServiceConnectionEngine {
         BluetoothServiceConnectionEngine.getInstance()
             .startSDPDiscoveryForService(testDescriptionTwo, client)
 
-        discoveryListender.captured.onPeerDiscovered(testDeviceOne)
-        discoveryListender.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
+        discoveryListener.captured.onPeerDiscovered(testDeviceOne)
+        discoveryListener.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
 
         verify(exactly = 1) { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) }
         verify(exactly = 1) { mockedSocket.connect() }
@@ -393,7 +394,7 @@ class UnitBluetoothServiceConnectionEngine {
         // In the given time exactly one connection should be accepted
         verify(exactly = 1) {
             mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-                testDescriptionOne.serviceName, testDescriptionOne.serviceUuid
+                testDescriptionOne.instanceName, testDescriptionOne.serviceUuid
             )
         }
         // Accept will be called twice, once will go trough, then the tread loops and watt for the next connection
@@ -402,7 +403,7 @@ class UnitBluetoothServiceConnectionEngine {
         // Still only one Server socket should be opened
         verify(exactly = 1) {
             mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-                testDescriptionOne.serviceName, testDescriptionOne.serviceUuid
+                testDescriptionOne.instanceName, testDescriptionOne.serviceUuid
             )
         }
         // his should accept he second connection and start waiting for the next
@@ -438,7 +439,7 @@ class UnitBluetoothServiceConnectionEngine {
         // In the given time exactly one connection should be accepted
         verify(exactly = 1) {
             mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-                testDescriptionOne.serviceName, testDescriptionOne.serviceUuid
+                testDescriptionOne.instanceName, testDescriptionOne.serviceUuid
             )
         }
         // Accept will be called twice, once will go trough, then the tread loops and watt for the next connection
@@ -447,7 +448,7 @@ class UnitBluetoothServiceConnectionEngine {
         // Still only one Server socket should be opened
         verify(exactly = 1) {
             mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-                testDescriptionOne.serviceName, testDescriptionOne.serviceUuid
+                testDescriptionOne.instanceName, testDescriptionOne.serviceUuid
             )
         }
         // his should accept he second connection and start waiting for the next
@@ -511,13 +512,13 @@ class UnitBluetoothServiceConnectionEngine {
         // setting up the adapter to return mocked ServerSockets
         every {
             mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-                testDescriptionOne.serviceName,
+                testDescriptionOne.instanceName,
                 any()
             )
         } returns mockedServerSocketOne
         every {
             mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-                testDescriptionTwo.serviceName,
+                testDescriptionTwo.instanceName,
                 any()
             )
         } returns mockedServerSocketTwo
@@ -537,12 +538,12 @@ class UnitBluetoothServiceConnectionEngine {
         // In the given time exactly one connection should be accepted
         verify(exactly = 1) {
             mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-                testDescriptionOne.serviceName, testDescriptionOne.serviceUuid
+                testDescriptionOne.instanceName, testDescriptionOne.serviceUuid
             )
         }
         verify(exactly = 1) {
             mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-                testDescriptionTwo.serviceName, testDescriptionTwo.serviceUuid
+                testDescriptionTwo.instanceName, testDescriptionTwo.serviceUuid
             )
         }
         verify(exactly = 2) { mockedServerSocketOne.accept() }
@@ -551,12 +552,12 @@ class UnitBluetoothServiceConnectionEngine {
         // Still only one Server socket should be opened
         verify(exactly = 1) {
             mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-                testDescriptionOne.serviceName, testDescriptionOne.serviceUuid
+                testDescriptionOne.instanceName, testDescriptionOne.serviceUuid
             )
         }
         verify(exactly = 1) {
             mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-                testDescriptionTwo.serviceName, testDescriptionTwo.serviceUuid
+                testDescriptionTwo.instanceName, testDescriptionTwo.serviceUuid
             )
         }
         // his should accept he second connection and start waiting for the next

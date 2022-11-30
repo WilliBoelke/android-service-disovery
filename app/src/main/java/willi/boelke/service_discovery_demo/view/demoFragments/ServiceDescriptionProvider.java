@@ -35,6 +35,15 @@ public class ServiceDescriptionProvider
             serviceAttributesTwo.put("name", "Counting Service two");
             serviceAttributesTwo.put("info", "This service counts upwards an sends a message containing this number to all clients");
             two = new ServiceDescription(getCurrentDeviceName(), serviceAttributesTwo, "_demoTwo._tcp");
+
+            HashMap<String, String> txtRecord = new HashMap<>();
+            txtRecord.put("name", "Example Service");
+            txtRecord.put("port", "4242");
+            ServiceDescription example = new ServiceDescription(
+                    "Example Service",
+                    txtRecord,
+                    "_exampleSrv._tcp");
+
         }
        return two;
     }

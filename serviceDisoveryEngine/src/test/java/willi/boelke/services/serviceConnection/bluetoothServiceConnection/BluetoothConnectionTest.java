@@ -44,8 +44,13 @@ public class BluetoothConnectionTest
         serviceAttributesOne.put("service-info", "This is a test service description");
         serviceAttributesTwo.put("service-name", "Counting Service Two");
         serviceAttributesTwo.put("service-info", "This service counts upwards an sends a message containing this number to all clients");
-        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One", serviceAttributesOne);
-        ServiceDescription descriptionForServiceTwo = new ServiceDescription("Test Service One", serviceAttributesTwo);
+        ServiceDescription descriptionForServiceOne = new ServiceDescription("Test Service One",
+                serviceAttributesOne,
+                "_testOne._tcp");
+        ServiceDescription descriptionForServiceTwo = new ServiceDescription(
+                "Test Service One",
+                serviceAttributesTwo,
+                "_testTwo._tcp");
 
         testConnectionOne = new BluetoothConnection(descriptionForServiceOne, testSocketOne, false);
         testConnectionTwo = new BluetoothConnection(descriptionForServiceTwo, testSocketTwo, true);

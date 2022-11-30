@@ -121,6 +121,7 @@ public class BluetoothConnectionFragment extends Fragment
     {
         if (!BluetoothServiceConnectionEngine.getInstance().isRunning())
         {
+            Toast.makeText(getContext(), "Missing permission or Bluetooth not supported", Toast.LENGTH_LONG).show();
             return;
         }
         if (binding.discoverableButton.equals(view))

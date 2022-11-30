@@ -151,7 +151,7 @@ public abstract class IntegrationBluetoothServiceDiscovery
         serviceAttributesTwo.put("service-name", "Counting Service Two");
         serviceAttributesTwo.put("service-info", "This is another test service description");
         descriptionForServiceOne = new ServiceDescription("test service one", serviceAttributesOne, "_testOne._tcp");
-        descriptionForServiceTwo = new ServiceDescription("test service two", serviceAttributesTwo,"_testTwo._tcp");
+        descriptionForServiceTwo = new ServiceDescription("test service two", serviceAttributesTwo, "_testTwo._tcp");
         this.adapter = BluetoothAdapter.getDefaultAdapter();
     }
 

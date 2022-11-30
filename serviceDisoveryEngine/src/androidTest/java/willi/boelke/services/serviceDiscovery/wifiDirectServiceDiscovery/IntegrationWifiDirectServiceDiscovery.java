@@ -156,7 +156,7 @@ public class IntegrationWifiDirectServiceDiscovery
         serviceAttributesTwo.put("service-name", "Counting Service Two");
         serviceAttributesTwo.put("service-info", "This is another test service description");
         descriptionForServiceOne = new ServiceDescription("test service one", serviceAttributesOne, "_testOne._tcp");
-        descriptionForServiceTwo = new ServiceDescription("test service two", serviceAttributesTwo,"_testTwo._tcp");
+        descriptionForServiceTwo = new ServiceDescription("test service two", serviceAttributesTwo, "_testTwo._tcp");
         printDeviceInfo(InstrumentationRegistry.getInstrumentation().getTargetContext());
         WifiDirectServiceDiscoveryEngine.getInstance();
         WifiDirectServiceDiscoveryEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());

@@ -46,10 +46,10 @@ public class BluetoothConnectionListAdapter extends ArrayAdapter<BluetoothConnec
         TextView peerState = convertView.findViewById(R.id.peer_state_tv);
         TextView uuid = convertView.findViewById(R.id.uuid_tv);
 
-        String srvInstance = connection.getServiceDescription().getServiceName() + "." + connection.getServiceDescription().getServiceType();
+        String srvInstance = connection.getServiceDescription().getInstanceName() + "." + connection.getServiceDescription().getServiceType();
         name.setText(srvInstance);
-        description.setText(connection.getServiceDescription().getServiceRecord().get("info"));
-        serviceName.setText(connection.getServiceDescription().getServiceRecord().get("name"));
+        description.setText(connection.getServiceDescription().getTxtRecord().get("info"));
+        serviceName.setText(connection.getServiceDescription().getTxtRecord().get("name"));
         uuid.setText(connection.getServiceDescription().getServiceUuid().toString());
         peerAddress.setText(connection.getRemoteDeviceAddress());
         peerName.setText(connection.getRemoteDevice().getName());

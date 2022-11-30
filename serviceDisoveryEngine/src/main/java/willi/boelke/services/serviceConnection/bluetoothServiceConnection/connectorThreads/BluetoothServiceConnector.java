@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
 import java.io.IOException;
+import java.util.Random;
 import java.util.UUID;
 
 import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
@@ -110,7 +111,7 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
         Log.d(TAG, "openServerSocket: opening server socket with UUID : " + description.getServiceUuid());
         this.serverSocket =
                 mBluetoothAdapter.listenUsingRfcommWithServiceRecord(
-                        description.getServiceName(),
+                        description.getInstanceName(),
                         description.getServiceUuid()
                 );
     }
@@ -134,6 +135,14 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
             {
                 socket = this.serverSocket.accept();
                 Log.d(TAG, "run: RFCOMM server socked accepted client connection");
+                synchronized (this)
+                {
+                    // well just as in the client connector
+                    // making it a little random. In case on client connects to
+                    // the same time
+                    Log.d(TAG, "acceptConnections: giving it some randomness.. ");
+                    wait(new Random().nextInt(200));
+                }
             }
             catch (IOException e)
             {

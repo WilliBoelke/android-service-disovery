@@ -133,7 +133,9 @@ public class BluetoothDiscoveryFragment extends Fragment
 
     private void notificationObserver()
     {
-        model.getLatestNotification().observe(this.getViewLifecycleOwner(), message -> Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show());
+        model.getLatestNotification().observe(
+                this.getViewLifecycleOwner(), message ->
+                        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show());
     }
 
     private void discoveryObserver()

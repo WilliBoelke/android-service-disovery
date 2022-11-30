@@ -27,6 +27,7 @@ lateinit var testDescriptionTwo: ServiceDescription
 lateinit var testDescriptionThree: ServiceDescription
 lateinit var testDescriptionFour: ServiceDescription
 lateinit var testDescriptionFive: ServiceDescription
+lateinit var testDescriptionFive_ButDifferentInstaceName: ServiceDescription
 
 fun initTestMocks() {
     val serviceAttributesOne = HashMap<String, String>()
@@ -44,7 +45,7 @@ fun initTestMocks() {
         ServiceDescription(
             "test service one",
             serviceAttributesOne,
-        "_testOne._tcp"
+            "_testOne._tcp"
         )
     testDescriptionTwo =
         ServiceDescription(
@@ -70,7 +71,12 @@ fun initTestMocks() {
             serviceAttributesFive,
             "_testFive._tcp"
         )
-
+    testDescriptionFive_ButDifferentInstaceName =
+        ServiceDescription(
+            "test service five - but different",
+            serviceAttributesFive,
+            "_testFive._tcp"
+        )
     testDescriptionOne.overrideUuidForBluetooth(testUUIDOne)
     testDescriptionTwo.overrideUuidForBluetooth(testUUIDTwo)
     testDescriptionThree.overrideUuidForBluetooth(testUUIDThree)
