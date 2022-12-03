@@ -131,15 +131,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
      */
     private final HashMap<ServiceDescription, ArrayList<WifiP2pDevice>> discoveredServices = new HashMap<>();
 
-    /**
-     * Keeps all started services (WifiP2pServiceInfo)
-     * when they where started.
-     * This is to remove them again at a later point.
-     *
-     * @see #startService(ServiceDescription)
-     * @see #stopService(ServiceDescription)
-     */
-    private final HashMap<ServiceDescription, WifiP2pServiceInfo> runningServices = new HashMap<>();
 
     /**
      * List of all listeners who registered
@@ -322,7 +313,8 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     //
 
     /**
-     * Starts looking for the service specified with the `serviceUUID` parameter.
+     * Starts looking for the service specified with
+     * the same ServiceType
      *
      * @param description
      *         The Service description
@@ -331,7 +323,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     public void startDiscoveryForService(ServiceDescription description)
     {
         super.startDiscoveryForService(description);
-        tryToFindAlreadyDiscoveredServices(description);
     }
 
     @Override
@@ -372,7 +363,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
             public void onSuccess()
             {
                 Log.d(TAG, "startSdpService: service successfully added : " + description);
-                runningServices.put(description, serviceInfo);
             }
 
             @Override
@@ -397,13 +387,17 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
         }
         try
         {
-            manager.removeLocalService(channel, this.runningServices.get(description), new WifiP2pManager.ActionListener()
+            WifiP2pServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(
+                    description.getInstanceName(),
+                    description.getServiceType(),
+                    description.getTxtRecord());
+
+            manager.removeLocalService(channel, serviceInfo, new WifiP2pManager.ActionListener()
             {
                 @Override
                 public void onSuccess()
                 {
-                    runningServices.remove(description);
-                    Log.d(TAG, "stopSDPService: service removed successfully ");
+                    Log.d(TAG, "stopService: service removed successfully ");
                 }
 
                 @Override
@@ -419,44 +413,11 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
         }
     }
 
-
-    /**
-     * This checks if the service was discovered previously.
-     * Listeners will be notified if the service was discovered before.
-     *
-     * @param description
-     *         ServiceDescription of the service
-     */
-    private void tryToFindAlreadyDiscoveredServices(ServiceDescription description)
-    {
-        Log.d(TAG, "tryToFindAlreadyDiscoveredServices: checking if " + description + " was discovered before ");
-
-        // iterating through devices already discovered
-        if(!this.discoveredServices.keySet().contains(description)){
-            Log.d(TAG, "tryToFindAlreadyDiscoveredServices: no such service discovered yet");
-            return;
-        }
-        ArrayList<WifiP2pDevice> knownHosts = this.discoveredServices.get(description);
-        Log.d(TAG, "tryToFindAlreadyDiscoveredServices: found hosts of " + description.getServiceType());
-        Log.d(TAG, "tryToFindAlreadyDiscoveredServices: hosts  " + knownHosts);
-        for (WifiP2pDevice knownHost: knownHosts)
-        {
-            notifyOnServiceDiscovered(knownHost, description);
-        }
-    }
-
     /**
      * Clears all locally registered services
-     *
-     * @see #runningServices
      */
     private void stopAllServices()
     {
-        // both don't seem to work reliable
-        for (ServiceDescription description : runningServices.keySet())
-        {
-            stopService(description);
-        }
 
         this.manager.clearLocalServices(channel, new WifiP2pManager.ActionListener()
         {
@@ -470,7 +431,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
             public void onFailure(int reason)
             {
                 // Nothing to do here
-
             }
         });
     }
@@ -674,6 +634,12 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     //  ---------- no threaded discovery (test) ----------
     //
 
+    /**
+     * One service discovery will
+     * cues two independent callbacks to be called
+     * this HashMap caches the values from the first one
+     * to retrieve them when teh second arrives
+     */
     private final HashMap<String, Map<String, String>> tmpRecordCache = new HashMap<>();
 
     private void discoverService()
@@ -810,4 +776,5 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     {
         super.notifyAboutAllServices(all);
     }
+
 }

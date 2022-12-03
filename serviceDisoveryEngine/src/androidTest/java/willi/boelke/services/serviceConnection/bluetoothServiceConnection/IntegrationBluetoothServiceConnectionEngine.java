@@ -205,7 +205,7 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
     {
         ArrayList<BluetoothConnection> connections = new ArrayList<>();
 
-        getConnectionEngine().startSDPDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
+        getConnectionEngine().startDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -288,7 +288,7 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
     {
         ArrayList<ServiceDescription> connectedServices = new ArrayList<>();
 
-        getConnectionEngine().startSDPDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
+        getConnectionEngine().startDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice address, ServiceDescription description)
@@ -316,7 +316,7 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
             }
         });
 
-        getConnectionEngine().startSDPDiscoveryForService(descriptionForServiceTwo, new BluetoothServiceClient()
+        getConnectionEngine().startDiscoveryForService(descriptionForServiceTwo, new BluetoothServiceClient()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice host, ServiceDescription description)
@@ -401,7 +401,7 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
     public void itShouldAcceptConnectionsFromSeveralClients_discoverAndConnect() throws InterruptedException
     {
         ArrayList<ServiceDescription> connectedServices = new ArrayList<>();
-        getConnectionEngine().startSDPDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
+        getConnectionEngine().startDiscoveryForService(descriptionForServiceOne, new BluetoothServiceClient()
         {
             @Override
             public void onServiceDiscovered(BluetoothDevice address, ServiceDescription description)

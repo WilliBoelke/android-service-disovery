@@ -170,7 +170,7 @@ class UnitBluetoothServiceConnectionEngine {
     @Test
     fun itShouldRegisterServiceForDiscovery() {
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionOne, TestClientPeer())
+            .startDiscoveryForService(testDescriptionOne, TestClientPeer())
         verify { mockedDiscoveryVTwo.startDiscoveryForService(testDescriptionOne) }
 
     }
@@ -178,9 +178,9 @@ class UnitBluetoothServiceConnectionEngine {
     @Test
     fun itShouldUnregisterServiceFromDiscovery() {
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionOne, TestClientPeer())
+            .startDiscoveryForService(testDescriptionOne, TestClientPeer())
         BluetoothServiceConnectionEngine.getInstance()
-            .stopSDPDiscoveryForService(testDescriptionOne)
+            .stopDiscoveryForService(testDescriptionOne)
         verify { mockedDiscoveryVTwo.stopDiscoveryForService(testDescriptionOne) }
     }
 
@@ -192,7 +192,7 @@ class UnitBluetoothServiceConnectionEngine {
         val client = TestClientPeer()
         val testDevice = getTestDeviceOne()
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionOne, client)
+            .startDiscoveryForService(testDescriptionOne, client)
         discoveryListener.captured.onPeerDiscovered(testDevice)
         assertEquals(testDevice, client.foundDevices[0])
     }
@@ -207,10 +207,10 @@ class UnitBluetoothServiceConnectionEngine {
         val clientTwo = TestClientPeer()
 
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionOne, clientOne)
+            .startDiscoveryForService(testDescriptionOne, clientOne)
 
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionFour, clientTwo)
+            .startDiscoveryForService(testDescriptionFour, clientTwo)
 
         val testDeviceOne = getTestDeviceOne()
 
@@ -230,7 +230,7 @@ class UnitBluetoothServiceConnectionEngine {
 
         //Start client looking for uuid four, which is part of test array two
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionTwo, client)
+            .startDiscoveryForService(testDescriptionTwo, client)
 
         // discovered device with
         val testDeviceOne = getTestDeviceOne()
@@ -251,10 +251,10 @@ class UnitBluetoothServiceConnectionEngine {
         val clientTwo = TestClientPeer()
 
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionTwo, clientTwo)
+            .startDiscoveryForService(testDescriptionTwo, clientTwo)
 
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionFour, clientOne)
+            .startDiscoveryForService(testDescriptionFour, clientOne)
         val testDeviceOne = getTestDeviceOne()
         val testDeviceTwo = getTestDeviceTwo()
 
@@ -291,7 +291,7 @@ class UnitBluetoothServiceConnectionEngine {
         val client = TestClientPeer(true)
 
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionTwo, client)
+            .startDiscoveryForService(testDescriptionTwo, client)
 
         discoveryListener.captured.onPeerDiscovered(testDeviceOne)
         discoveryListener.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
@@ -321,7 +321,7 @@ class UnitBluetoothServiceConnectionEngine {
         val client = TestClientPeer(true)
 
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionTwo, client)
+            .startDiscoveryForService(testDescriptionTwo, client)
 
         discoveryListener.captured.onPeerDiscovered(testDeviceTwo)
         discoveryListener.captured.onServiceDiscovered(testDeviceTwo, testDescriptionTwo)
@@ -357,7 +357,7 @@ class UnitBluetoothServiceConnectionEngine {
 
         val client = TestClientPeer(true)
         BluetoothServiceConnectionEngine.getInstance()
-            .startSDPDiscoveryForService(testDescriptionTwo, client)
+            .startDiscoveryForService(testDescriptionTwo, client)
 
         discoveryListener.captured.onPeerDiscovered(testDeviceOne)
         discoveryListener.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)

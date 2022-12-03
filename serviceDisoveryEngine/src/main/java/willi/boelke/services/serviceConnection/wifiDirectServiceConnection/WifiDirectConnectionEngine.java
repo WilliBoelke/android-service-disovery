@@ -24,9 +24,11 @@ import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiSer
 
 /**
  * This is a prototypic implementation to establish
- * wifi direct connections between android devices based on the
+ * Wi-Fi Direct connections between android devices based on the
  * {@link WifiDirectServiceDiscovery}.
  * The connections and groups will be formed automatically.
+ * It will try to connect to the first discovered service
+ * and try to for a Wi-Fi Direct group
  * <p>
  * <h2>General</h2>
  * Starts service discovery and service advertisement,
@@ -260,7 +262,6 @@ public class WifiDirectConnectionEngine
         return true;
     }
 
-
     /**
      * This stops the engine and disconnects from the group
      * the singleton instance will be reset to null.
@@ -468,7 +469,6 @@ public class WifiDirectConnectionEngine
         }
         this.discoveryEngine.stopDiscovery();
     }
-
 
     //
     //  ----------  connecting ----------

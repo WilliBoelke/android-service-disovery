@@ -1,4 +1,4 @@
-package willi.boelke.services.serviceConnection.bluetoothServiceConnection.connectorThreads;
+package willi.boelke.services.serviceConnection.bluetoothServiceConnection;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 
@@ -47,6 +46,11 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
      * TThe Bluetooth Socket
      */
     private BluetoothSocket mmSocket;
+
+    /**
+     * set to false when canceled
+     */
+    private boolean running = true;
 
 
     //------------Constructors------------
@@ -113,19 +117,20 @@ public class BluetoothClientConnector extends BluetoothConnectorThread
                 return;
             }
         }
+        if(!running){
+            Log.d(TAG, "run: Thread was canceled");
+            return;
+        }
         Log.d(TAG, "run: connection established ");
         this.connectionStateChangeListener.onConnectionSuccess(this, new BluetoothConnection(this.description, mmSocket, false));
         Log.d(TAG, "run: Thread ended");
     }
 
-    public ServiceDescription getServiceDescription()
-    {
-        return this.description;
-    }
 
     @Override
     public void cancel()
     {
+        this.running = false;
         this.thread.interrupt();
         try
         {

@@ -13,9 +13,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.connectorThreads.BluetoothClientConnector;
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.connectorThreads.BluetoothConnectorThread;
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.connectorThreads.BluetoothServiceConnector;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscovery;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
@@ -54,7 +51,7 @@ import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.Bluetoot
  * To look discover services the interface {@link BluetoothServiceClient} needs to be
  * implemented, it serves as listener and provides callback functions the discovery
  * process. The discovery can be started using
- * {@link #startSDPDiscoveryForService(ServiceDescription, BluetoothServiceClient)}
+ * {@link #startDiscoveryForService(ServiceDescription, BluetoothServiceClient)}
  * <p>
  * Service Descriptions<br>
  * ------------------------------------------------------------<br>
@@ -114,7 +111,7 @@ public class BluetoothServiceConnectionEngine
     /**
      *
      */
-    private final List<BluetoothServiceConnector> runningServiceConnectors = new CopyOnWriteArrayList<>(new ArrayList<>());
+    private final List<BluetoothServerConnector> runningServiceConnectors = new CopyOnWriteArrayList<>(new ArrayList<>());
 
     private final List<BluetoothClientConnector> runningClientConnectors = new CopyOnWriteArrayList<>(new ArrayList<>());
 
@@ -272,6 +269,9 @@ public class BluetoothServiceConnectionEngine
      */
     public void stop()
     {
+        if(!isRunning()){
+            return;
+        }
         stopDeviceDiscovery();
         stopAllServiceConnector();
         stopAllClientConnectors();
@@ -309,14 +309,14 @@ public class BluetoothServiceConnectionEngine
     }
 
     /**
-     * Stop all {@link BluetoothServiceConnector}s
+     * Stop all {@link BluetoothServerConnector}s
      * which are currently running and accepting connections.
      *
      * @see #runningServiceConnectors
      */
     private void stopAllServiceConnector()
     {
-        for (BluetoothServiceConnector connector : this.runningServiceConnectors)
+        for (BluetoothServerConnector connector : this.runningServiceConnectors)
         {
             connector.cancel();
         }
@@ -398,14 +398,14 @@ public class BluetoothServiceConnectionEngine
      * Devices tha will be discovered from now on (given that the bluetooth discovery is enabled)
      * <p>
      * The service discovery will run till
-     * {@link BluetoothServiceConnectionEngine#stopSDPDiscoveryForService(ServiceDescription)
+     * {@link BluetoothServiceConnectionEngine#stopDiscoveryForService(ServiceDescription)
      * with the same UUID is called,  no matter hwo many devies will be disovered ill then.
      * (Or to make i short, this wont stop afer the first connecion was made)
      *
      * @param serviceUUID
      *         The UUID of the service to connect o
      */
-    public void startSDPDiscoveryForService(ServiceDescription serviceDescription, BluetoothServiceClient serviceClient)
+    public void startDiscoveryForService(ServiceDescription serviceDescription, BluetoothServiceClient serviceClient)
     {
         if (engineIsNotRunning())
         {
@@ -434,7 +434,7 @@ public class BluetoothServiceConnectionEngine
      * @param description
      *         The service description
      */
-    public void stopSDPDiscoveryForService(ServiceDescription description)
+    public void stopDiscoveryForService(ServiceDescription description)
     {
         if (engineIsNotRunning())
         {
@@ -464,14 +464,14 @@ public class BluetoothServiceConnectionEngine
     }
 
     /**
-     * This will close all client connections to the service specified he UUID.
+     * This will close all client connections to the service with the given ServiceDescription.
      * This alone does not end the discovery of the given service, it just
      * closes already established connections.
      *
      * @param description
      *         Description of teh service
      *
-     * @see #stopSDPDiscoveryForService(ServiceDescription) to sop the discovery of a service
+     * @see #stopDiscoveryForService(ServiceDescription) to sop the discovery of a service
      */
     public void disconnectFromServicesWith(ServiceDescription description)
     {
@@ -573,7 +573,7 @@ public class BluetoothServiceConnectionEngine
     }
 
     /**
-     * Returns true if there is a {@link BluetoothServiceConnector} with the same UUID
+     * Returns true if there is a {@link BluetoothServerConnector} with the same UUID
      * running and present in {@see #runningServiceConnectors}
      *
      * @param description
@@ -581,9 +581,9 @@ public class BluetoothServiceConnectionEngine
      */
     private boolean serviceAlreadyRunning(ServiceDescription description)
     {
-        for (BluetoothServiceConnector connector : this.runningServiceConnectors)
+        for (BluetoothServerConnector connector : this.runningServiceConnectors)
         {
-            if (connector.getService().equals(description))
+            if (connector.getServiceDescription().equals(description))
             {
                 return true;
             }
@@ -601,15 +601,15 @@ public class BluetoothServiceConnectionEngine
      */
     public void stopSDPService(ServiceDescription description)
     {
-        ArrayList<BluetoothServiceConnector> connectorsToEnd = new ArrayList<>();
-        for (BluetoothServiceConnector serviceConnector : this.runningServiceConnectors)
+        ArrayList<BluetoothServerConnector> connectorsToEnd = new ArrayList<>();
+        for (BluetoothServerConnector serviceConnector : this.runningServiceConnectors)
         {
-            if (serviceConnector.getService().equals(description))
+            if (serviceConnector.getServiceDescription().equals(description))
             {
                 connectorsToEnd.add(serviceConnector);
             }
         }
-        for (BluetoothServiceConnector connectorToEnd : connectorsToEnd)
+        for (BluetoothServerConnector connectorToEnd : connectorsToEnd)
         {
             connectorToEnd.cancel();
             this.runningServiceConnectors.remove(connectorToEnd);
@@ -636,16 +636,16 @@ public class BluetoothServiceConnectionEngine
     }
 
     /**
-     * Closes all connections / sockets to a service (specified by its UUID) running on this device.
+     * Closes all connections/sockets to a service running on this device.
      * Note that his just closes all current connections from clients to this device.
-     * It does not to prevent the Service from accepting new connections from his point on.
+     * It does not to prevent the Service from accepting new connections from this point on.
      * <p>
-     * To stop new connexions from being made use {@link BluetoothServiceConnectionEngine#stopSDPService(ServiceDescription)}
+     * To stop new connections from being accepted use {@link BluetoothServiceConnectionEngine#stopSDPService(ServiceDescription)}
      *
      * @param description
-     *         The UUID of the service
+     *         The ServiceDescription of the service
      */
-    public void disconnectFromClientsWithUUID(ServiceDescription description)
+    public void disconnectFromClientsOn(ServiceDescription description)
     {
         Log.d(TAG, "disconnectFromClientsWithUUID: closing client connections to service " + description);
         this.connectionManager.closeServerConnectionsToService(description);
@@ -674,6 +674,7 @@ public class BluetoothServiceConnectionEngine
             @Override
             public void onConnectionFailed(UUID uuid, BluetoothConnectorThread failedConnector)
             {
+                // we should notify the application / listeners here
                 BluetoothClientConnector failedClient = (BluetoothClientConnector) failedConnector;
                 failedClient.cancel();
                 runningClientConnectors.remove(failedClient);
@@ -684,7 +685,10 @@ public class BluetoothServiceConnectionEngine
             {
                 BluetoothClientConnector client = (BluetoothClientConnector) bluetoothClientConnector;
                 connectionManager.addConnection(connection);
-                Objects.requireNonNull(serviceClients.get(description)).onConnectedToService(connection);
+                if(serviceClients.get(description) != null){
+                    Log.e(TAG, "onConnectionSuccess:  weird null pointer check  " +connection );
+                    serviceClients.get(description).onConnectedToService(connection);
+                }
                 runningClientConnectors.remove(client);
             }
         });
@@ -693,7 +697,7 @@ public class BluetoothServiceConnectionEngine
     }
 
     /**
-     * Starts a {@link BluetoothServiceConnector} for the given {@link ServiceDescription}
+     * Starts a {@link BluetoothServerConnector} for the given {@link ServiceDescription}
      * or more clearly for the UUID given by the service description.
      *
      * @param description
@@ -703,17 +707,17 @@ public class BluetoothServiceConnectionEngine
      */
     private void startServiceThread(ServiceDescription description, BluetoothServiceServer serviceServer)
     {
-        BluetoothServiceConnector bluetoothServiceConnector = new BluetoothServiceConnector(bluetoothAdapter, description, new BluetoothServiceConnector.ConnectionEventListener()
+        BluetoothServerConnector bluetoothServiceConnector = new BluetoothServerConnector(bluetoothAdapter, description, new BluetoothServerConnector.ConnectionEventListener()
         {
             @Override
             public void onConnectionFailed(UUID uuid, BluetoothConnectorThread failedConnector)
             {
-                BluetoothServiceConnector failedServer = (BluetoothServiceConnector) failedConnector;
+                BluetoothServerConnector failedServer = (BluetoothServerConnector) failedConnector;
                 failedServer.cancel();
                 runningServiceConnectors.remove(failedServer);
-                startServiceThread(description, serviceServer);
+                // we should notify the application / listeners here
                 Log.e(TAG, "onConnectionFailed: server socket died , trying to restart");
-                // this probably should not run indefinitely - keep an eye on the behavior
+                startServiceThread(description, serviceServer);
             }
 
             @Override

@@ -62,11 +62,12 @@ public class DemoClientController implements BluetoothServiceClient
     @Override
     public void onConnectedToService(BluetoothConnection connection)
     {
+        Log.e(TAG, "onConnectedToService: weird null pointer check " +connection );
         this.connections.add(connection);
-        this.listener.onNewConnection(connection);
         if(this.connections.size() == 1){
             this.startReading();
         }
+        this.listener.onNewConnection(connection);
     }
 
     @Override
@@ -96,7 +97,7 @@ public class DemoClientController implements BluetoothServiceClient
      */
     public void startClient()
     {
-        BluetoothServiceConnectionEngine.getInstance().startSDPDiscoveryForService(serviceDescription, this);
+        BluetoothServiceConnectionEngine.getInstance().startDiscoveryForService(serviceDescription, this);
     }
 
     /**
@@ -107,12 +108,21 @@ public class DemoClientController implements BluetoothServiceClient
     public void stopClient()
     {
         Log.d(TAG, "stopClient: stopping client for service " + serviceDescription);
-        BluetoothServiceConnectionEngine.getInstance().stopSDPDiscoveryForService(serviceDescription);
+        BluetoothServiceConnectionEngine.getInstance().stopDiscoveryForService(serviceDescription);
         BluetoothServiceConnectionEngine.getInstance().disconnectFromServicesWith(serviceDescription);
         stopReading();
         this.listener.onNewNotification("Stopped client for service " + this.serviceDescription.getServiceType());
         this.listener.onMessageChange("");
+        // okay so simply put : the read thread will
+        // remove most of the closed connections
+        // though in some cases it some before i can
+        // so here lets remove the rest
+        for (BluetoothConnection connection: connections)
+        {
+            this.listener.onConnectionLost(connection);
+        }
     }
+
 
 
     //

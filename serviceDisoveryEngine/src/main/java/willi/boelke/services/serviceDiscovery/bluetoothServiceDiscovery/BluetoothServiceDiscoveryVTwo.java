@@ -64,16 +64,20 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
      * {@link #onDeviceDiscovered(BluetoothDevice)}. When the device discovery
      * stopped {@link #onDeviceDiscoveryFinished()} a service discovery will
      * be performed on the device(es) in this list. Then they will be added to
-     * {@link #fetchedList} an removed from this.
+     * {@link #alreadyReceivedUuidsFor} an removed from this.
      */
-    private final List<BluetoothDevice> deviceFetchQueue = new CopyOnWriteArrayList<>(new ArrayList<>());
+    private final List<BluetoothDevice> devicesToFetch = new  ArrayList<>();
+
     /**
-     * This list contains all devices where a service discovery was performed on since the start of
-     * the discovery process through {@link #startDeviceDiscovery()}.
-     * This is to prevent a circling discovery where a device is discovered again and again
-     * and the process never stops.
+     * As soon as the device discovery finished and
+     * this it will be set to the size
+     * of {@link #alreadyReceivedUuidsFor} amd then in {@link #onUuidsFetched(BluetoothDevice, Parcelable[])}
+     * decremented til it reaches 0 again.
+     * This prevents the device discovery from being restarted before all (if there are several)
+     * SDP Queries have been answered.
+     * This not always works. Sometimes onDeviceDiscoveryFinished() will be called several times
      */
-    private final List<BluetoothDevice> fetchedList = new CopyOnWriteArrayList<>(new ArrayList<>());
+    private short fetchedCounter = 0;
     /**
      * When a refresh is started through {@link #refreshNearbyServices()}
      * the automatic re-enabling of the device discovery will be stopped
@@ -129,22 +133,25 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
     /**
      * Called when the device discovery finished.
      * Performs a service discovery on all BluetoothDevices
-     * in {@link #deviceFetchQueue}
+     * in {@link #devicesToFetch}
      */
     @Override
     protected void onDeviceDiscoveryFinished()
     {
+        if(fetchedCounter != 0)
+            fetchedCounter = (short) devicesToFetch.size();
+        Log.e(TAG, "onDeviceDiscoveryFinished: fetched counter init " + fetchedCounter);
         ArrayList<BluetoothDevice> fetchedDevices = new ArrayList<>();
-        for (BluetoothDevice device : deviceFetchQueue)
+        for (BluetoothDevice device : devicesToFetch)
         {
             device.fetchUuidsWithSdp();
             fetchedDevices.add(device);
         }
         for (BluetoothDevice fetched : fetchedDevices)
         {
-            deviceFetchQueue.remove(fetched);
+            devicesToFetch.remove(fetched);
         }
-        deviceFetchQueue.clear();
+        devicesToFetch.clear();
     }
 
     /**
@@ -173,14 +180,15 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
         if (shouldFetchUUIDsAgain(device))
         {
             Log.d(TAG, "onDeviceDiscovered: fetching services from " + device);
-            deviceFetchQueue.add(device);
+            devicesToFetch.add(device);
             bluetoothAdapter.cancelDiscovery();
         }
     }
 
+
     /**
      * Called when UUIds for a device have been fetched
-     * Adds the device to the {@link #fetchedList} if it isn't there already
+     * Adds the device to the {@link #alreadyReceivedUuidsFor} if it isn't there already
      * and then starts a check for the discovered services through
      * {@link #notifyListenersIfServiceIsAvailable(BluetoothDevice, Parcelable[])}
      *
@@ -199,12 +207,19 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
             notifyListenersIfServiceIsAvailable(device, uuidExtra);
         }
 
-        fetchedList.add(device);
+        alreadyReceivedUuidsFor.add(device);
+        fetchedCounter--;
+        Log.d(TAG, "onUuidsFetched: counter - " +  fetchedCounter);
 
         if (!this.isRefreshProcessRunning())
         {
-            Log.d(TAG, "onUuidsFetched: not refreshing, restarting discovery");
-            internalRestartDiscovery();
+            if(fetchedCounter < 1){
+                fetchedCounter = 0;
+                internalRestartDiscovery();
+            }
+            else{
+                Log.e(TAG, "onUuidsFetched: not restarting " +  fetchedCounter);
+            }
         }
     }
 
@@ -217,7 +232,7 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
     @Override
     protected void onDeviceDiscoveryRestart()
     {
-        this.fetchedList.clear();
+        this.fetchedCounter = 0;
         refreshingTimeStamp = 0;
     }
 
@@ -230,7 +245,7 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
     @Override
     protected void onRefreshStarted()
     {
-        this.fetchedList.clear();
+        this.fetchedCounter = 0;
         this.refreshingTimeStamp = System.currentTimeMillis();
     }
 
@@ -244,8 +259,8 @@ public class BluetoothServiceDiscoveryVTwo extends BluetoothServiceDiscoveryEngi
      */
     private boolean shouldFetchUUIDsAgain(BluetoothDevice device)
     {
-        Log.d(TAG, "shouldFetchUUIDsAgain: Already on list " + fetchedList.contains(device));
-        return !this.fetchedList.contains(device);
+        Log.d(TAG, "shouldFetchUUIDsAgain: Already on list " + alreadyReceivedUuidsFor.contains(device));
+        return !this.alreadyReceivedUuidsFor.contains(device);
     }
 
     /**

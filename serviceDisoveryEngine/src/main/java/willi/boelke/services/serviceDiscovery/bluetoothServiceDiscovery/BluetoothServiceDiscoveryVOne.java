@@ -83,10 +83,11 @@ public class BluetoothServiceDiscoveryVOne extends BluetoothServiceDiscoveryEngi
     @Override
     protected void onUuidsFetched(BluetoothDevice device, Parcelable[] uuidExtra)
     {
-        Log.d(TAG, "onUuidsFetched: received UUIDS fot " + device);
+        Log.d(TAG, "onUuidsFetched: received UUIDS for " + device.getAddress() + " / " + device.getName());
 
-        if (uuidExtra != null)
+        if (uuidExtra != null && !alreadyReceivedUuidsFor.contains(device))
         {
+            alreadyReceivedUuidsFor.add(device);
             notifyListenersIfServiceIsAvailable(device, uuidExtra);
         }
     }

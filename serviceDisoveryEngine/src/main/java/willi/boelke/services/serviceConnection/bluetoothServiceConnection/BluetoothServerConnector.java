@@ -1,4 +1,4 @@
-package willi.boelke.services.serviceConnection.bluetoothServiceConnection.connectorThreads;
+package willi.boelke.services.serviceConnection.bluetoothServiceConnection;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.UUID;
 
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 
@@ -33,7 +32,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  *
  * @author WilliBoelke
  */
-public class BluetoothServiceConnector extends BluetoothConnectorThread
+public class BluetoothServerConnector extends BluetoothConnectorThread
 {
 
     /**
@@ -78,7 +77,7 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
      * @param connectionEvenListener
      *         Implementation of the {@link ConnectionEventListener} interface
      */
-    public BluetoothServiceConnector(BluetoothAdapter bluetoothAdapter, ServiceDescription description, ConnectionEventListener connectionEvenListener)
+    public BluetoothServerConnector(BluetoothAdapter bluetoothAdapter, ServiceDescription description, ConnectionEventListener connectionEvenListener)
     {
         this.mBluetoothAdapter = bluetoothAdapter;
         this.description = description;
@@ -171,7 +170,7 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
                 Log.d(TAG, "acceptConnections: an unexpected exception occurred, this maybe is because thread was interrupted");
             }
 
-            if (socket == null)
+            if (socket == null || !this.running)
             {
                 Log.d(TAG, "run: Thread was interrupted");
                 return;
@@ -207,20 +206,7 @@ public class BluetoothServiceConnector extends BluetoothConnectorThread
         }
     }
 
-
-    //
-    //  ----------  getter and setter ----------
-    //
-
-    /**
-     * Returns he UUID of this service
-     *
-     * @return
-     */
-    public ServiceDescription getService()
-    {
-        return this.description;
-    }
 }
+
 
 
