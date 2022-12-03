@@ -108,19 +108,16 @@ public class DemoClientController implements BluetoothServiceClient
     public void stopClient()
     {
         Log.d(TAG, "stopClient: stopping client for service " + serviceDescription);
-        BluetoothServiceConnectionEngine.getInstance().stopDiscoveryForService(serviceDescription);
-        BluetoothServiceConnectionEngine.getInstance().disconnectFromServicesWith(serviceDescription);
-        stopReading();
-        this.listener.onNewNotification("Stopped client for service " + this.serviceDescription.getServiceType());
-        this.listener.onMessageChange("");
-        // okay so simply put : the read thread will
-        // remove most of the closed connections
-        // though in some cases it some before i can
-        // so here lets remove the rest
         for (BluetoothConnection connection: connections)
         {
             this.listener.onConnectionLost(connection);
         }
+        stopReading();
+        BluetoothServiceConnectionEngine.getInstance().stopDiscoveryForService(serviceDescription);
+        BluetoothServiceConnectionEngine.getInstance().disconnectFromServicesWith(serviceDescription);
+        this.listener.onNewNotification("Stopped client for service " + this.serviceDescription.getServiceType());
+        this.listener.onMessageChange("");
+        connections.clear();
     }
 
 

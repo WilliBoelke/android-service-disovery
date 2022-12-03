@@ -91,6 +91,7 @@ public class WriteThread<T extends ServiceConnection, D> extends Thread
             }
             for (T disconnected : disconnectedConnections)
             {
+                Log.d(TAG, "run: removed disconnected sockets");
                 disconnected.close();
                 listener.onConnectionLost(disconnected);
                 connections.remove(disconnected);

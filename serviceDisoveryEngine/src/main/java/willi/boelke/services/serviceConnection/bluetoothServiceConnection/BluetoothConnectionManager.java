@@ -65,8 +65,9 @@ class BluetoothConnectionManager
      */
     protected void addConnection(BluetoothConnection connection)
     {
-        Log.d(TAG, "store connections :" + openConnections);
+        this.closeAndRemoveZombieConnections();
         this.openConnections.add(connection);
+        logConnectionTable();
     }
 
     /**
@@ -199,6 +200,8 @@ class BluetoothConnectionManager
                 zombies.add(connection);
             }
         }
+
+        Log.d(TAG, "closeAndRemoveZombieConnections: closing " + zombies);
 
         for (BluetoothConnection zombie : zombies)
         {

@@ -123,15 +123,15 @@ public class DemoServerController implements BluetoothServiceServer
      */
     public void stopService()
     {
-        //--- closing all sockets and stopping service advertisement ---//
-        BluetoothServiceConnectionEngine.getInstance().disconnectFromClientsOn(this.serviceDescription);
-        BluetoothServiceConnectionEngine.getInstance().stopSDPService(this.serviceDescription);
         //--- notify listener that all connections where closed and clear the list ---//
-        this.stopWriting();
         for (BluetoothConnection connection : connections)
         {
             listener.onConnectionLost(connection);
         }
+        this.stopWriting();
+        //--- closing all sockets and stopping service advertisement ---//
+        BluetoothServiceConnectionEngine.getInstance().disconnectFromClientsOn(this.serviceDescription);
+        BluetoothServiceConnectionEngine.getInstance().stopSDPService(this.serviceDescription);
         this.connections.clear();
     }
 
