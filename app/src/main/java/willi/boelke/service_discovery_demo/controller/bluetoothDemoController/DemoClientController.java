@@ -62,12 +62,11 @@ public class DemoClientController implements BluetoothServiceClient
     @Override
     public void onConnectedToService(BluetoothConnection connection)
     {
-        Log.e(TAG, "onConnectedToService: weird null pointer check " +connection );
         this.connections.add(connection);
+        this.listener.onNewConnection(connection);
         if(this.connections.size() == 1){
             this.startReading();
         }
-        this.listener.onNewConnection(connection);
     }
 
     @Override
@@ -108,18 +107,17 @@ public class DemoClientController implements BluetoothServiceClient
     public void stopClient()
     {
         Log.d(TAG, "stopClient: stopping client for service " + serviceDescription);
-        for (BluetoothConnection connection: connections)
-        {
-            this.listener.onConnectionLost(connection);
-        }
-        stopReading();
         BluetoothServiceConnectionEngine.getInstance().stopDiscoveryForService(serviceDescription);
         BluetoothServiceConnectionEngine.getInstance().disconnectFromServicesWith(serviceDescription);
+        stopReading();
+        for (BluetoothConnection connection : connections)
+        {
+            listener.onConnectionLost(connection);
+        }
+        this.connections.clear();
         this.listener.onNewNotification("Stopped client for service " + this.serviceDescription.getServiceType());
         this.listener.onMessageChange("");
-        connections.clear();
     }
-
 
 
     //

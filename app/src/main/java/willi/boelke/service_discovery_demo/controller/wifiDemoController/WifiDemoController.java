@@ -67,7 +67,6 @@ public class WifiDemoController implements WifiDirectPeer
     private final String TAG = this.getClass().getSimpleName();
     private boolean groupOwner = false;
 
-
     //
     //  ----------  constructor and initialisation ----------
     //

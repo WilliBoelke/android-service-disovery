@@ -32,7 +32,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  *
  * @author WilliBoelke
  */
-public class BluetoothServerConnector extends BluetoothConnectorThread
+class BluetoothServerConnector extends BluetoothConnectorThread
 {
 
     /**

@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServerConnector;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscovery;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
@@ -685,10 +686,7 @@ public class BluetoothServiceConnectionEngine
             {
                 BluetoothClientConnector client = (BluetoothClientConnector) bluetoothClientConnector;
                 connectionManager.addConnection(connection);
-                if(serviceClients.get(description) != null){
-                    Log.e(TAG, "onConnectionSuccess:  weird null pointer check  " +connection );
-                    serviceClients.get(description).onConnectedToService(connection);
-                }
+                Objects.requireNonNull(serviceClients.get(description)).onConnectedToService(connection);
                 runningClientConnectors.remove(client);
             }
         });
