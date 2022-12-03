@@ -1,8 +1,7 @@
-package willi.boelke.services.serviceConnection.bluetoothServiceConnection.connectorThreads;
+package willi.boelke.services.serviceConnection.bluetoothServiceConnection;
 
 import java.util.UUID;
 
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 
 /**
@@ -28,4 +27,8 @@ public abstract class BluetoothConnectorThread extends Thread
     }
 
     public abstract void cancel();
+
+    public ServiceDescription getServiceDescription(){
+        return description;
+    }
 }

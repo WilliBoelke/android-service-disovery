@@ -14,10 +14,10 @@ import willi.boelke.services.serviceDiscovery.ServiceDescription;
  * <h2>Registering and Unregistering</h2>
  * A client always needs to be registered along side a {@link ServiceDescription}.
  * A client can be registered several times, though with different {@link ServiceDescription}s.
- * See : {@link BluetoothServiceConnectionEngine#startSDPDiscoveryForService(ServiceDescription, BluetoothServiceClient)}
+ * See : {@link BluetoothServiceConnectionEngine#startDiscoveryForService(ServiceDescription, BluetoothServiceClient)}
  * <p>
  * To stop the service discovery and unregister the client only the ServiceDescription is necessary.
- * {@link BluetoothServiceConnectionEngine#stopSDPDiscoveryForService(ServiceDescription)}
+ * {@link BluetoothServiceConnectionEngine#stopDiscoveryForService(ServiceDescription)}
  *
  * <p>
  * <h2>Events</h2>
@@ -48,7 +48,7 @@ public interface BluetoothServiceClient
     /**
      * This will be called whenever a service has been discovered that
      * is looked for through
-     * {@link BluetoothServiceConnectionEngine#startSDPDiscoveryForService(ServiceDescription, BluetoothServiceClient)}
+     * {@link BluetoothServiceConnectionEngine#startDiscoveryForService(ServiceDescription, BluetoothServiceClient)}
      * However this does not mean that a connection was established yet.
      * <p>
      * The connection will be established if {@link #shouldConnectTo(BluetoothDevice, ServiceDescription)}

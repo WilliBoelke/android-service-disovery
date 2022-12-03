@@ -96,7 +96,7 @@ public class DemoClientController implements BluetoothServiceClient
      */
     public void startClient()
     {
-        BluetoothServiceConnectionEngine.getInstance().startSDPDiscoveryForService(serviceDescription, this);
+        BluetoothServiceConnectionEngine.getInstance().startDiscoveryForService(serviceDescription, this);
     }
 
     /**
@@ -107,9 +107,14 @@ public class DemoClientController implements BluetoothServiceClient
     public void stopClient()
     {
         Log.d(TAG, "stopClient: stopping client for service " + serviceDescription);
-        BluetoothServiceConnectionEngine.getInstance().stopSDPDiscoveryForService(serviceDescription);
+        BluetoothServiceConnectionEngine.getInstance().stopDiscoveryForService(serviceDescription);
         BluetoothServiceConnectionEngine.getInstance().disconnectFromServicesWith(serviceDescription);
         stopReading();
+        for (BluetoothConnection connection : connections)
+        {
+            listener.onConnectionLost(connection);
+        }
+        this.connections.clear();
         this.listener.onNewNotification("Stopped client for service " + this.serviceDescription.getServiceType());
         this.listener.onMessageChange("");
     }

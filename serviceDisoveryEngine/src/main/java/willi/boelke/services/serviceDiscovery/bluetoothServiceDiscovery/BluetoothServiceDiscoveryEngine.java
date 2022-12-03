@@ -170,6 +170,16 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
     protected final ArrayList<BluetoothDevice> discoveredDevices = new ArrayList<>();
 
     /**
+     * Sometimes (often) android will send the UUID Broadcast twice.
+     * Testing this showed that the first one is not the cached version (from getUuids())
+     * but shows new services. Same for the second.
+     * This here will store all the bluetooth devices which are Prefetched in
+     * either a device / service discovery run or a pure service discovery  (refresh nearby services)
+     * it will be cleared when either of them starts,
+     */
+    protected final ArrayList<BluetoothDevice> alreadyReceivedUuidsFor = new ArrayList<>();
+
+    /**
      * BroadcastReceiver listening at discovered devices intent
      * {@link DeviceFoundReceiver}
      *
@@ -195,6 +205,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      * @see #unregisterAllReceivers()
      */
     private final BroadcastReceiver bluetoothReceiver;
+
 
     /**
      * Determines whether discovered service UUIDs
@@ -246,6 +257,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
      */
     private void registerReceivers()
     {
+        Log.e(TAG, "registerReceivers: registering ");
         IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         IntentFilter actionUUID = new IntentFilter(BluetoothDevice.ACTION_UUID);
         IntentFilter bluetoothDiscoveryStateFilter = new IntentFilter();
@@ -351,6 +363,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
 
     private void unregisterReceiver(BroadcastReceiver receiver)
     {
+        Log.e(TAG, "unregisterReceiver: unregistering a receiver");
         try
         {
             this.context.unregisterReceiver(receiver);
@@ -402,6 +415,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
         }
         // resetting discovered devices
         this.discoveredDevices.clear();
+        this.alreadyReceivedUuidsFor.clear();
         this.onDeviceDiscoveryRestart();
         return internalRestartDiscovery();
     }
@@ -416,19 +430,18 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
     protected boolean internalRestartDiscovery()
     {
 
-        Log.d(TAG, "startDeviceDiscovery: start looking for other devices");
+        Log.d(TAG, "internalRestartDiscovery: start looking for other devices");
         if (bluetoothAdapter.isDiscovering())
         {
-            Log.d(TAG, "startDeviceDiscovery: already scanning, restarting ... ");
+            Log.d(TAG, "internalRestartDiscovery: already scanning, restarting ... ");
             this.bluetoothAdapter.cancelDiscovery();
         }
-        Log.d(TAG, "startDeviceDiscovery: enabled ? = " + bluetoothAdapter.isEnabled());
         if (this.bluetoothAdapter.startDiscovery())
         {
-            Log.d(TAG, "startDeviceDiscovery: started device discovery");
+            Log.d(TAG, "internalRestartDiscovery: started device discovery");
             return true;
         }
-        Log.e(TAG, "startDeviceDiscovery: could not start Discovery");
+        Log.e(TAG, "internalRestartDiscovery: could not start Discovery");
         return false;
     }
 
@@ -548,6 +561,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
         }
         Log.d(TAG, "refreshNearbyServices: start refreshing");
         this.bluetoothAdapter.cancelDiscovery();
+        this.alreadyReceivedUuidsFor.clear();
         Log.e(TAG, "refreshNearbyServices: " + bluetoothAdapter.isDiscovering());
         this.onRefreshStarted();
         requestServiceFromDiscoveredDevices();
@@ -756,6 +770,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
                 }
             }
         }
+
     }
 
     /**
@@ -787,7 +802,7 @@ public abstract class BluetoothServiceDiscoveryEngine extends ServiceDiscoveryEn
             }
             catch (NullPointerException e)
             {
-                Log.e(TAG, "tryToConnectToServiceAlreadyInRange: we have no uuids of his device " + device);
+                Log.e(TAG, "tryToConnectToServiceAlreadyInRange: we have no uuids of This device " + device);
             }
         }
     }

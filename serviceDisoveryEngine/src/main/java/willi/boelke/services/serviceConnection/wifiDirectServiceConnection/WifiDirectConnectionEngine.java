@@ -560,8 +560,6 @@ public class WifiDirectConnectionEngine
             this.peer.onBecameGroupClient();
         }
         Log.d(TAG, "onBecameClient: became client to a GO, doing client stuff");
-        this.discoveryEngine.stopService(currentServiceDescription);
-        this.connectionListener.establishConnections(false);
         //----------------------------------
         // NOTE : as a client, the local device does
         // not need to discover further devices, since
@@ -574,8 +572,10 @@ public class WifiDirectConnectionEngine
         // another GO election. This would break
         // the existing group.
         //----------------------------------
-        this.stopDiscovery();
-        this.isConnected = true;
+
+        // this.discoveryEngine.stopService(currentServiceDescription);
+        // this.stopDiscovery();
+        this.connectionListener.establishConnections(false);
     }
 
     protected void onSocketConnected(WifiConnection connection)
@@ -590,7 +590,6 @@ public class WifiDirectConnectionEngine
         {
             Log.e(TAG, "onSocketConnected: no peer registered, closing connection");
             connection.close();
-            this.isConnected = false;
         }
     }
 

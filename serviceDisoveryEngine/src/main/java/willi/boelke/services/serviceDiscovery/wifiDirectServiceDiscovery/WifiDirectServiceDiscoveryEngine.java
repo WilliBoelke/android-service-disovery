@@ -131,15 +131,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
      */
     private final HashMap<ServiceDescription, ArrayList<WifiP2pDevice>> discoveredServices = new HashMap<>();
 
-    /**
-     * Keeps all started services (WifiP2pServiceInfo)
-     * when they where started.
-     * This is to remove them again at a later point.
-     *
-     * @see #startService(ServiceDescription)
-     * @see #stopService(ServiceDescription)
-     */
-    private final HashMap<ServiceDescription, WifiP2pServiceInfo> runningServices = new HashMap<>();
 
     /**
      * List of all listeners who registered
@@ -322,7 +313,8 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     //
 
     /**
-     * Starts looking for the service specified with the `serviceUUID` parameter.
+     * Starts looking for the service specified with
+     * the same ServiceType
      *
      * @param description
      *         The Service description
@@ -371,7 +363,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
             public void onSuccess()
             {
                 Log.d(TAG, "startSdpService: service successfully added : " + description);
-                runningServices.put(description, serviceInfo);
             }
 
             @Override
@@ -396,13 +387,17 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
         }
         try
         {
-            manager.removeLocalService(channel, this.runningServices.get(description), new WifiP2pManager.ActionListener()
+            WifiP2pServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(
+                    description.getInstanceName(),
+                    description.getServiceType(),
+                    description.getTxtRecord());
+
+            manager.removeLocalService(channel, serviceInfo, new WifiP2pManager.ActionListener()
             {
                 @Override
                 public void onSuccess()
                 {
-                    runningServices.remove(description);
-                    Log.d(TAG, "stopSDPService: service removed successfully ");
+                    Log.d(TAG, "stopService: service removed successfully ");
                 }
 
                 @Override
@@ -420,16 +415,9 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
 
     /**
      * Clears all locally registered services
-     *
-     * @see #runningServices
      */
     private void stopAllServices()
     {
-        // both don't seem to work reliable
-        for (ServiceDescription description : runningServices.keySet())
-        {
-            stopService(description);
-        }
 
         this.manager.clearLocalServices(channel, new WifiP2pManager.ActionListener()
         {
@@ -537,12 +525,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     {
         Log.d(TAG, "onServiceDiscovered: ----discovered a new Service on " + device + "----");
 
-        if (!isServiceBeingLockedFor(registrationType) && !notifyAboutAllServices)
-        {
-            Log.e(TAG, "onServiceDiscovered: its a " + registrationType + " service - stop");
-            return;
-        }
-
         //--- updating discovered services list ---//
 
         registrationType = registrationType.replace(LOCAL_TLD, "");
@@ -550,40 +532,62 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
 
         boolean newService = false;
 
-        if (this.discoveredServices.containsKey(description) && this.discoveredServices.get(description).contains(device))
+        //--- service already cached ---//
+
+        if (this.discoveredServices.containsKey(description) &&
+                this.discoveredServices.get(description).contains(device))
         {
-            //--- service already cached ---//
             Log.d(TAG, "onServiceDiscovered: already knew the service");
         }
+
+        //--- service and device new ---//
+
         else if (!this.discoveredServices.containsKey(description))
         {
-            //--- service and device new ---//
             Log.d(TAG, "onServiceDiscovered: discovered new service");
             ArrayList<WifiP2pDevice> serviceDevices = new ArrayList<>();
             serviceDevices.add(device);
             this.discoveredServices.put(description, serviceDevices);
             newService = true;
         }
+
+        //--- device new ---//
+
         else
         {
-            //--- device new ---//
             Log.d(TAG, "onServiceDiscovered: knew the service, but this is a new host");
             Objects.requireNonNull(discoveredServices.get(description)).add(device);
             newService = true;
         }
-        if (newService)
+
+        //--- notify listeners ? ---//
+
+        if (newService && isServiceBeingLockedFor(description))
         {
             notifyOnServiceDiscovered(device, description);
         }
     }
 
-    private boolean isServiceBeingLockedFor(String registrationType)
+    /**
+     * Deceives whether or now a service is "being looked for"
+     * meaning either on {@link #servicesToLookFor} or
+     * {@link #notifyAboutAllServices} == true
+     *
+     * @param description#The description of the service to check
+     * @return
+     * true if the service is being searched for, else return false
+     */
+    private boolean isServiceBeingLockedFor(ServiceDescription description)
     {
+        if(notifyAboutAllServices)
+        {
+            return true;
+        }
         for (ServiceDescription serviceDescription : servicesToLookFor)
         {
-            String searchedServiceType = serviceDescription.getServiceType() + LOCAL_TLD;
-            Log.e(TAG, "isServiceBeingLockedFor: " + searchedServiceType + " / " + registrationType);
-            if (searchedServiceType.equals(registrationType))
+            String searchedServiceType = serviceDescription.getServiceType();
+            Log.e(TAG, "isServiceBeingLockedFor: " + searchedServiceType + " / " + description.getServiceType());
+            if (serviceDescription.equals(description))
             {
                 return true;
             }
@@ -631,6 +635,12 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     //  ---------- no threaded discovery (test) ----------
     //
 
+    /**
+     * One service discovery will
+     * cues two independent callbacks to be called
+     * this HashMap caches the values from the first one
+     * to retrieve them when teh second arrives
+     */
     private final HashMap<String, Map<String, String>> tmpRecordCache = new HashMap<>();
 
     private void discoverService()
@@ -767,4 +777,5 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     {
         super.notifyAboutAllServices(all);
     }
+
 }

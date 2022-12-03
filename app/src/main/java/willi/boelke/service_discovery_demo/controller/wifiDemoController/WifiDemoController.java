@@ -65,7 +65,7 @@ public class WifiDemoController implements WifiDirectPeer
      * Classname for logging
      */
     private final String TAG = this.getClass().getSimpleName();
-
+    private boolean groupOwner = false;
 
     //
     //  ----------  constructor and initialisation ----------
@@ -85,8 +85,6 @@ public class WifiDemoController implements WifiDirectPeer
     public void startService()
     {
         this.isStarted = true;
-        this.writeThread = new WriteThread<>(this.connections, this.description, this.listener);
-        this.readThread = new ReadThread<>(this.connections, this.listener);
         WifiDirectConnectionEngine.getInstance().registerService(this.description, this);
     }
 
@@ -154,9 +152,9 @@ public class WifiDemoController implements WifiDirectPeer
             // lets notify subscribers
             listener.onMessageChange(GROUP_OWNER_DEFAULT_MESSAGE);
             listener.onNewNotification(GROUP_OWNER_DEFAULT_MESSAGE);
-            writeThread.start();
 
             this.gotRoleAssigned = true;
+            this.groupOwner = true;
         }
     }
 
@@ -169,9 +167,9 @@ public class WifiDemoController implements WifiDirectPeer
             Log.d(TAG, "onBecameGroupClient: first time - starting read thread");
             // lets notify subscribers
             listener.onNewNotification("Became GroupClient");
-            readThread.start();
 
             this.gotRoleAssigned = true;
+            this.groupOwner = false;
         }
     }
 
@@ -182,6 +180,24 @@ public class WifiDemoController implements WifiDirectPeer
         this.connections.add(connection);
         this.listener.onNewConnection(connection);
         Log.e(TAG, "onConnectionEstablished: " + connections);
+        if(connections.size() == 1){
+            if(groupOwner){
+                startWriting();
+            }
+            else {
+                startReading();
+            }
+        }
+    }
+
+    private void startWriting(){
+        this.writeThread = new WriteThread<>(this.connections, this.description, this.listener);
+        writeThread.start();
+    }
+
+    private void startReading(){
+        this.readThread = new ReadThread<>(this.connections, this.listener);
+        readThread.start();
     }
 
     @Override
