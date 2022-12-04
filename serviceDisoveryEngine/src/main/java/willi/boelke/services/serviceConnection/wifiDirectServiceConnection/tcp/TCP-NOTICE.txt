@@ -1,2 +1,2 @@
-Alle, sich in diesem Package (tcp), befriended Klassen kommen aus ASAPAndroid,
-wurden aber Tweilweise verändert.
+Alle, sich in diesem Package befinden kalssen zum aufbau von TCp Socket verbindungen
+kommen aus ASAPAndroid, sie wurden nur Teilweise verändert wenn dies notwendig war.

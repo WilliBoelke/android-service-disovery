@@ -16,12 +16,21 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mock
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothClientConnector
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnection
+import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothConnectorThread
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.tcp.TCPChannelMaker
 
 import willi.boelke.services.serviceDiscovery.ServiceDescription
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiDirectServiceDiscoveryEngine
 import willi.boelke.services.serviceDiscovery.wifiDirectServiceDiscovery.WifiServiceDiscoveryListener
 import willi.boelke.services.testUtils.*
 import java.io.IOException
+import java.net.Socket
+import java.net.SocketAddress
+import java.util.*
+import kotlin.collections.ArrayList
 
 
 /**
@@ -106,7 +115,6 @@ class UnitWifiDirectServiceConnectionEngine {
         justRun { mockedChannel.close() }
 
         every { mockedContext.applicationContext.getSystemService(Context.WIFI_SERVICE) } returns mockedWifiManager
-        every { mockedContext.applicationContext.getSystemService(Context.WIFI_SERVICE) } returns mockedWifiManager
         every { mockedContext.getSystemService(Context.WIFI_P2P_SERVICE) } returns mockedManager
         every { mockedContext.packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_DIRECT) } returns true
         every { mockedManager.initialize(mockedContext, any(), any()) } returns mockedChannel
@@ -121,7 +129,7 @@ class UnitWifiDirectServiceConnectionEngine {
 
     @After
     fun teardown() {
-        WifiDirectConnectionEngine.getInstance().callPrivateFunc("teardownEngine")
+        WifiDirectConnectionEngine.getInstance().teardownEngine()
     }
 
     //
@@ -188,19 +196,64 @@ class UnitWifiDirectServiceConnectionEngine {
         fun hasDiscoveredPeer(device: WifiP2pDevice): Boolean {
             return foundServiceHosts.contains(device)
         }
+
+        fun hasConnectionTo(description: ServiceDescription): Boolean {
+            establishedConnections.forEach {
+                it.serviceDescription.equals(description) && return true;
+            }
+            return false
+        }
     }
 
     fun simulateServiceDiscovery(peer: WifiP2pDevice, description: ServiceDescription) {
         discoveryListener.captured.onServiceDiscovered(peer, description)
     }
 
+
+    /**
+     * The engine should only start if
+     * the environment is fitting
+     */
     @Test
-    fun itShouldStart() {
+    fun itShouldNotStart() {
+
+        WifiDirectConnectionEngine.getInstance().teardownEngine()
+        every { mockedWifiManager.isP2pSupported } returns false
+
+        assertFalse(
+            WifiDirectConnectionEngine.getInstance()
+                .start(mockedContext, mockedDiscovery)
+        )
+
+        every { mockedWifiManager.isP2pSupported } returns true
+        every { mockedContext.applicationContext.getSystemService(Context.WIFI_SERVICE) } returns null
+
+        assertFalse(
+            WifiDirectConnectionEngine.getInstance()
+                .start(mockedContext, mockedDiscovery)
+        )
+
+        every { mockedContext.applicationContext.getSystemService(Context.WIFI_SERVICE) } returns mockedWifiManager
+        every { mockedContext.getSystemService(Context.WIFI_P2P_SERVICE) } returns null
+
+        assertFalse(
+            WifiDirectConnectionEngine.getInstance()
+                .start(mockedContext, mockedDiscovery)
+        )
+        every { mockedContext.getSystemService(Context.WIFI_P2P_SERVICE) } returns mockedManager
+        every { mockedManager.initialize(mockedContext, any(), any()) } returns null
+
+        assertFalse(
+            WifiDirectConnectionEngine.getInstance()
+                .start(mockedContext, mockedDiscovery)
+        )
+
+        every { mockedManager.initialize(mockedContext, any(), any()) } returns mockedChannel
+
         assertTrue(
             WifiDirectConnectionEngine.getInstance()
                 .start(mockedContext, mockedDiscovery)
         )
-        verify { mockedDiscovery.registerDiscoverListener(any()) }
 
     }
 
@@ -312,137 +365,168 @@ class UnitWifiDirectServiceConnectionEngine {
     /**
      * If a service is discovered and the client callback `shouldConnect`
      * returns true, a connection attempt should be started.
-     * This also should notify about more connections
      */
     @Test
     fun itShouldTryToConnectToSeveralServices() {
+        val peer = TestPeer(true)
+        val description = testDescriptionTwo
+        val testDeviceOne = getTestDeviceOne_Wifi()
+        val testDeviceTwo = getTestDeviceOne_Wifi()
 
-    }
-
-    /**
-     * When connecting the socket an IO Exception can occur
-     * this should be handled
-     */
-    @Test
-    fun itShouldHandleIoExceptionsWhenTryingToConnect() {
-
-        val testDeviceOne = getTestDeviceOne()
-        val mockedSocket = getSocketToTestDevice(testDeviceOne)
-
-        every { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) } returns mockedSocket
-        every { mockedSocket.connect() } throws IOException()
-
-        val client = TestPeer()
         WifiDirectConnectionEngine.getInstance()
-            .registerService(testDescriptionTwo, client)
+            .registerService(description, peer)
 
-        //  discoveryListener.captured.onPeerDiscovered(testDeviceOne)
-        //  discoveryListener.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
-
-        verify(exactly = 1) { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) }
-        verify(exactly = 1) { mockedSocket.connect() }
-        verify(exactly = 2) { mockedSocket.close() }
+        simulateServiceDiscovery(testDeviceOne, description)
+        simulateServiceDiscovery(testDeviceTwo, description)
+        val config: CapturingSlot<WifiP2pConfig> = CapturingSlot()
+        verify(exactly = 2) { mockedManager.connect(mockedChannel, capture(config), any()) }
     }
 
     /**
-     * When a Service was started client connections should be accepted
-     * after a connection was accepted the server socket should be reopened
-     * and further connections should be accepted.
+     * Just a setup for the following test
+     * to setup the engine to the point where
+     * it has send a connection request
      */
-    @Test
-    fun itShouldAcceptConnectionsWhenServiceStarted() {
-
-        val mockedServerSocket = mockk<BluetoothServerSocket>()
-        val mockedSocket = getSocketToTestDevice(getTestDeviceOne())
-        val answerF = FunctionAnswer { Thread.sleep(2000); mockedSocket }
-        every { mockedServerSocket.accept() }.answers(answerF)
-        justRun { mockedServerSocket.close() }
-
-        //  every { mockedBtAdapter.listenUsingRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
-
-        //   WifiDirectConnectionEngine.getInstance().startSDPService(testDescriptionOne) {}
-
-        Thread.sleep(3000)
-        // In the given time exactly one connection should be accepted
-        // verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-        //      testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
-        // Accept will be called twice, once will go trough, then the tread loops and watt for the next connection
-        verify(exactly = 2) { mockedServerSocket.accept() }
-        Thread.sleep(2000)
-        // Still only one Server socket should be opened
-        // verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-        //     testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
-        // his should accept he second connection and start waiting for the next
-        verify(exactly = 3) { mockedServerSocket.accept() }
+    private fun setupConnectionAttempt(peer :TestPeer, desc : ServiceDescription, host: WifiP2pDevice){
+        WifiDirectConnectionEngine.getInstance()
+            .registerService(desc, peer)
+        simulateServiceDiscovery(host, desc)
     }
 
     /**
-     * A service (with a given service description)
-     * can only be registered once
+     * The engine should notify the peer when it became a group owner
      */
     @Test
-    fun itShouldNotStartTheSameServiceTwice() {
-        val mockedServerSocket = mockk<BluetoothServerSocket>()
-        val mockedSocket = getSocketToTestDevice(getTestDeviceOne())
-        val answerF = FunctionAnswer { Thread.sleep(2000); mockedSocket }
-        every { mockedServerSocket.accept() }.answers(answerF)
-        justRun { mockedServerSocket.close() }
-        //  every { mockedBtAdapter.listenUsingRfcommWithServiceRecord(any(), any()) } returns mockedServerSocket
+    fun itShouldNotifyAboutBecomingGroupOwner() {
+        val peer = TestPeer(true)
+        val description = testDescriptionTwo
+        val testDeviceOne = getTestDeviceOne_Wifi()
+        setupConnectionAttempt(peer, description, testDeviceOne)
+        assertFalse(peer.groupOwner)
+        WifiDirectConnectionEngine.getInstance().onBecameGroupOwner()
+        assertTrue(peer.groupOwner)
 
-        //    val createdFirst =
-        //      WifiDirectConnectionEngine.getInstance().startSDPService(testDescriptionOne) {}
-
-        //  val createdSecond =
-        //         WifiDirectConnectionEngine.getInstance().startSDPService(testDescriptionOne) {}
-
-        // This should all stay he same, there is no second service created =
-        Thread.sleep(3000)
-        // In the given time exactly one connection should be accepted
-        //   verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-        //     testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
-        // Accept will be called twice, once will go trough, then the tread loops and watt for the next connection
-        verify(exactly = 2) { mockedServerSocket.accept() }
-        Thread.sleep(2000)
-        // Still only one Server socket should be opened
-        //   verify(exactly = 1) { mockedBtAdapter.listenUsingRfcommWithServiceRecord(
-        //       testDescriptionOne.serviceName, testDescriptionOne.serviceUuid)}
-        // his should accept he second connection and start waiting for the next
-        //   verify(exactly = 3) { mockedServerSocket.accept()}
-
-        // checking return
-        //   assertTrue(createdFirst)
-        //  TestCase.assertFalse(createdSecond)
+        // as group owner the engine still send connection requests
+        val config: CapturingSlot<WifiP2pConfig> = CapturingSlot()
+        verify(exactly = 1) { mockedManager.connect(mockedChannel, capture(config), any()) }
+        simulateServiceDiscovery(testDeviceOne, description)
+        verify(exactly = 2) { mockedManager.connect(mockedChannel, capture(config), any()) }
     }
 
-    @Test
-    fun itShouldNotifyServerOnCreatedConnection() {
-
-    }
 
     /**
-     * Testing if several services and be advertised at the same times, and incoming connections
-     * will be accepted by them
+     * The engine should notify the peer when it became a group owner
      */
     @Test
-    fun itShouldBeAbleToRunSeveralServicesAtTheSametime() {
+    fun itShouldNotifyAboutBecomingAClient() {
+        val peer = TestPeer(true)
+        val description = testDescriptionTwo
+        val testDeviceOne = getTestDeviceOne_Wifi()
+        setupConnectionAttempt(peer, description, testDeviceOne)
+        assertFalse(peer.client)
+        WifiDirectConnectionEngine.getInstance().onBecameClient()
+        assertTrue(peer.client)
 
+        // As a group client the engine still should send connection request
+        // (which will ask the other to join the group)
+        val config: CapturingSlot<WifiP2pConfig> = CapturingSlot()
+        verify(exactly = 1) { mockedManager.connect(mockedChannel, capture(config), any()) }
+        simulateServiceDiscovery(testDeviceOne, description)
+        verify(exactly = 2) { mockedManager.connect(mockedChannel, capture(config), any()) }
+
+        // As a client the service advertisement is stopped
+        verify (exactly = 1) { mockedDiscovery.stopService(description) }
     }
 
-    /**
-     * When a service is closed and unregistered
-     * the service socket needs to eb closed
-     */
-    @Test
-    fun itShouldCloseTheServerSocketWhenEndingTheService() {
 
+    /**
+     * Okay soo here it should test the await thread
+     * for the  tcp channel, though
+     * the is  some very weird issue which doesn't let me
+     * initialize a class which extends Thread.
+     *
+     * I tried giving it an empty constructor since that's basically what it pointed me at
+     * or completely removing the original constructor and giving it a
+     * second method to pass the parameter's before starting the thread
+     * but it did not work and i  - so far- could not find a solution.
+     *
+     * This seems to be related  to the usage of Kotlin here and there being a
+     * primary and secondary conductor in  kotlin.
+     * But what i don't understand is hy the other threads - which i also tested
+     * where running just fine.
+     *
+     * either way the exceptions says
+     * java.lang.NoSuchMethodException : init
+     *
+     */
+    fun itShouldAwaitTheSocket(){
+        /*
+            val peer = TestPeer(true)
+            val description = testDescriptionTwo
+            val testDeviceOne = getTestDeviceOne_Wifi()
+            setupConnectionAttempt(peer, description, testDeviceOne)
+            assertFalse(peer.client)
+            WifiDirectConnectionEngine.getInstance().onBecameClient()
+            val channelMaker : TCPChannelMaker = mockk<TCPChannelMaker>(relaxed = true)
+            every { channelMaker.running() } returns true
+            WifiDirectConnectionEngine.getInstance().onSocketConnectionStarted(channelMaker)
+            */
+            /*
+            val peer = TestPeer(true)
+            val description = testDescriptionTwo
+            val testDeviceOne = getTestDeviceOne_Wifi()
+            setupConnectionAttempt(peer, description, testDeviceOne)
+            assertFalse(peer.client)
+            WifiDirectConnectionEngine.getInstance().onBecameClient()
+            val channelMaker : TCPChannelMaker = mockk<TCPChannelMaker>(relaxed = true)
+            val mockEngine = mockk<WifiDirectConnectionEngine>(relaxed = true)
+            val awaitThread : BluetoothClientConnector = BluetoothClientConnector(testDescriptionFour,
+                getTestDeviceOne(), object: BluetoothConnectorThread.ConnectionEventListener{
+                    override fun onConnectionFailed(
+                        uuid: UUID?,
+                        failedConnector: BluetoothConnectorThread?
+                    ) {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun onConnectionSuccess(
+                        connector: BluetoothConnectorThread?,
+                        connection: BluetoothConnection?
+                    ) {
+                        TODO("Not yet implemented")
+                    }
+                })
+            awaitThread.run()
+
+          */
     }
 
+
     /**
-     * The server socket may produce a null pointer exception which
-     * needs to be handled
+     * It should notify when a connection was created
      */
     @Test
-    fun iShouldNotCrashOnAServerSocketNullPointerException() {
+    fun itShouldNotifyWhenAConnectionHasBeenCreated() {
+        val peer = TestPeer(true)
+        val description = testDescriptionTwo
+        val testDeviceOne = getTestDeviceOne_Wifi()
+        setupConnectionAttempt(peer, description, testDeviceOne)
+        assertFalse(peer.client)
+        WifiDirectConnectionEngine.getInstance().onBecameClient()
+        assertTrue(peer.client)
+
+        // As a group client the engine still should send connection request
+        // (which will ask the other to join the group)
+        val config: CapturingSlot<WifiP2pConfig> = CapturingSlot()
+        simulateServiceDiscovery(testDeviceOne, description)
+        val socket = mockk<Socket>()
+        val address = mockk<SocketAddress>()
+        every { socket.remoteSocketAddress } returns address
+        val connection = WifiConnection(socket, description)
+        WifiDirectConnectionEngine.getInstance().onSocketConnected(connection);
+
+        assertEquals(1, peer.establishedConnections.size)
+        assertTrue(peer.hasConnectionTo(description))
     }
 
 

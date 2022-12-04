@@ -166,8 +166,28 @@ class BluetoothConnectionManager
 
         for (BluetoothConnection connectionToClose : connectionsToClose)
         {
-            this.openConnections.remove(connectionToClose);
-            connectionToClose.close();
+            // okay lets start a runnable
+            // to prevent sockets from being closed to fast after
+            // opening them which causes some issues
+
+            new Thread((Runnable) () ->
+            {
+                synchronized (this)
+                {
+                    try
+                    {
+                        Thread.sleep(1000);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        Log.d(TAG, "closeConnectionsWithDescription: interrupted - just go on");
+                    }
+                }
+                openConnections.remove(connectionToClose);
+                connectionToClose.close();
+                Log.d(TAG, "closeConnectionsWithDescription: closed connection");
+            }).start();
+
             Log.d(TAG, "closeServiceConnectionsToServiceWithUUID: closed client connections");
         }
     }

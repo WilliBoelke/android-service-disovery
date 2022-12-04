@@ -115,7 +115,7 @@ public class DemoServerController implements BluetoothServiceServer
      */
     public void startService()
     {
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(this.serviceDescription, this);
+        BluetoothServiceConnectionEngine.getInstance().startService(this.serviceDescription, this);
     }
 
     /**

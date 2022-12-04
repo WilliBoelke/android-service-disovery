@@ -31,7 +31,9 @@ class AsyncSdpWifiConnectionCreator extends Thread
     private final ServiceDescription serviceDescription;
     private Socket socket;
 
-    public AsyncSdpWifiConnectionCreator(TCPChannelMaker channelMaker, WifiDirectConnectionEngine engine, ServiceDescription description)
+    public AsyncSdpWifiConnectionCreator(TCPChannelMaker channelMaker,
+                                         WifiDirectConnectionEngine engine,
+                                         ServiceDescription description)
     {
         this.serviceDescription = description;
         this.channelMaker = channelMaker;

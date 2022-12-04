@@ -244,18 +244,16 @@ public class WifiDirectConnectionEngine
             return false;
         }
 
-        Log.d(TAG, "start: setup wifi engine");
+        Log.d(TAG, "start: checks passed - starting engine");
 
         // Initialize manager and channel
         this.context = context.getApplicationContext();
-
 
         this.registerReceiver();
 
         //--- setting up discovery engine ---//
 
         this.discoveryEngine = serviceDiscovery;
-        this.discoveryEngine.start(context, manager, channel);
         this.discoveryEngine.registerDiscoverListener(serviceDiscoveryListener);
 
         this.engineRunning = true;
@@ -553,21 +551,8 @@ public class WifiDirectConnectionEngine
             this.peer.onBecameGroupClient();
         }
         Log.d(TAG, "onBecameClient: became client to a GO, doing client stuff");
-        //----------------------------------
-        // NOTE : as a client, the local device does
-        // not need to discover further devices, since
-        // has found a group owner.
-        // Also the service doesn't need to be advertised
-        // anymore.
-        // this especially brought some troubles. since
-        // if another device found the service
-        // another connection was established - including
-        // another GO election. This would break
-        // the existing group.
-        //----------------------------------
 
-        // this.discoveryEngine.stopService(currentServiceDescription);
-        // this.stopDiscovery();
+        this.discoveryEngine.stopService(currentServiceDescription);
         this.connectionListener.establishConnections(false);
     }
 
@@ -594,6 +579,8 @@ public class WifiDirectConnectionEngine
      */
     protected void onSocketConnectionStarted(TCPChannelMaker channelCreator)
     {
+        Log.d(TAG, "onSocketConnectionStarted: test");
+        Log.d(TAG, "onSocketConnectionStarted: test" + channelCreator + ", " + this +", " + this.currentServiceDescription );
         AsyncSdpWifiConnectionCreator awaitThread = new AsyncSdpWifiConnectionCreator(channelCreator, this, this.currentServiceDescription);
         awaitThread.start();
     }

@@ -15,9 +15,6 @@ public interface WifiDirectServiceDiscovery extends IServiceDiscoveryEngine
     @Override
     boolean start(Context context);
 
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    boolean start(Context context, WifiP2pManager manager, WifiP2pManager.Channel channel);
-
     @Override
     void stop();
 

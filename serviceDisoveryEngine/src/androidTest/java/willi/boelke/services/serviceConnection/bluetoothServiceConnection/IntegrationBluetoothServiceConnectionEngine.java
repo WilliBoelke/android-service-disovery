@@ -190,7 +190,7 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
     public void itShouldConnectToOneNearbyService_advertiseServiceAndAccept() throws InterruptedException
     {
         ArrayList<BluetoothConnection> acceptedConnections = new ArrayList<>();
-        getConnectionEngine().startSDPService(descriptionForServiceOne, acceptedConnections::add);
+        getConnectionEngine().startService(descriptionForServiceOne, acceptedConnections::add);
         getConnectionEngine().startDiscoverable();
         synchronized (this)
         {
@@ -272,8 +272,8 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
     {
 
         ArrayList<BluetoothConnection> acceptedConnections = new ArrayList<>();
-        getConnectionEngine().startSDPService(descriptionForServiceOne, acceptedConnections::add);
-        getConnectionEngine().startSDPService(descriptionForServiceTwo, acceptedConnections::add);
+        getConnectionEngine().startService(descriptionForServiceOne, acceptedConnections::add);
+        getConnectionEngine().startService(descriptionForServiceTwo, acceptedConnections::add);
         getConnectionEngine().startDiscoverable();
         synchronized (this)
         {
@@ -281,7 +281,7 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
         }
 
         assertEquals(acceptedConnections.get(0).getRemoteDeviceAddress(), MAC_A_BT);
-        assertEquals(acceptedConnections.get(0).getServiceDescription(), descriptionForServiceOne);
+        assertTrue(acceptedConnections.size() == 2);
     }
 
     public void itShouldMakeTwoConnectionsToTwoServicesOnTheSameDevice_discoverAndConnect() throws InterruptedException
@@ -381,7 +381,7 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
 
         ArrayList<ServiceDescription> connectedServices = new ArrayList<>();
         ArrayList<String> connectedClients = new ArrayList<>();
-        getConnectionEngine().startSDPService(descriptionForServiceOne, connection ->
+        getConnectionEngine().startService(descriptionForServiceOne, connection ->
         {
             connectedServices.add(connection.getServiceDescription());
             connectedClients.add(connection.getRemoteDeviceAddress());
@@ -389,7 +389,7 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
         getConnectionEngine().startDiscoverable();
         synchronized (this)
         {
-            this.wait(40000); // wait for test to finish
+            this.wait(45000); // wait for test to finish
         }
 
         assertEquals(2, connectedServices.size());
@@ -431,7 +431,7 @@ public abstract class IntegrationBluetoothServiceConnectionEngine
 
         synchronized (this)
         {
-            this.wait(40000); // device discovery takes about 12s
+            this.wait(45000);
         }
         assertTrue(true);
     }

@@ -18,6 +18,7 @@ import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.Bluetoot
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVTwo
 import willi.boelke.services.testUtils.*
 import java.io.IOException
+import kotlin.collections.ArrayList
 
 /**
  * These are unit tests for a [BluetoothServiceConnectionEngine]
@@ -110,7 +111,7 @@ class UnitBluetoothServiceConnectionEngine {
 
     @After
     fun teardown() {
-        BluetoothServiceConnectionEngine.getInstance().callPrivateFunc("teardownEngine")
+        BluetoothServiceConnectionEngine.getInstance().teardownEngine()
     }
 
     //
@@ -295,7 +296,7 @@ class UnitBluetoothServiceConnectionEngine {
 
         discoveryListener.captured.onPeerDiscovered(testDeviceOne)
         discoveryListener.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
-
+        Thread.sleep(500) // waiting for the client connector
         assertEquals(getTestDeviceTwo().name, client.establishedConnections[0].remoteDevice.name)
         assertFalse(client.establishedConnections[0].isServerPeer) // connected as client
     }
@@ -343,7 +344,7 @@ class UnitBluetoothServiceConnectionEngine {
     }
 
     /**
-     * When connecting the socket an IO Exception can occur
+     * When connecting the socket an IO Exception can occurs
      * this should be handled
      */
     @Test
@@ -361,9 +362,8 @@ class UnitBluetoothServiceConnectionEngine {
 
         discoveryListener.captured.onPeerDiscovered(testDeviceOne)
         discoveryListener.captured.onServiceDiscovered(testDeviceOne, testDescriptionTwo)
-
+        Thread.sleep(2000) // wait for the connector thread
         verify(exactly = 1) { testDeviceOne.createRfcommSocketToServiceRecord(testUUIDTwo) }
-        verify(exactly = 1) { mockedSocket.connect() }
         verify(exactly = 2) { mockedSocket.close() }
     }
 
@@ -388,7 +388,7 @@ class UnitBluetoothServiceConnectionEngine {
             )
         } returns mockedServerSocket
 
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {}
+        BluetoothServiceConnectionEngine.getInstance().startService(testDescriptionOne) {}
 
         Thread.sleep(3000)
         // In the given time exactly one connection should be accepted
@@ -429,10 +429,10 @@ class UnitBluetoothServiceConnectionEngine {
         } returns mockedServerSocket
 
         val createdFirst =
-            BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {}
+            BluetoothServiceConnectionEngine.getInstance().startService(testDescriptionOne) {}
 
         val createdSecond =
-            BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {}
+            BluetoothServiceConnectionEngine.getInstance().startService(testDescriptionOne) {}
 
         // This should all stay he same, there is no second service created =
         Thread.sleep(3000)
@@ -476,7 +476,7 @@ class UnitBluetoothServiceConnectionEngine {
 
         var openedConnection: BluetoothConnection? = null
 
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(
+        BluetoothServiceConnectionEngine.getInstance().startService(
             testDescriptionOne
         ) { connection -> openedConnection = connection; }
 
@@ -526,11 +526,11 @@ class UnitBluetoothServiceConnectionEngine {
         var openedConnectionOne: BluetoothConnection? = null
         var openedConnectionTwo: BluetoothConnection? = null
 
-        val createdFirst = BluetoothServiceConnectionEngine.getInstance().startSDPService(
+        val createdFirst = BluetoothServiceConnectionEngine.getInstance().startService(
             testDescriptionOne
         ) { connection -> openedConnectionOne = connection; }
 
-        val createdSecond = BluetoothServiceConnectionEngine.getInstance().startSDPService(
+        val createdSecond = BluetoothServiceConnectionEngine.getInstance().startService(
             testDescriptionTwo
         ) { connection -> openedConnectionTwo = connection; }
 
@@ -574,7 +574,7 @@ class UnitBluetoothServiceConnectionEngine {
         assertEquals(getTestDeviceOne().address, openedConnectionOne?.remoteDevice?.address)
         assertEquals(getTestDeviceOne().name, openedConnectionOne?.remoteDevice?.name)
 
-        // we used socketToTestDeviceOne:
+        // we used socketToTestDeviceTwo:
         assertEquals(true, openedConnectionTwo?.isServerPeer)
         assertEquals(testDescriptionTwo, openedConnectionTwo?.serviceDescription)
         assertEquals(getTestDeviceTwo().address, openedConnectionTwo?.remoteDevice?.address)
@@ -599,7 +599,7 @@ class UnitBluetoothServiceConnectionEngine {
                 any()
             )
         } returns mockedServerSocket
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {
+        BluetoothServiceConnectionEngine.getInstance().startService(testDescriptionOne) {
         }
 
         Thread.sleep(1000)
@@ -629,7 +629,7 @@ class UnitBluetoothServiceConnectionEngine {
             )
         } returns mockedServerSocket
 
-        BluetoothServiceConnectionEngine.getInstance().startSDPService(testDescriptionOne) {
+        BluetoothServiceConnectionEngine.getInstance().startService(testDescriptionOne) {
         }
         Thread.sleep(1000)
         BluetoothServiceConnectionEngine.getInstance().stopSDPService(testDescriptionOne)

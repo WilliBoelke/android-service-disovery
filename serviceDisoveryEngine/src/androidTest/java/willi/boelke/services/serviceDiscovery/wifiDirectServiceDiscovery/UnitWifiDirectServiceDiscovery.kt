@@ -15,6 +15,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import willi.boelke.services.serviceConnection.wifiDirectServiceConnection.WifiDirectConnectionEngine
 import willi.boelke.services.serviceDiscovery.ServiceDescription
 import willi.boelke.services.testUtils.*
 
@@ -50,9 +51,11 @@ class UnitWifiDirectServiceDiscovery {
         justRun { mockedChannel.close() }
 
         every { mockedContext.applicationContext.getSystemService(Context.WIFI_SERVICE) } returns mockedWifiManager
-        every { mockedContext.applicationContext.getSystemService(Context.WIFI_SERVICE) } returns mockedWifiManager
+        every { mockedContext.getSystemService(Context.WIFI_P2P_SERVICE) } returns mockedManager
         every { mockedContext.packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_DIRECT) } returns true
+        every { mockedManager.initialize(mockedContext, any(), any()) } returns mockedChannel
         every { mockedWifiManager.isP2pSupported } returns true
+
 
         // capturing the callbacks
         // they are needed to mock the api
@@ -91,7 +94,7 @@ class UnitWifiDirectServiceDiscovery {
 
         //Run
         WifiDirectServiceDiscoveryEngine.getInstance()
-            .start(mockedContext, mockedManager, mockedChannel)
+            .start(mockedContext)
         initTestMocks()
     }
 
@@ -147,12 +150,51 @@ class UnitWifiDirectServiceDiscovery {
     // ------------ test ---------------
     //
 
+    /**
+     * The engine should only start if
+     * the environment is fitting
+     */
     @Test
-    fun itShouldStart() {
+    fun itShouldNotStart() {
+
+        WifiDirectServiceDiscoveryEngine.getInstance().teardownEngine()
+        every { mockedWifiManager.isP2pSupported } returns false
+
+        assertFalse(
+            WifiDirectServiceDiscoveryEngine.getInstance()
+                .start(mockedContext)
+        )
+
+        every { mockedWifiManager.isP2pSupported } returns true
+        every { mockedContext.applicationContext.getSystemService(Context.WIFI_SERVICE) } returns null
+
+        assertFalse(
+            WifiDirectServiceDiscoveryEngine.getInstance()
+                .start(mockedContext)
+        )
+
+        every { mockedContext.applicationContext.getSystemService(Context.WIFI_SERVICE) } returns mockedWifiManager
+        every { mockedContext.getSystemService(Context.WIFI_P2P_SERVICE) } returns null
+
+        assertFalse(
+            WifiDirectServiceDiscoveryEngine.getInstance()
+                .start(mockedContext)
+        )
+        every { mockedContext.getSystemService(Context.WIFI_P2P_SERVICE) } returns mockedManager
+        every { mockedManager.initialize(mockedContext, any(), any()) } returns null
+
+        assertFalse(
+            WifiDirectServiceDiscoveryEngine.getInstance()
+                .start(mockedContext)
+        )
+
+        every { mockedManager.initialize(mockedContext, any(), any()) } returns mockedChannel
+
         assertTrue(
             WifiDirectServiceDiscoveryEngine.getInstance()
-                .start(mockedContext, mockedManager, mockedChannel)
+                .start(mockedContext)
         )
+
     }
 
     @Test
@@ -160,9 +202,8 @@ class UnitWifiDirectServiceDiscovery {
         WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery()
         clearServiceRequestsCallback.captured.onSuccess()
         addServiceRequestsCallback.captured.onSuccess()
-        discoverServicesCallback.captured.onSuccess()
 
-        verify(exactly = 1) { mockedManager.discoverServices(mockedChannel, any()) }
+        verify(atLeast = 1) { mockedManager.discoverServices(mockedChannel, any()) }
         verify(exactly = 2) { mockedManager.clearServiceRequests(mockedChannel, any()) }
         verify(exactly = 1) { mockedManager.addServiceRequest(mockedChannel, any(), any()) }
         verify(exactly = 1) { mockedManager.setDnsSdResponseListeners(mockedChannel, any(), any()) }
@@ -177,7 +218,6 @@ class UnitWifiDirectServiceDiscovery {
         WifiDirectServiceDiscoveryEngine.getInstance().startDiscovery()
         clearServiceRequestsCallback.captured.onSuccess()
         addServiceRequestsCallback.captured.onSuccess()
-        discoverServicesCallback.captured.onSuccess()
 
         WifiDirectServiceDiscoveryEngine.getInstance().stopDiscovery()
         verify(exactly = 3) { mockedManager.clearServiceRequests(mockedChannel, any()) }

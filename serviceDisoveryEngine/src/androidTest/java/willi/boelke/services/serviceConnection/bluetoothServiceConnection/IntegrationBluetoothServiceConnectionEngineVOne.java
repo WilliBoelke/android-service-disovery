@@ -21,6 +21,7 @@ public class IntegrationBluetoothServiceConnectionEngineVOne extends Integration
     public void setup()
     {
         super.setup();
+        BluetoothServiceDiscoveryVOne.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
         BluetoothServiceConnectionEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext()
                 , BluetoothServiceDiscoveryVOne.getInstance());
     }

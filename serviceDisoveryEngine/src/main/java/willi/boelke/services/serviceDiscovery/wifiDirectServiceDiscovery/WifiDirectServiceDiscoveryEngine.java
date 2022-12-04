@@ -15,6 +15,7 @@ import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 import android.net.wifi.p2p.nsd.WifiP2pServiceInfo;
+import android.net.wifi.p2p.nsd.WifiP2pUpnpServiceInfo;
 import android.util.Log;
 
 import androidx.annotation.RequiresPermission;
@@ -78,7 +79,7 @@ import willi.boelke.services.serviceDiscovery.ServiceDiscoveryEngine;
  * every discovered service even if it was not registered through {@link #startService(ServiceDescription)}
  * <p>
  * <h2>Starting and stopping the engine</h2>
- * To use the engine {@link #start(Context)} or {@link #start(Context, WifiP2pManager, WifiP2pManager.Channel)}
+ * To use the engine {@link #start(Context)}
  * are needed to be called. The engine will then start and check if necessary hard- and software
  * are available. To verify that the engine started {@link #isRunning()} can be called and should return true.
  * To stop the engine call {@link #stop()}
@@ -102,6 +103,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
      * mDNS domain names.
      */
     private static final String LOCAL_TLD = ".local.";
+
 
     //
     //  ----------  instance members ----------
@@ -140,6 +142,7 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
      */
     private final ArrayList<WifiServiceDiscoveryListener> discoveryListeners = new ArrayList<>();
 
+    private DiscoveryRunner discoveryRunner = new DiscoveryRunner();
 
     //  ----------  constructor and initialization ----------
     //
@@ -181,39 +184,12 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     @Override
     public boolean start(Context context)
     {
-        WifiP2pManager tempManager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
-        WifiP2pManager.Channel tempChannel = tempManager.initialize(context, context.getMainLooper(), null);
-        return start(context, tempManager, tempChannel);
-    }
-
-    /**
-     * Starts the engine
-     * needs to eb called before doing anything else
-     * before starting the engine all calls will be returned immediately.
-     * <p>
-     * Alternatively use {@link #start(Context)}
-     *
-     * @param manager
-     *         the wifi manager service
-     * @param channel
-     *         a channel
-     *
-     * @see #stop()
-     */
-    @Override
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    public boolean start(Context context, WifiP2pManager manager, WifiP2pManager.Channel channel)
-    {
         if (isRunning())
         {
-            Log.e(TAG, "start: engine already started");
+            Log.e(TAG, "start: engine already running");
             return true;
         }
-        if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_DIRECT))
-        {
-            Log.e(TAG, "start: Wifi Direct not supported");
-            return false;
-        }
+
         WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wifiManager == null)
         {
@@ -225,18 +201,21 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
             Log.e(TAG, "start: Wifi turned off or not available");
             return false;
         }
+        this.manager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
         if (manager == null)
         {
             Log.e(TAG, "start:Wifi Service not available");
             return false;
         }
+        this.channel = manager.initialize(context, context.getMainLooper(), null);
         if (channel == null)
         {
             Log.e(TAG, "start: cant init WiFi direct");
             return false;
         }
-        this.manager = manager;
-        this.channel = channel;
+
+        Log.d(TAG, "start: checks passed - starting engine");
+
         engineRunning = true;
         return true;
     }
@@ -287,9 +266,9 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
             return;
         }
         this.discoveredServices.clear();
-        this.stopDiscovery();
+        cancelServiceDiscovery();
         Log.d(TAG, "startDiscovery: staring discovery");
-        discoverService();
+        runServiceDiscovery();
     }
 
     /**
@@ -371,6 +350,21 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
                 logReason(TAG, "startSdpService: service could not be added : " + description, arg0);
             }
         });
+        manager.addLocalService(channel, serviceInfo, new WifiP2pManager.ActionListener()
+        {
+            @Override
+            public void onSuccess()
+            {
+                Log.d(TAG, "startSdpService: service successfully added : " + description);
+            }
+
+            @Override
+            public void onFailure(int arg0)
+            {
+                logReason(TAG, "startSdpService: service could not be added : " + description, arg0);
+            }
+        });
+
     }
 
     /**
@@ -642,66 +636,6 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
      */
     private final HashMap<String, Map<String, String>> tmpRecordCache = new HashMap<>();
 
-    private void discoverService()
-    {
-        setupDiscoveryCallbacks();
-        runServiceDiscovery();
-    }
-
-    private void runServiceDiscovery()
-    {
-
-        Log.d(TAG, "startDiscovery: started discovery");
-
-        //--- adding service requests (again) ---//
-
-        //----------------------------------
-        // NOTE : Bonjour services are used,
-        // so WifiP2pDnsSdServiceRequests are
-        // used here.
-        //----------------------------------
-        manager.clearServiceRequests(this.channel, new WifiP2pManager.ActionListener()
-        {
-            @Override
-            public void onSuccess()
-            {
-                manager.addServiceRequest(channel, WifiP2pDnsSdServiceRequest.newInstance(), new WifiP2pManager.ActionListener()
-                {
-                    @Override
-                    public void onSuccess()
-                    {
-                        //--- starting the service discovery (again) ---//
-                        manager.discoverServices(channel, new WifiP2pManager.ActionListener()
-                        {
-                            @Override
-                            public void onSuccess()
-                            {
-                                Log.d(TAG, "Started service discovery");
-                            }
-
-                            @Override
-                            public void onFailure(int code)
-                            {
-                                Log.d(TAG, "failed to start service discovery");
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onFailure(int code)
-                    {
-                        Log.d(TAG, "failed to add service discovery request");
-                    }
-                });
-            }
-
-            @Override
-            public void onFailure(int reason)
-            {
-                Log.d(TAG, "failed to add service discovery request");
-            }
-        });
-    }
 
     /**
      * This interrupts the service thread
@@ -725,7 +659,49 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
                 WifiDirectServiceDiscoveryEngine.logReason(TAG, "DiscoveryThread: cancel: could not clear service requests ", reason);
             }
         });
+        discoveryRunner.cancel();
         Log.d(TAG, "cancel: canceled service discovery");
+    }
+
+
+    /**
+     * Registers the dns response listeners and starts the discovery
+     * thread
+     */
+    private void runServiceDiscovery() {
+        setupDiscoveryCallbacks();
+        manager.clearServiceRequests(channel, new WifiP2pManager.ActionListener()
+        {
+            @Override
+            public void onSuccess()
+            {
+                manager.addServiceRequest(channel, WifiP2pDnsSdServiceRequest.newInstance(), new WifiP2pManager.ActionListener()
+                {
+                    @Override
+                    public void onSuccess()
+                    {
+                        //--- starting the service discovery thread---//
+
+                        discoveryRunner.cancel();
+                        discoveryRunner = new DiscoveryRunner();
+                        discoveryRunner.start();
+                    }
+
+                    @Override
+                    public void onFailure(int code)
+                    {
+                        Log.d(TAG, "failed to add service discovery request");
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(int reason)
+            {
+                Log.d(TAG, "failed to add service discovery request");
+            }
+        });
+        Log.d(TAG, "startDiscovery: started discovery");
     }
 
     /**
@@ -764,6 +740,70 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     }
 
     /**
+     * This thread restarts the service discovery periodically
+     * every 5 seconds for a total time of 2 minutes
+     * from testing - this improves the discovery dramatically
+     */
+    private class DiscoveryRunner extends Thread{
+
+        Thread thread = null;
+        boolean running = true;
+        int runs = 0;
+        @Override
+        public void run(){
+
+            thread = currentThread();
+            while (running && runs < 17)
+            {
+                runs ++;
+                manager.discoverServices(getInstance().channel, new WifiP2pManager.ActionListener()
+                {
+                    @Override
+                    public void onSuccess()
+                    {
+                        Log.d(TAG, "onSuccess: started discovery");
+                    }
+
+                    @Override
+                    public void onFailure(int reason)
+                    {
+                        Log.e(TAG, "onSuccess: failed to start discovery");
+                        cancel();
+                    }
+                });
+                synchronized (this){
+                    try
+                    {
+                        wait(7000);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+        }
+        
+        void cancel() {
+            Log.d(TAG, "cancel: cancel discovery");
+            this.running = false;
+            try
+            {
+                thread.interrupt();
+            }
+            catch (NullPointerException e){
+                Log.d(TAG, "cancel: thread weas not started");
+            }
+        }
+    }
+
+
+    //
+    //  ----------  config ----------
+    //
+
+    /**
      * Set the engine to notify about every service, even though it
      * doesn't match the descriptions set through {@link #startDiscoveryForService(ServiceDescription)}.
      * This can be disabled and enabled at will and will apply to all future discoveries.
@@ -776,5 +816,4 @@ public class WifiDirectServiceDiscoveryEngine extends ServiceDiscoveryEngine imp
     {
         super.notifyAboutAllServices(all);
     }
-
 }

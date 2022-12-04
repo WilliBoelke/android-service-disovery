@@ -13,7 +13,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import willi.boelke.services.serviceConnection.bluetoothServiceConnection.BluetoothServerConnector;
 import willi.boelke.services.serviceDiscovery.ServiceDescription;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscovery;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryListener;
@@ -44,7 +43,7 @@ import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.Bluetoot
  * For using this to advertise a service {@link BluetoothServiceServer} needs to be
  * implemented to get notified about new client connections.
  * To start the advertisement of a service refer to
- * {@link #startSDPService(ServiceDescription, BluetoothServiceServer)}
+ * {@link #startService(ServiceDescription, BluetoothServiceServer)}
  * which will also take the {@link BluetoothServiceServer} as an listener.
  * <p>
  * Discover Services<br>
@@ -556,7 +555,7 @@ public class BluetoothServiceConnectionEngine
      *
      * @see #stopSDPService(ServiceDescription) method to stop the service
      */
-    public boolean startSDPService(ServiceDescription description, BluetoothServiceServer server)
+    public boolean startService(ServiceDescription description, BluetoothServiceServer server)
     {
         Log.d(TAG, "Staring new Service Service");
         if (engineIsNotRunning())
@@ -713,9 +712,19 @@ public class BluetoothServiceConnectionEngine
                 BluetoothServerConnector failedServer = (BluetoothServerConnector) failedConnector;
                 failedServer.cancel();
                 runningServiceConnectors.remove(failedServer);
-                // we should notify the application / listeners here
-                Log.e(TAG, "onConnectionFailed: server socket died , trying to restart");
-                startServiceThread(description, serviceServer);
+
+                // where is that deadObjectException coming from here ...?
+                if(bluetoothAdapter.isEnabled()){
+                    // we should notify the application / listeners here
+                    Log.e(TAG, "onConnectionFailed: server socket died , trying to restart");
+                    Runnable tryToRestart = new TryToRestart(description, serviceServer, 1);
+                    tryToRestart.run();
+                }
+                else{
+                    Runnable tryToRestart = new TryToRestart(description, serviceServer, 3);
+                    tryToRestart.run();
+                }
+
             }
 
             @Override
@@ -729,6 +738,41 @@ public class BluetoothServiceConnectionEngine
         bluetoothServiceConnector.start();
         this.runningServiceConnectors.add(bluetoothServiceConnector);
     }
+
+    private class TryToRestart extends Thread
+    {
+        private final ServiceDescription description;
+        private final BluetoothServiceServer serviceServer;
+        private final int restartTimer;
+
+        public TryToRestart(ServiceDescription description,
+                                 BluetoothServiceServer serviceServer,
+                                 int restartTimerInSeconds)
+        {
+                this.description = description;
+                this.serviceServer = serviceServer;
+                this.restartTimer = restartTimerInSeconds * 100;
+        }
+
+        @Override
+        public void run()
+        {
+            synchronized (this){
+                try
+                {
+                    wait(restartTimer);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+
+            if(bluetoothAdapter.isEnabled() && engineRunning){
+                startServiceThread(this.description, this.serviceServer);
+            }
+        }
+    };
 
     //
     //  ---------- config ----------

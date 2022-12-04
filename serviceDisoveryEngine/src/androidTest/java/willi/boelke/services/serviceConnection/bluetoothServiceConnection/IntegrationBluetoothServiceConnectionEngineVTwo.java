@@ -5,6 +5,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVOne;
 import willi.boelke.services.serviceDiscovery.bluetoothServiceDiscovery.BluetoothServiceDiscoveryVTwo;
 
 /**
@@ -21,6 +22,7 @@ public class IntegrationBluetoothServiceConnectionEngineVTwo extends Integration
     public void setup()
     {
         super.setup();
+        BluetoothServiceDiscoveryVTwo.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext());
         BluetoothServiceConnectionEngine.getInstance().start(InstrumentationRegistry.getInstrumentation().getTargetContext()
                 , BluetoothServiceDiscoveryVTwo.getInstance());
     }
